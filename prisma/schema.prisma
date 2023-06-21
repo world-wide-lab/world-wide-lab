@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Participant {
+  participantId String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  runs          Run[]
+
+  @@map("wwl_participant")
+}
+
+model Study {
+  studyId   String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      Run[]
+
+  @@map("wwl_study")
+}
+
+model Run {
+  runId         String      @id @default(uuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  finished      Boolean     @default(false)
+  participant   Participant @relation(fields: [participantId], references: [participantId])
+  study         Study       @relation(fields: [studyId], references: [studyId])
+  responses     Response[]
+  participantId String
+  studyId       String
+
+  @@map("wwl_run")
+}
+
+model Response {
+  responseId String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  name       String?
+  payload    String? // TODO: Use Json here once Prisma supports it (really odd that it doesn't)
+  run        Run      @relation(fields: [runId], references: [runId])
+  runId      String
+
+  @@map("wwl_response")
+}
