@@ -1,0 +1,5 @@
+# Installed npm modules
+node_modules/
+
+# Ignore .env
+.env
