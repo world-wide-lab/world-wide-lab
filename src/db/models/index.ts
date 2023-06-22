@@ -1,0 +1,125 @@
+import { Sequelize, DataTypes } from 'sequelize';
+
+function defineModels(sequelize: Sequelize) {
+
+  const Participant = sequelize.define('Participant', {
+    participantId: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: 'CASCADE',
+    },
+    info: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+  }, {
+    tableName: 'wwl_participants'
+  });
+
+  const Study = sequelize.define('Study', {
+    studyId: {
+      type: DataTypes.STRING,
+      primaryKey: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: 'CASCADE',
+    },
+    info: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+  }, {
+    tableName: 'wwl_studies'
+  });
+
+  const Run = sequelize.define('Run', {
+    runId: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: 'CASCADE',
+    },
+    info: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    finished: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    participantId: {
+      type: DataTypes.STRING,
+    },
+    studyId: {
+      type: DataTypes.STRING,
+    },
+  }, {
+    tableName: 'wwl_runs'
+  });
+
+  const Response = sequelize.define('Response', {
+    responseId: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: 'CASCADE',
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    payload: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    runId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  }, {
+    tableName: 'wwl_responses'
+  });
+
+  // Associations
+  Participant.hasMany(Run, { foreignKey: 'participantId' });
+  Run.belongsTo(Participant, { foreignKey: 'participantId' });
+
+  Study.hasMany(Run, { foreignKey: 'studyId' });
+  Run.belongsTo(Study, { foreignKey: 'studyId' });
+
+  Run.hasMany(Response, { foreignKey: 'runId' });
+  Response.belongsTo(Run, { foreignKey: 'runId' });
+}
+
+export default defineModels;

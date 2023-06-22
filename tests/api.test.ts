@@ -1,9 +1,18 @@
+// Set up fake environment variables
+import "./setup_env";
+
 import request from 'supertest';
+import sequelize from '../src/db';
 import app from '../src/app';
 
 const STUDY_ID = 'abc123';
 
 describe('API Routes', () => {
+  beforeAll(async () => {
+    // Initialize Database
+    await sequelize.sync();
+  });
+
   // afterAll(async () => {
   //   // TODO: Clean up any test data
   // });
@@ -30,11 +39,15 @@ describe('API Routes', () => {
     it('should update an existing participant', async () => {
       const response = await request(app)
         .put('/v1/participant/' + participantId)
-        .send({ newData: 'updated data' });
+        .send({ info: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('participantId', participantId);
-      expect(response.body).toHaveProperty('newData', 'updated data');
+      expect(response.body).toMatchSnapshot();
+
+      const user = await sequelize.models.Participant.findOne({
+        where: { participantId }
+      })
+      expect(user).toHaveProperty('info', { lorem: 'ipsum' });
     });
   });
 
@@ -68,11 +81,15 @@ describe('API Routes', () => {
     it('should mark a run as finished', async () => {
       const response = await request(app)
         .post('/v1/run/finish')
-        .send({ runId: studyId });
+        .send({ runId: runId });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('runId', runId);
-      expect(response.body).toHaveProperty('finished', true);
+      expect(response.body).toMatchSnapshot();
+
+      const run = await sequelize.models.Run.findOne({
+        where: { runId }
+      })
+      expect(run).toHaveProperty('finished', true);
     });
   });
 
@@ -80,11 +97,15 @@ describe('API Routes', () => {
     it('should update a run', async () => {
       const response = await request(app)
         .put('/v1/run/' + runId)
-        .send({ newData: 'updated data' });
+        .send({ info: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('runId', runId);
-      expect(response.body).toHaveProperty('newData', 'updated data');
+      expect(response.body).toMatchSnapshot();
+
+      const run = await sequelize.models.Run.findOne({
+        where: { runId }
+      })
+      expect(run).toHaveProperty('info', { lorem: 'ipsum' });
     });
   });
 
@@ -102,7 +123,15 @@ describe('API Routes', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('runId', runId);
+      expect(response.body).toHaveProperty('responseId');
+      const { responseId } = response.body;
+
+      const runResponse = await sequelize.models.Response.findOne({
+        where: { responseId }
+      })
+      expect(runResponse).toHaveProperty('runId', runId);
+      expect(runResponse).toHaveProperty('name', 'test_trail');
+      expect(runResponse).toHaveProperty('payload', { key_1: 'value 1', key_2: 'value 2', });
     });
   });
 });

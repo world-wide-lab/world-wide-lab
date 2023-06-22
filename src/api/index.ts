@@ -1,101 +1,89 @@
 import express, { Request, Response } from "express";
-
-import { PrismaClient, Prisma } from '@prisma/client'
-
-const prisma = new PrismaClient();
+import sequelize from "../db";
 
 const router = express.Router();
 
-router.get("/", async (req: Request, res: Response) => {
-  res.send("API Running");
+router.get('/', async (req: Request, res: Response) => {
+  res.send('API Running');
 });
 
 // Create new participant
 router.post('/participant', async (req: Request, res: Response) => {
-  const participant = await prisma.participant.create({ data: {} });
-  res.json(participant);
+  try {
+    const participant = await sequelize.models.Participant.create();
+    res.json(participant);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create participant' });
+  }
 });
 
 // Update an existing participant's data
 router.put('/participant/:participantId', async (req: Request, res: Response) => {
   const { participantId } = req.params;
-  const { newData } = req.body;
-  const participant = await prisma.participant.update({
-    where: { participantId },
-    data: { newData },
-  });
-  res.json(participant);
+  const newData = req.body;
+  try {
+    const participant = await sequelize.models.Participant.update(newData, { where: { participantId } });
+    res.json(participant);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update participant' });
+  }
 });
 
 // Create new study
 router.post('/study', async (req: Request, res: Response) => {
   const { studyId } = req.body;
-  const studyInput: Prisma.StudyCreateInput = {
-    studyId
-  };
-  const study = await prisma.study.create({
-    data: studyInput,
-  });
-  res.json(study);
+  try {
+    const study = await sequelize.models.Study.create({ studyId });
+    res.json(study);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create study' });
+  }
 });
 
 // Start a new run (payload: participantId & studyId)
 router.post('/run', async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
-  const runInput: Prisma.RunCreateInput = {
-    participant: {
-      connect: { participantId },
-    },
-    study: {
-      connect: { studyId },
-    }
+  try {
+    const run = await sequelize.models.Run.create({ participantId, studyId });
+    res.json(run);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create run' });
   }
-  const run = await prisma.run.create({
-    data: runInput,
-  });
-  res.json(run);
 });
 
 // Shorthand for marking a run as finished
 router.post('/run/finish', async (req: Request, res: Response) => {
   const { runId } = req.body;
-  const run = await prisma.run.update({
-    where: { runId },
-    data: { finished: true },
-  });
-  res.json(run);
+  try {
+    const run = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
+    res.json(run);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update run' });
+  }
 });
 
 // Update a run
 router.put('/run/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
-  const { newData } = req.body;
-  const runInput: Prisma.RunUpdateInput = newData;
-  const run = await prisma.run.update({
-    where: { runId },
-    data: runInput,
-  });
-  res.json(run);
+  const newData = req.body;
+  try {
+    const run = await sequelize.models.Run.update(newData, { where: { runId } });
+    res.json(run);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update run' });
+  }
 });
 
 // Submit a response (payload: runId)
 router.post('/response', async (req: Request, res: Response) => {
-  const { runId } = req.params;
-  const { name, payload } = req.body;
+  const { runId, name, payload } = req.body;
 
-  const runInput: Prisma.ResponseCreateInput = {
-    run: {
-      connect: { runId },
-    },
-    name,
-    // This depends on whether or not the DB supports string or JSON for payload
-    payload: true ? JSON.stringify(payload) : payload,
+  try {
+    const response = await sequelize.models.Response.create({ runId, name, payload });
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create response' });
   }
-
-  const response = await prisma.response.create({
-    data: runInput,
-  });
-  res.json(response);
 });
 
 export default router;

@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`API Routes POST /run/finish should mark a run as finished 1`] = `
+[
+  1,
+]
+`;
+
+exports[`API Routes PUT /participant/:participantId should update an existing participant 1`] = `
+[
+  1,
+]
+`;
+
+exports[`API Routes PUT /run/:runId should update a run 1`] = `
+[
+  1,
+]
+`;
