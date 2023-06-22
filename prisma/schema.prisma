@@ -14,15 +14,17 @@ model Participant {
   participantId String   @id @default(uuid())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  info          String? // TODO: Use Json here once Prisma supports it
   runs          Run[]
 
   @@map("wwl_participant")
 }
 
 model Study {
-  studyId   String   @id @default(uuid())
+  studyId   String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  info      String? // TODO: Use Json here once Prisma supports it
   runs      Run[]
 
   @@map("wwl_study")
@@ -32,6 +34,7 @@ model Run {
   runId         String      @id @default(uuid())
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  info          String? // TODO: Use Json here once Prisma supports it
   finished      Boolean     @default(false)
   participant   Participant @relation(fields: [participantId], references: [participantId])
   study         Study       @relation(fields: [studyId], references: [studyId])
@@ -47,7 +50,7 @@ model Response {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   name       String?
-  payload    String? // TODO: Use Json here once Prisma supports it (really odd that it doesn't)
+  payload    String? // TODO: Use Json here once Prisma supports it
   run        Run      @relation(fields: [runId], references: [runId])
   runId      String
 
