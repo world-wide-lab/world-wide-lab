@@ -2,6 +2,29 @@ import { Sequelize, DataTypes } from 'sequelize';
 
 function defineModels(sequelize: Sequelize) {
 
+  const Study = sequelize.define('Study', {
+    studyId: {
+      type: DataTypes.STRING,
+      primaryKey: true,
+      allowNull: false,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: 'CASCADE',
+    },
+    info: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+  }, {
+    tableName: 'wwl_studies'
+  });
+
   const Participant = sequelize.define('Participant', {
     participantId: {
       type: DataTypes.UUID,
@@ -23,28 +46,6 @@ function defineModels(sequelize: Sequelize) {
     },
   }, {
     tableName: 'wwl_participants'
-  });
-
-  const Study = sequelize.define('Study', {
-    studyId: {
-      type: DataTypes.STRING,
-      primaryKey: true,
-    },
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
-    },
-    info: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
-  }, {
-    tableName: 'wwl_studies'
   });
 
   const Run = sequelize.define('Run', {
