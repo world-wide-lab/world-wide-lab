@@ -8,6 +8,11 @@ AdminJS.registerAdapter({
   Database: AdminJSSequelize.Database,
 })
 
+const databaseParent = {
+  name: 'Database',
+  icon: 'Folder',
+}
+
 const admin = new AdminJS({
   rootPath: '/admin',
 
@@ -16,11 +21,54 @@ const admin = new AdminJS({
   },
 
   resources: [
-    sequelize.models.Study,
-    sequelize.models.Participant,
-    sequelize.models.Run,
-    sequelize.models.Response,
+    {
+      resource: sequelize.models.Study,
+      options: {
+        parent: databaseParent,
+        properties: {
+          studyId: {
+            isTitle: true,
+            isVisible: { list: true, filter: true, show: true, edit: true },
+          },
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+        }
+      }
+    },
+    {
+      resource: sequelize.models.Participant,
+      options: {
+        parent: databaseParent,
+      }
+    },
+    {
+      resource: sequelize.models.Run,
+      options: {
+        parent: databaseParent,
+      }
+    },
+    {
+      resource: sequelize.models.Response,
+      options: {
+        parent: databaseParent,
+      }
+    },
   ],
+
+  locale: {
+    translations: {
+      labels: {
+        wwl_studies: 'Studies',
+        wwl_participants: 'Participants',
+        wwl_runs: 'Runs',
+        wwl_responses: 'Responses',
+      }
+    }
+  },
 })
 
 const adminRouter = AdminJSExpress.buildRouter(admin)
