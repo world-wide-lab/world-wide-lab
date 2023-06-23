@@ -3,10 +3,11 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import api from './api';
+import { admin, adminRouter } from './admin'
 
 const app = express();
 
-app.use(helmet());
+// app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
@@ -16,5 +17,8 @@ app.get("/", async (req: Request, res: Response) => {
 
 // Mount the API router under v1
 app.use('/v1', api);
+
+// Use adminJS
+app.use(admin.options.rootPath, adminRouter)
 
 export default app;
