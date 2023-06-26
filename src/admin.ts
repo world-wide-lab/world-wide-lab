@@ -13,6 +13,11 @@ const databaseParent = {
   icon: 'Folder',
 }
 
+const infoDescription = (
+  "JSON object with meta information." +
+  "Use this to store any additional information you want to keep track of."
+)
+
 const admin = new AdminJS({
   rootPath: '/admin',
 
@@ -28,6 +33,7 @@ const admin = new AdminJS({
         properties: {
           studyId: {
             isTitle: true,
+            description: 'Unique identifier for this particular study.',
             isVisible: { list: true, filter: true, show: true, edit: true },
           },
           createdAt: {
@@ -36,6 +42,9 @@ const admin = new AdminJS({
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
           },
+          info: {
+            description: infoDescription,
+          },
         }
       }
     },
@@ -43,18 +52,51 @@ const admin = new AdminJS({
       resource: sequelize.models.Participant,
       options: {
         parent: databaseParent,
+        properties: {
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          info: {
+            description: infoDescription,
+          },
+        }
       }
     },
     {
       resource: sequelize.models.Run,
       options: {
         parent: databaseParent,
+        properties: {
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          info: {
+            description: infoDescription,
+          },
+        }
       }
     },
     {
       resource: sequelize.models.Response,
       options: {
         parent: databaseParent,
+        properties: {
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          info: {
+            description: infoDescription,
+          },
+        }
       }
     },
   ],
