@@ -1,7 +1,7 @@
 import AdminJS from 'adminjs'
-import AdminJSExpress from '@adminjs/express'
 import * as AdminJSSequelize from '@adminjs/sequelize'
-import sequelize from './db'
+import sequelize from '../db'
+import { initializeRouter } from './router_auth'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -113,7 +113,7 @@ const admin = new AdminJS({
   },
 })
 
-const adminRouter = AdminJSExpress.buildRouter(admin)
+const adminRouter = initializeRouter(admin)
 
 // Bundle admin js files in development mode
 // Having this active will cause jest to stay open after tests are done
