@@ -19,6 +19,8 @@ app.get("/", async (req: Request, res: Response) => {
 app.use('/v1', api);
 
 // Use adminJS
-app.use(admin.options.rootPath, adminRouter)
+if (String(process.env.ADMIN_UI).toLowerCase() !== 'false') {
+  app.use(admin.options.rootPath, adminRouter)
+}
 
 export default app;
