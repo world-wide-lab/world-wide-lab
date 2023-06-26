@@ -73,9 +73,11 @@ const admin = new AdminJS({
 
 const adminRouter = AdminJSExpress.buildRouter(admin)
 
-// May or may not be needed
-// https://docs.adminjs.co/installation/getting-started
-admin.watch()
+// Bundle admin js files in development mode
+// Having this active will cause jest to stay open after tests are done
+if (process.env.NODE_ENV === 'development') {
+  admin.watch()
+}
 
 export {
   admin,
