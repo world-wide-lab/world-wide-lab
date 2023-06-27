@@ -6,6 +6,7 @@ const router = express.Router();
 
 const options = {
   failOnErrors: true,
+  customCss: '.swagger-ui .topbar { display: none }',
   swaggerOptions: {
     url: "./openapi.json",
   },

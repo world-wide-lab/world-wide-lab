@@ -2,6 +2,7 @@ import AdminJS from 'adminjs'
 import * as AdminJSSequelize from '@adminjs/sequelize'
 import sequelize from '../db'
 import { initializeRouter } from './router_auth'
+import { componentLoader, Components } from './components'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -28,6 +29,7 @@ const admin = new AdminJS({
   branding: {
     companyName: 'WWL: World-Wide-Lab ',
   },
+  componentLoader,
 
   resources: [
     {
@@ -104,8 +106,15 @@ const admin = new AdminJS({
       }
     },
   ],
+  pages: {
+    'Public API': {
+      component: Components.ApiDocsPage,
+      icon: 'Book',
+    },
+  },
 
   locale: {
+    language: 'en',
     translations: {
       labels: {
         wwl_studies: 'Studies',
