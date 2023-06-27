@@ -51,14 +51,14 @@ function initializeRouter(admin: AdminJS) {
       {
         authenticate,
         cookieName: 'adminjs',
-        cookiePassword: SESSION_SECRET,
+        cookiePassword: SESSION_SECRET as string,
       },
       null,
       {
         store: sessionStore,
         resave: true,
         saveUninitialized: true,
-        secret: SESSION_SECRET,
+        secret: SESSION_SECRET as string,
         cookie: {
           httpOnly: process.env.NODE_ENV === 'production',
           secure: process.env.NODE_ENV === 'production',

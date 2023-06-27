@@ -1,12 +1,11 @@
 import swaggerJsdoc from 'swagger-jsdoc'
-import { version } from '../../package.json'
 
 const options = {
   definition: {
     openapi: "3.1.0",
     info: {
       title: "WorldWideLab Public API",
-      version,
+      version: process.env.npm_package_version as string,
       description: "This is the public facing and unauthenticated portion of the WorldWideLab API.",
       license: {
         name: "MIT",

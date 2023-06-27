@@ -13,6 +13,6 @@ const options = {
 
 router.get("/openapi.json", (req, res) => res.json(spec));
 router.use('/', swaggerUi.serve);
-router.get('/', swaggerUi.setup(null, options));
+router.get('/', swaggerUi.setup(undefined, options));
 
 export default router;
