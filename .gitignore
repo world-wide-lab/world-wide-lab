@@ -9,3 +9,6 @@ node_modules/
 
 # Ignore any files in special "ignore" dir
 ignore/
+
+# Ignore built files
+dist/
