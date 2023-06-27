@@ -2,6 +2,7 @@ import AdminJS from 'adminjs'
 import * as AdminJSSequelize from '@adminjs/sequelize'
 import sequelize from '../db'
 import { initializeRouter } from './router_auth'
+import { version } from '../../package.json'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -21,6 +22,10 @@ const infoDescription = (
 const admin = new AdminJS({
   rootPath: '/admin',
 
+  version: {
+    admin: false,
+    app: version,
+  },
   branding: {
     companyName: 'WWL: World-Wide-Lab ',
   },
