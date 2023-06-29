@@ -5,7 +5,7 @@ node_modules/
 .env
 
 # Ignore any SQLite databases
-*.db
+*.sqlite
 
 # Ignore any files in special "ignore" dir
 ignore/
