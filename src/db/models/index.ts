@@ -3,9 +3,18 @@ import { Sequelize, DataTypes } from 'sequelize';
 function defineModels(sequelize: Sequelize) {
 
   const Study = sequelize.define('Study', {
+    id : {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     studyId: {
       type: DataTypes.STRING,
-      primaryKey: true,
+      validate: {
+        is: /^[a-zA-Z0-9-_]+$/,
+      },
+      unique: true,
       allowNull: false,
     },
     createdAt: {
@@ -22,7 +31,7 @@ function defineModels(sequelize: Sequelize) {
       allowNull: true,
     },
   }, {
-    tableName: 'wwl_studies'
+    tableName: 'wwl_studies',
   });
 
   const Participant = sequelize.define('Participant', {
@@ -116,8 +125,8 @@ function defineModels(sequelize: Sequelize) {
   Participant.hasMany(Run, { foreignKey: 'participantId' });
   Run.belongsTo(Participant, { foreignKey: 'participantId' });
 
-  Study.hasMany(Run, { foreignKey: 'studyId' });
-  Run.belongsTo(Study, { foreignKey: 'studyId' });
+  Study.hasMany(Run, { sourceKey: 'studyId', foreignKey: 'studyId' });
+  Run.belongsTo(Study, { targetKey: 'studyId', foreignKey: 'studyId' });
 
   Run.hasMany(Response, { foreignKey: 'runId' });
   Response.belongsTo(Run, { foreignKey: 'runId' });
