@@ -4,22 +4,9 @@ import session from 'express-session'
 import connect from 'connect-session-sequelize'
 
 import sequelize from '../db'
+import config from '../config'
 
-// Get configuration from environment variables
-const USE_AUTHENTICATION = String(process.env.ADMIN_AUTH_ENABLED).toLowerCase() !== 'false'
-const DEFAULT_ADMIN = {
-  email: process.env.ADMIN_AUTH_DEFAULT_USERNAME,
-  password: process.env.ADMIN_AUTH_DEFAULT_PASSWORD,
-}
-const SESSION_SECRET = process.env.ADMIN_AUTH_SESSION_SECRET
-if (USE_AUTHENTICATION) {
-  if (DEFAULT_ADMIN.email == "" || DEFAULT_ADMIN.password == "" || SESSION_SECRET == "") {
-    throw new Error(
-      "With ADMIN_AUTH_ENABLED = true, ADMIN_AUTH_DEFAULT_USERNAME," +
-      "ADMIN_AUTH_DEFAULT_PASSWORD and ADMIN_AUTH_SESSION_SECRET must not be empty."
-    );
-  }
-}
+const DEFAULT_ADMIN = config.admin.auth.default_admin_credentials;
 
 // Check provided credentials to authenticate users
 const authenticate = async (email: string, password: string) => {
@@ -30,7 +17,7 @@ const authenticate = async (email: string, password: string) => {
 }
 
 function initializeRouter(admin: AdminJS) {
-  if (!USE_AUTHENTICATION) {
+  if (!config.admin.auth.enabled) {
     // Don't use authentication
     const adminRouter =  AdminJSExpress.buildRouter(admin)
     return adminRouter
@@ -51,14 +38,14 @@ function initializeRouter(admin: AdminJS) {
       {
         authenticate,
         cookieName: 'adminjs',
-        cookiePassword: SESSION_SECRET as string,
+        cookiePassword: config.admin.auth.sessionSecret as string,
       },
       null,
       {
         store: sessionStore,
         resave: true,
         saveUninitialized: true,
-        secret: SESSION_SECRET as string,
+        secret: config.admin.auth.sessionSecret as string,
         cookie: {
           httpOnly: process.env.NODE_ENV === 'production',
           secure: process.env.NODE_ENV === 'production',

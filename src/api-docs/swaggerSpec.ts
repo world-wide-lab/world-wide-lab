@@ -1,12 +1,13 @@
 import path from 'path'
 import swaggerJsdoc from 'swagger-jsdoc'
+import config from '../config'
 
 const options = {
   definition: {
     openapi: "3.0.0",
     info: {
       title: "WorldWideLab Public API",
-      version: process.env.npm_package_version as string,
+      version: config.version,
       description: "This is the public facing and unauthenticated portion of the WorldWideLab API.",
       license: {
         name: "MIT",
@@ -20,7 +21,7 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT}/v1`,
+        url: `http://${config.root}:${config.port}/v1`,
       },
     ],
   },

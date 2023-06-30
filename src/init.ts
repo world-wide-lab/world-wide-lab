@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import sequelize from './db';
 import app from './app';
+import config from './config';
 
 async function init() {
   // Check the database
@@ -16,14 +17,19 @@ async function init() {
 	}
 
   // Start the server
-  const port = process.env.PORT || 5000;
+  const root = config.root;
+  const port = config.port;
   return new Promise((resolve, reject) => {
     try {
       app.listen(port, () => {
         /* eslint-disable no-console */
-        console.log(`Listening on: http://localhost:${port}`);
-        console.log(`Admin UI at: http://localhost:${port}/admin`);
-        console.log(`API Docs at: http://localhost:${port}/api-docs`);
+        console.log(`Listening on: ${root}:${port}`);
+        if (config.admin.enabled) {
+          console.log(`Admin UI at: ${root}:${port}/admin`);
+        }
+        if (config.apiDocs.enabled) {
+          console.log(`API Docs at: ${root}:${port}/api-docs`);
+        }
         /* eslint-enable no-console */
 
         resolve(null)

@@ -1,9 +1,10 @@
 import { Sequelize } from 'sequelize';
 
 import defineModels from './models';
+import config from '../config';
 
 const sequelize = new Sequelize(
-  process.env.DATABASE_URL as string,
+  config.database.url,
   {
     logging: console.log,
   }

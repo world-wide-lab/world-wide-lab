@@ -1,8 +1,9 @@
-import AdminJS from 'adminjs'
+import AdminJS, { AdminPages, AdminPage } from 'adminjs'
 import * as AdminJSSequelize from '@adminjs/sequelize'
 import sequelize from '../db'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
+import config from '../config'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -19,12 +20,20 @@ const infoDescription = (
   "Use this to store any additional information you want to keep track of."
 )
 
+const pages: AdminPages = {}
+if (config.apiDocs.enabled) {
+  pages['Public API'] = {
+    component: Components.ApiDocsPage,
+    icon: 'Book',
+  } as AdminPage
+}
+
 const admin = new AdminJS({
   rootPath: '/admin',
 
   version: {
     admin: false,
-    app: process.env.npm_package_version,
+    app: config.version,
   },
   branding: {
     companyName: 'WWL: World-Wide-Lab ',
@@ -106,12 +115,7 @@ const admin = new AdminJS({
       }
     },
   ],
-  pages: {
-    'Public API': {
-      component: Components.ApiDocsPage,
-      icon: 'Book',
-    },
-  },
+  pages,
 
   locale: {
     language: 'en',
