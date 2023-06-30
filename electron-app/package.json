@@ -1,0 +1,28 @@
+{
+  "name": "@world-wide-lab/electron-app",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:electron": "npm run build && npm run dist:electron",
+    "dist:electron": "electron-builder",
+    "pack:electron": "electron-builder --dir",
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "world-wide-lab",
+    "mac": {
+      "category": "your.app.category.type"
+    }
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@world-wide-lab/wwl": "file:.."
+  },
+  "devDependencies": {
+    "electron": "^25.2.0",
+    "electron-builder": "^24.4.0"
+  }
+}

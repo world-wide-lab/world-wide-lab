@@ -1,0 +1,14 @@
+# Installed npm modules
+node_modules/
+
+# Ignore .env
+.env
+
+# Ignore any SQLite databases
+*.sqlite
+
+# Ignore any files in special "ignore" dir
+ignore/
+
+# Ignore built files
+dist/
