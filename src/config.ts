@@ -55,6 +55,7 @@ const config = {
 
   database: {
     url: getStringFromEnv("DATABASE_URL"),
+    generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
   }
 }
 
