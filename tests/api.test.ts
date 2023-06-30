@@ -49,6 +49,15 @@ describe('API Routes', () => {
       })
       expect(user).toHaveProperty('info', { lorem: 'ipsum' });
     });
+
+    it('should fail when the participant does not exist', async () => {
+      const response = await request(app)
+        .put('/v1/participant/' + 'some-non-existing-ID')
+        .send({ info: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
   });
 
   describe('POST /study', () => {
@@ -91,6 +100,15 @@ describe('API Routes', () => {
       })
       expect(run).toHaveProperty('finished', true);
     });
+
+    it('should fail when the run does not exist', async () => {
+      const response = await request(app)
+        .post('/v1/run/finish')
+        .send({ runId: 'non-existent' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
   });
 
   describe('PUT /run/:runId', () => {
@@ -106,6 +124,15 @@ describe('API Routes', () => {
         where: { runId }
       })
       expect(run).toHaveProperty('info', { lorem: 'ipsum' });
+    });
+
+    it('should fail when the run does not exist', async () => {
+      const response = await request(app)
+        .put('/v1/run/' + 'non-existent-run-id')
+        .send({ info: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
     });
   });
 

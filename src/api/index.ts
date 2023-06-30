@@ -69,8 +69,12 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
   const { participantId } = req.params;
   const newData = req.body;
   try {
-    const participant = await sequelize.models.Participant.update(newData, { where: { participantId } });
-    res.json(participant);
+    const updatedRows = await sequelize.models.Participant.update(newData, { where: { participantId } });
+    if (updatedRows[0] == 1) {
+      res.status(200).send();
+    } else {
+      res.status(400).json({ error: 'Unknown participantId' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update participant' });
@@ -171,8 +175,12 @@ router.post('/run', async (req: Request, res: Response) => {
 router.post('/run/finish', async (req: Request, res: Response) => {
   const { runId } = req.body;
   try {
-    const run = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
-    res.json(run);
+    const updatedRows = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
+    if (updatedRows[0] == 1) {
+      res.status(200).send();
+    } else {
+      res.status(400).json({ error: 'Unknown runId' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update run' });
@@ -191,7 +199,7 @@ router.post('/run/finish', async (req: Request, res: Response) => {
  *           type: string
  *         required: true
  *         description: ID of the run to update
-*     requestBody:
+ *     requestBody:
  *       description: New data for the run
  *       required: true
  *       content:
@@ -211,8 +219,12 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
   const newData = req.body;
   try {
-    const run = await sequelize.models.Run.update(newData, { where: { runId } });
-    res.json(run);
+    const updatedRows = await sequelize.models.Run.update(newData, { where: { runId } });
+    if (updatedRows[0] == 1) {
+      res.status(200).send();
+    } else {
+      res.status(400).json({ error: 'Unknown runId' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update run' });

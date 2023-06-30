@@ -3,6 +3,8 @@ import sequelize from './db';
 import app from './app';
 import config from './config';
 
+import generateExampleData from './db/exampleData';
+
 async function init() {
   // Check the database
   console.log(`Checking database connection...`);
@@ -15,6 +17,10 @@ async function init() {
 		console.error(`Unable to connect to the database: ${(error as Error).message}`);
 		process.exit(1);
 	}
+
+  if (config.database.generateExampleData) {
+    await generateExampleData(sequelize);
+  }
 
   // Start the server
   const root = config.root;

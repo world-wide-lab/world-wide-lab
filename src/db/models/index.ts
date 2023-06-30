@@ -91,10 +91,11 @@ function defineModels(sequelize: Sequelize) {
   });
 
   const Response = sequelize.define('Response', {
-    responseId: {
-      type: DataTypes.UUID,
+    responseId : {
+      type: DataTypes.INTEGER,
       primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
+      autoIncrement: true,
+      allowNull: false,
     },
     createdAt: {
       type: DataTypes.DATE,
