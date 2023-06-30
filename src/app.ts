@@ -5,6 +5,7 @@ import cors from 'cors';
 import api from './api';
 import apiDocs from './api-docs';
 import { admin, adminRouter } from './admin'
+import config from './config'
 
 const app = express();
 
@@ -20,10 +21,12 @@ app.get("/", async (req: Request, res: Response) => {
 app.use('/v1', api);
 
 // Mount the api-docs
-app.use('/api-docs', apiDocs);
+if (config.apiDocs.enabled) {
+  app.use('/api-docs', apiDocs);
+}
 
 // Use adminJS
-if (String(process.env.ADMIN_UI).toLowerCase() !== 'false') {
+if (config.admin.enabled) {
   app.use(admin.options.rootPath, adminRouter)
 }
 
