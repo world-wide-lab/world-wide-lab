@@ -59,8 +59,6 @@ const config = {
   }
 }
 
-console.log(config)
-
 // Validate configuration
 if (config.admin.enabled && config.admin.auth.enabled) {
   if (
