@@ -1,14 +1,7 @@
-// Fake environment variables
-process.env.PORT = 7700
-process.env.ADMIN_UI = "true"
-process.env.USE_AUTHENTICATION = "false"
+// Set environment variables
+require("./set-env")
 
-const path = require('path')
 const { app, BrowserWindow } = require('electron')
-process.env.ADMIN_JS_TMP_DIR = path.join(app.getPath("userData"), "adminjs-tmp")
-const dbUrl = "sqlite:" + path.join(app.getPath("userData"), "world-wide-lab-database.sqlite")
-console.log("Database: "+ dbUrl)
-process.env.DATABASE_URL = dbUrl
 const { init } = require('@world-wide-lab/wwl/dist/init.js')
 
 // To prevent super slow start up
