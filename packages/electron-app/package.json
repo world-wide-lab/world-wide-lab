@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:electron": "npm run build && npm run dist:electron",
-    "dist:electron": "electron-builder",
-    "pack:electron": "electron-builder --dir",
-    "start": "electron .",
+    "dev": "electron .",
+    "build": "npm run build:wwl && npm run package",
+    "build:wwl": "npm run build --prefix ../wwl/",
+    "package": "electron-builder",
+    "package:dev": "electron-builder --dir",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
