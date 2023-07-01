@@ -16,3 +16,6 @@ console.log("AdminJS Temp Directory: " + adminJsTmpDir)
 const dbUrl = "sqlite:" + path.join(BASE_DIR, DATABASE_NAME)
 process.env.DATABASE_URL = dbUrl
 console.log("Database URL: " + dbUrl)
+
+// Manually set package version, which is normally set by npm
+process.env.npm_package_version = app.getVersion()
