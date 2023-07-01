@@ -20,13 +20,15 @@
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
     "express": "^4.18.2",
+    "express-formidable": "^1.2.0",
     "express-session": "^1.17.3",
     "helmet": "^7.0.0",
     "pg": "^8.11.0",
     "sequelize": "^6.32.1",
     "sqlite3": "^5.1.6",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^4.6.3"
+    "swagger-ui-express": "^4.6.3",
+    "tslib": "^2.6.0"
   },
   "devDependencies": {
     "@babel/core": "^7.22.5",

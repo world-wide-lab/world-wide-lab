@@ -25,7 +25,7 @@ async function init() {
   // Start the server
   const root = config.root;
   const port = config.port;
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     try {
       app.listen(port, () => {
         /* eslint-disable no-console */
@@ -37,7 +37,6 @@ async function init() {
           console.log(`API Docs at: ${root}:${port}/api-docs`);
         }
         /* eslint-enable no-console */
-
         resolve(null)
       });
     } catch (error) {

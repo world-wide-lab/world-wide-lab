@@ -11,7 +11,7 @@ function getValueFromEnv(key: string): string | undefined {
 function getStringFromEnv(key: string): string {
   const value = getValueFromEnv(key)
   if (value === undefined) {
-    throw new Error("${key} must not be empty!");
+    throw new Error(`${key} must not be empty!`);
   }
   return value
 }
@@ -58,6 +58,8 @@ const config = {
     generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
   }
 }
+
+console.log(config)
 
 // Validate configuration
 if (config.admin.enabled && config.admin.auth.enabled) {
