@@ -1,7 +1,5 @@
 import AdminJS, { AdminPages, AdminPage } from 'adminjs'
 import * as AdminJSSequelize from '@adminjs/sequelize'
-import path from 'path'
-import express from 'express'
 import sequelize from '../db'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
@@ -39,7 +37,7 @@ const admin = new AdminJS({
   },
   branding: {
     companyName: 'WWL: World-Wide-Lab ',
-    logo: '/admin/static/logo.svg',
+    logo: '/static/logo.svg',
     withMadeWithLove: false,
   },
   componentLoader,
@@ -135,7 +133,6 @@ const admin = new AdminJS({
 })
 
 const adminRouter = initializeRouter(admin)
-adminRouter.use('/static', express.static(path.join(__dirname, 'static')))
 
 // Bundle admin js files in development mode
 // Having this active will cause jest to stay open after tests are done
