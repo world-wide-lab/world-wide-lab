@@ -20,7 +20,8 @@ async function generateExampleData (sequelize: Sequelize) {
 
   async function generateParticipantData(info: Object, runs: Array<number>) {
     const participant = await sequelize.models.Participant.create({ info })
-    runs.forEach(async (n_responses) => {
+    for (let runIndex = 0; runIndex < runs.length; runIndex++) {
+      const n_responses = runs[runIndex];
       const run = await sequelize.models.Run.create({
         // @ts-ignore
         participantId: participant.participantId,
@@ -36,9 +37,9 @@ async function generateExampleData (sequelize: Sequelize) {
             response: `Response #${index}`,
           },
         })
-        await sequelize.models.Response.bulkCreate(responses)
       }
-    })
+      await sequelize.models.Response.bulkCreate(responses)
+    }
   }
 
   await generateParticipantData({
