@@ -2,18 +2,18 @@
   "version": "0.2.0",
   "configurations": [
       {
-          "name": "Debug Jest Tests",
+          "name": "WWL: Debug Jest Tests",
           "type": "node",
           "request": "launch",
-          "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand"],
+          "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/packages/wwl/node_modules/.bin/jest", "--runInBand"],
           "console": "integratedTerminal",
           "internalConsoleOptions": "neverOpen"
       },
       {
-        "name": "Debug Dev Server",
+        "name": "WWL: Debug Dev Server",
         "type": "node",
         "request": "launch",
-        "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/node_modules/.bin/nodemon"],
+        "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/packages/wwl/node_modules/.bin/nodemon"],
         "console": "integratedTerminal",
         "internalConsoleOptions": "neverOpen"
     }
