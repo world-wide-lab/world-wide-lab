@@ -1,6 +1,7 @@
 import AdminJS, { AdminPages, AdminPage } from 'adminjs'
 import * as AdminJSSequelize from '@adminjs/sequelize'
 import sequelize from '../db'
+import { columnComments } from '../db/models'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
 import config from '../config'
@@ -15,11 +16,6 @@ const databaseParent = {
   name: 'Database',
   icon: 'Folder',
 }
-
-const infoDescription = (
-  "JSON object with meta information." +
-  "Use this to store any additional information you want to keep track of."
-)
 
 const pages: AdminPages = {}
 if (config.apiDocs.enabled) {
@@ -52,17 +48,19 @@ const admin = new AdminJS({
         properties: {
           studyId: {
             isTitle: true,
-            description: 'Unique identifier for this particular study.',
             isVisible: { list: true, filter: true, show: true, edit: true },
+            description: columnComments.studyId,
           },
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
           },
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
           },
           info: {
-            description: infoDescription,
+            description: columnComments.info,
           },
         },
         actions: {
@@ -79,12 +77,14 @@ const admin = new AdminJS({
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
           },
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
           },
           info: {
-            description: infoDescription,
+            description: columnComments.info,
           },
         }
       }
@@ -96,12 +96,14 @@ const admin = new AdminJS({
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
           },
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
           },
           info: {
-            description: infoDescription,
+            description: columnComments.info,
           },
         }
       }
@@ -113,12 +115,14 @@ const admin = new AdminJS({
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
           },
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
           },
           info: {
-            description: infoDescription,
+            description: columnComments.info,
           },
         }
       }

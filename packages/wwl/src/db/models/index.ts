@@ -1,5 +1,16 @@
 import { Sequelize, DataTypes } from 'sequelize';
 
+const columnComments = {
+  studyId: `The unique identifier for each study. This id is used to link runs with studies. Must be unique across all studies.`,
+  participantId: `The unique identifier for each participant. This id is used to link runs with participants. Generated automatically.`,
+  runId: `The unique identifier for each run. This id is used to identify responses. Generated automatically.`,
+  responseId: `The unique identifier for each response. Generated automatically.`,
+
+  createdAt: `The timestamp this record has been created. Generated automatically.`,
+  updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
+  info: `Additional information for this record, stored as a JSON object.`,
+}
+
 function defineModels(sequelize: Sequelize) {
 
   const Study = sequelize.define('Study', {
@@ -12,19 +23,23 @@ function defineModels(sequelize: Sequelize) {
       unique: true,
       allowNull: false,
       defaultValue: null,
+      comment: columnComments.studyId,
     },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      comment: columnComments.createdAt,
     },
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       onUpdate: 'CASCADE',
+      comment: columnComments.updatedAt,
     },
     info: {
       type: DataTypes.JSON,
       allowNull: true,
+      comment: columnComments.info,
     },
   }, {
     tableName: 'wwl_studies',
@@ -35,19 +50,23 @@ function defineModels(sequelize: Sequelize) {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      comment: columnComments.participantId,
     },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      comment: columnComments.createdAt,
     },
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       onUpdate: 'CASCADE',
+      comment: columnComments.updatedAt,
     },
     info: {
       type: DataTypes.JSON,
       allowNull: true,
+      comment: columnComments.info,
     },
   }, {
     tableName: 'wwl_participants'
@@ -58,29 +77,36 @@ function defineModels(sequelize: Sequelize) {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      comment: columnComments.runId,
     },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      comment: columnComments.createdAt,
     },
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       onUpdate: 'CASCADE',
+      comment: columnComments.updatedAt,
     },
     info: {
       type: DataTypes.JSON,
       allowNull: true,
+      comment: columnComments.info,
     },
     finished: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+      comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
     },
     participantId: {
       type: DataTypes.STRING,
+      comment: columnComments.participantId,
     },
     studyId: {
       type: DataTypes.STRING,
+      comment: columnComments.studyId,
     },
   }, {
     tableName: 'wwl_runs'
@@ -92,15 +118,18 @@ function defineModels(sequelize: Sequelize) {
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
+      comment: columnComments.responseId,
     },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      comment: columnComments.createdAt,
     },
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       onUpdate: 'CASCADE',
+      comment: columnComments.updatedAt,
     },
     name: {
       type: DataTypes.STRING,
@@ -113,6 +142,7 @@ function defineModels(sequelize: Sequelize) {
     runId: {
       type: DataTypes.STRING,
       allowNull: false,
+      comment: columnComments.runId,
     },
   }, {
     tableName: 'wwl_responses'
@@ -129,4 +159,7 @@ function defineModels(sequelize: Sequelize) {
   Response.belongsTo(Run, { foreignKey: 'runId' });
 }
 
-export default defineModels;
+export {
+  defineModels,
+  columnComments,
+};

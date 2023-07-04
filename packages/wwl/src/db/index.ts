@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
 
-import defineModels from './models';
+import { defineModels } from './models';
 import config from '../config';
 
 const sequelize = new Sequelize(
