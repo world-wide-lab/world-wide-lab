@@ -10,7 +10,7 @@ async function init() {
   console.log(`Checking database connection...`);
 	try {
 		// Note: This can modify databases
-    await sequelize.sync({alter: true});
+    await sequelize.sync({alter: false});
     // or use instead sequelize.authenticate();
 		console.log(`Database connection OK!`);
 	} catch (error) {
