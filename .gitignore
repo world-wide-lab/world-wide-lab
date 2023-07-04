@@ -12,3 +12,6 @@ ignore/
 
 # Ignore built files
 dist/
+
+# Ignore generated adminjs folder
+.adminjs/
