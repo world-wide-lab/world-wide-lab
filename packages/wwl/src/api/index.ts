@@ -13,7 +13,7 @@ const router = express.Router();
  *         description: API is running
  */
 router.get('/', async (req: Request, res: Response) => {
-  res.send('API Running');
+  res.type('text').send('WorldWideLab API is running 🌐🧑‍🔬👩‍🔬👨‍🔬');
 });
 
 /**
