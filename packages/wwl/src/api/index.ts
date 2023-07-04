@@ -8,6 +8,8 @@ const router = express.Router();
  * /:
  *   get:
  *     summary: Get API status
+ *     tags:
+ *       - main
  *     responses:
  *       '200':
  *         description: API is running
@@ -21,6 +23,8 @@ router.get('/', async (req: Request, res: Response) => {
  * /participant:
  *   post:
  *     summary: Create a new participant
+ *     tags:
+ *       - main
  *     responses:
  *       '200':
  *         description: Participant created successfully
@@ -42,6 +46,8 @@ router.post('/participant', async (req: Request, res: Response) => {
  * /participant/{participantId}:
  *   put:
  *     summary: Update an existing participant's data
+ *     tags:
+ *       - update
  *     parameters:
  *       - in: path
  *         name: participantId
@@ -88,6 +94,8 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
  * /participant/{participantId}:
  *   get:
  *     summary: Retrieve public information for a participant
+ *     tags:
+ *       - public-info
  *     parameters:
  *       - in: path
  *         name: participantId
@@ -126,6 +134,8 @@ router.get('/participant/:participantId', async (req: Request, res: Response) =>
  * /study:
  *   post:
  *     summary: Create a new study
+ *     tags:
+ *       - main
  *     requestBody:
  *       required: true
  *       content:
@@ -159,6 +169,8 @@ router.post('/study', async (req: Request, res: Response) => {
  * /run:
  *   post:
  *     summary: Start a new run
+ *     tags:
+ *       - main
  *     requestBody:
  *       required: true
  *       content:
@@ -195,6 +207,8 @@ router.post('/run', async (req: Request, res: Response) => {
  * /run/finish:
  *   post:
  *     summary: Mark a run as finished
+ *     tags:
+ *       - main
  *     requestBody:
  *       required: true
  *       content:
@@ -232,6 +246,8 @@ router.post('/run/finish', async (req: Request, res: Response) => {
  * /run/{runId}:
  *   put:
  *     summary: Update a run
+ *     tags:
+ *       - update
  *     parameters:
  *       - in: path
  *         name: runId
@@ -278,6 +294,8 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
  * /run/{runId}:
  *   get:
  *     summary: Retrieve public information for a run
+ *     tags:
+ *       - public-info
  *     parameters:
  *       - in: path
  *         name: runId
@@ -316,6 +334,8 @@ router.get('/run/:runId', async (req: Request, res: Response) => {
  * /response:
  *   post:
  *     summary: Submit a response
+ *     tags:
+ *       - main
  *     requestBody:
  *       required: true
  *       content:

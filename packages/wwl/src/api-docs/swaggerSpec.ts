@@ -17,13 +17,27 @@ const options = {
         name: "XXX",
         url: "https://logrocket.com",
         email: "info@email.com",
-      },
+      }
     },
     servers: [
       {
         url: `http://${config.root}:${config.port}/v1`,
       },
     ],
+    tags: [
+      {
+        name: "main",
+        description: "The most important endpoints in the API."
+      },
+      {
+        name: "public-info",
+        description: "Retrieve information that is marked as public to e.g. track and store randomization of participants."
+      },
+      {
+        name: "update",
+        description: "Update information about participants or runs."
+      }
+    ]
   },
   apis: [
     path.join(__dirname, "../api/*.ts"),
