@@ -371,4 +371,85 @@ router.post('/response', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /study/{studyId}/data/{dataType}:
+ *   get:
+ *     summary: Download a study's data
+ *     description: >
+ *       Download data for a given study. Different dataTypes and formats are
+ *       available for each study. The downloads may take a while depending
+ *       on the amount of data and whether or not it needs to be transformed.
+ *     tags:
+ *       - main
+ *     parameters:
+ *       - in: path
+ *         name: studyId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the study to retrieve data for
+ *       - in: path
+ *         name: dataType
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             responses-raw,
+ *             runs-raw,
+ *             participants-raw
+ *          ]
+ *         required: true
+ *         description: >
+ *           Which type of data should be downloaded.
+ *     responses:
+ *       '200':
+ *         description: Successfully downloaded study data
+ *       '400':
+ *         description: Study does not exist
+ *       '500':
+ *         description: Failed to download study data
+ */
+router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response) => {
+  const { studyId, dataType } = req.params;
+  try {
+    let study = await sequelize.models.Study.findOne({ where: { studyId } });
+    if (!study) {
+      res.status(400).json({ error: 'Unknown studyId' });
+      return
+    }
+
+    let data
+    if (dataType == "responses-raw") {
+      data = await sequelize.models.Response.findAll({
+        include: {
+          model: sequelize.models.Run,
+          where: { studyId },
+          attributes: ['participantId'],
+        },
+        raw: true,
+      });
+    } else if(dataType == "runs-raw") {
+      data = await sequelize.models.Run.findAll({
+        where: { studyId },
+        raw: true,
+      });
+    } else if (dataType == "participants-raw") {
+      data = await sequelize.models.Participant.findAll({
+        include: {
+          model: sequelize.models.Run,
+          where: { studyId },
+          attributes: ['runId'],
+        },
+        raw: true,
+      });
+    } else {
+      throw new Error(`Unknown dataType: ${dataType}`)
+    }
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to retrieve study data' });
+  }
+});
+
 export default router;

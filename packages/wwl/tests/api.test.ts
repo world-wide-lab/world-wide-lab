@@ -213,4 +213,66 @@ describe('API Routes', () => {
       expect(runResponse).toHaveProperty('payload', { key_1: 'value 1', key_2: 'value 2', });
     });
   });
+
+  describe('GET /study/:studyId/data/:dataType', () => {
+    it('should store additional data', async () => {
+      const exampleData = {
+        name: 'test_trail',
+        payload: {
+          key_1: 'value 1',
+          key_2: 'value 2',
+        },
+      }
+      // Two more responses for first run
+      await request(app)
+        .post('/v1/response')
+        .send({ runId, ...exampleData });
+      await request(app)
+        .post('/v1/response')
+        .send({ runId, ...exampleData });
+      // And one additional responses in a new run
+      const newRunResponse = await request(app)
+        .post('/v1/run')
+        .send({ participantId, studyId });
+      await request(app)
+        .post('/v1/response')
+        .send({ runId: newRunResponse.body.runId, ...exampleData });
+    });
+
+    it('should download a raw list of responses', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/responses-raw`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4);
+    });
+
+    it('should download a raw list of runs', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/runs-raw`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(2);
+    });
+
+    it('should download a raw list of participant', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(2);
+    });
+
+    it('should fail when the study does not exist', async () => {
+      const response = await request(app)
+        .get(`/v1/study/non-existent-study/data/participants-raw`)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+  });
 });
