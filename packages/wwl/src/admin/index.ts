@@ -59,8 +59,11 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
-          info: {
-            description: columnComments.info,
+          extraInfo: {
+            description: columnComments.extraInfo,
+          },
+          publicInfo: {
+            description: columnComments.publicInfo,
           },
         },
         actions: {
@@ -83,8 +86,11 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
-          info: {
-            description: columnComments.info,
+          extraInfo: {
+            description: columnComments.extraInfo,
+          },
+          publicInfo: {
+            description: columnComments.publicInfo,
           },
         }
       }
@@ -102,8 +108,11 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
-          info: {
-            description: columnComments.info,
+          extraInfo: {
+            description: columnComments.extraInfo,
+          },
+          publicInfo: {
+            description: columnComments.publicInfo,
           },
         }
       }

@@ -18,8 +18,8 @@ async function generateExampleData (sequelize: Sequelize) {
       studyId,
   })
 
-  async function generateParticipantData(info: Object, runs: Array<number>) {
-    const participant = await sequelize.models.Participant.create({ info })
+  async function generateParticipantData(extraInfo: Object, runs: Array<number>) {
+    const participant = await sequelize.models.Participant.create({ extraInfo })
     for (let runIndex = 0; runIndex < runs.length; runIndex++) {
       const n_responses = runs[runIndex];
       const run = await sequelize.models.Run.create({

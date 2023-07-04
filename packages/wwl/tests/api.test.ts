@@ -39,7 +39,7 @@ describe('API Routes', () => {
     it('should update an existing participant', async () => {
       const response = await request(app)
         .put('/v1/participant/' + participantId)
-        .send({ info: { lorem: 'ipsum' } });
+        .send({ extraInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
@@ -47,13 +47,13 @@ describe('API Routes', () => {
       const user = await sequelize.models.Participant.findOne({
         where: { participantId }
       })
-      expect(user).toHaveProperty('info', { lorem: 'ipsum' });
+      expect(user).toHaveProperty('extraInfo', { lorem: 'ipsum' });
     });
 
     it('should fail when the participant does not exist', async () => {
       const response = await request(app)
         .put('/v1/participant/' + 'some-non-existing-ID')
-        .send({ info: { lorem: 'ipsum' } });
+        .send({ extraInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -115,7 +115,7 @@ describe('API Routes', () => {
     it('should update a run', async () => {
       const response = await request(app)
         .put('/v1/run/' + runId)
-        .send({ info: { lorem: 'ipsum' } });
+        .send({ extraInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
@@ -123,13 +123,13 @@ describe('API Routes', () => {
       const run = await sequelize.models.Run.findOne({
         where: { runId }
       })
-      expect(run).toHaveProperty('info', { lorem: 'ipsum' });
+      expect(run).toHaveProperty('extraInfo', { lorem: 'ipsum' });
     });
 
     it('should fail when the run does not exist', async () => {
       const response = await request(app)
         .put('/v1/run/' + 'non-existent-run-id')
-        .send({ info: { lorem: 'ipsum' } });
+        .send({ extraInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();

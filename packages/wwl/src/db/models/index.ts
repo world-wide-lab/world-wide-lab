@@ -8,7 +8,8 @@ const columnComments = {
 
   createdAt: `The timestamp this record has been created. Generated automatically.`,
   updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
-  info: `Additional information for this record, stored as a JSON object.`,
+  extraInfo: `Additional information for this record, stored as a JSON object.`,
+  publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
 }
 
 function defineModels(sequelize: Sequelize) {
@@ -36,10 +37,15 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    info: {
+    extraInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.info,
+      comment: columnComments.extraInfo,
+    },
+    publicInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: columnComments.publicInfo,
     },
   }, {
     tableName: 'wwl_studies',
@@ -63,10 +69,15 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    info: {
+    extraInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.info,
+      comment: columnComments.extraInfo,
+    },
+    publicInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: columnComments.publicInfo,
     },
   }, {
     tableName: 'wwl_participants'
@@ -90,10 +101,15 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    info: {
+    extraInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.info,
+      comment: columnComments.extraInfo,
+    },
+    publicInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: columnComments.publicInfo,
     },
     finished: {
       type: DataTypes.BOOLEAN,
