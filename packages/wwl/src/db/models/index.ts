@@ -3,19 +3,15 @@ import { Sequelize, DataTypes } from 'sequelize';
 function defineModels(sequelize: Sequelize) {
 
   const Study = sequelize.define('Study', {
-    id : {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false,
-    },
     studyId: {
+      primaryKey: true,
       type: DataTypes.STRING,
       validate: {
         is: /^[a-zA-Z0-9-_]+$/,
       },
       unique: true,
       allowNull: false,
+      defaultValue: null,
     },
     createdAt: {
       type: DataTypes.DATE,

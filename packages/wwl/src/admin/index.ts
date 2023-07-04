@@ -4,6 +4,7 @@ import sequelize from '../db'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
 import config from '../config'
+import { newStudyHandler } from './study'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -63,6 +64,11 @@ const admin = new AdminJS({
           info: {
             description: infoDescription,
           },
+        },
+        actions: {
+          new: {
+            handler: newStudyHandler
+          }
         }
       }
     },
