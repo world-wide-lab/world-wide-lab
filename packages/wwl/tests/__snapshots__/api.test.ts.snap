@@ -1,5 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`API Routes GET /participant/:participantId should fail when the participant does not exist 1`] = `
+{
+  "error": "Unknown participantId",
+}
+`;
+
+exports[`API Routes GET /participant/:participantId should retrieve public information about a participant 1`] = `
+{
+  "publicInfo": {
+    "participantHasDoneSomething": true,
+  },
+}
+`;
+
+exports[`API Routes GET /run/:runId should fail when the run does not exist 1`] = `
+{
+  "error": "Unknown runId",
+}
+`;
+
+exports[`API Routes GET /run/:runId should retrieve public information about a run 1`] = `
+{
+  "publicInfo": {
+    "dolor": "sit",
+  },
+}
+`;
+
 exports[`API Routes POST /run/finish should fail when the run does not exist 1`] = `
 {
   "error": "Unknown runId",

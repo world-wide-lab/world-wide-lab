@@ -85,6 +85,44 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
 
 /**
  * @openapi
+ * /participant/{participantId}:
+ *   get:
+ *     summary: Retrieve public information for a participant
+ *     parameters:
+ *       - in: path
+ *         name: participantId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the participant to retrieve public information for.
+ *     responses:
+ *       '200':
+ *         description: Public participant information as JSON.
+ *       '400':
+ *         description: Run does not exist.
+ *       '500':
+ *         description: Failed to retrieve participant information.
+ */
+router.get('/participant/:participantId', async (req: Request, res: Response) => {
+  const { participantId } = req.params;
+  try {
+    const participant = await sequelize.models.Participant.findOne({
+      where: { participantId },
+      attributes: ['participantId', 'publicInfo']
+    });
+    if (participant) {
+      res.status(200).json(participant.toJSON());
+    } else {
+      res.status(400).json({ error: 'Unknown participantId' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update participant' });
+  }
+});
+
+/**
+ * @openapi
  * /study:
  *   post:
  *     summary: Create a new study
@@ -226,6 +264,44 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
     const updatedRows = await sequelize.models.Run.update(newData, { where: { runId } });
     if (updatedRows[0] == 1) {
       res.status(200).send();
+    } else {
+      res.status(400).json({ error: 'Unknown runId' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update run' });
+  }
+});
+
+/**
+ * @openapi
+ * /run/{runId}:
+ *   get:
+ *     summary: Retrieve public information for a run
+ *     parameters:
+ *       - in: path
+ *         name: runId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the run to retrieve public information for.
+ *     responses:
+ *       '200':
+ *         description: Public run information as JSON.
+ *       '400':
+ *         description: Run does not exist.
+ *       '500':
+ *         description: Failed to retrieve run information.
+ */
+router.get('/run/:runId', async (req: Request, res: Response) => {
+  const { runId } = req.params;
+  try {
+    const run = await sequelize.models.Run.findOne({
+      where: { runId },
+      attributes: ['runId', 'publicInfo']
+    });
+    if (run) {
+      res.status(200).json(run.toJSON());
     } else {
       res.status(400).json({ error: 'Unknown runId' });
     }

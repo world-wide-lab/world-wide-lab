@@ -39,7 +39,10 @@ describe('API Routes', () => {
     it('should update an existing participant', async () => {
       const response = await request(app)
         .put('/v1/participant/' + participantId)
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({
+          extraInfo: { lorem: 'ipsum' },
+          publicInfo: { participantHasDoneSomething: true }
+        });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
@@ -48,12 +51,35 @@ describe('API Routes', () => {
         where: { participantId }
       })
       expect(user).toHaveProperty('extraInfo', { lorem: 'ipsum' });
+      expect(user).toHaveProperty('publicInfo', { participantHasDoneSomething: true });
     });
 
     it('should fail when the participant does not exist', async () => {
       const response = await request(app)
         .put('/v1/participant/' + 'some-non-existing-ID')
         .send({ extraInfo: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+  });
+
+  describe('GET /participant/:participantId', () => {
+    it('should retrieve public information about a participant', async () => {
+      const response = await request(app)
+        .get('/v1/participant/' + participantId)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.participantId).toBe(participantId);
+      delete response.body.participantId;
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the participant does not exist', async () => {
+      const response = await request(app)
+        .get('/v1/participant/' + 'non-existent-participant-id')
+        .send();
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -115,7 +141,10 @@ describe('API Routes', () => {
     it('should update a run', async () => {
       const response = await request(app)
         .put('/v1/run/' + runId)
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({
+          extraInfo: { lorem: 'ipsum' },
+          publicInfo: { dolor: 'sit' },
+        });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
@@ -124,12 +153,35 @@ describe('API Routes', () => {
         where: { runId }
       })
       expect(run).toHaveProperty('extraInfo', { lorem: 'ipsum' });
+      expect(run).toHaveProperty('publicInfo', { dolor: 'sit' });
     });
 
     it('should fail when the run does not exist', async () => {
       const response = await request(app)
         .put('/v1/run/' + 'non-existent-run-id')
         .send({ extraInfo: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+  });
+
+  describe('GET /run/:runId', () => {
+    it('should retrieve public information about a run', async () => {
+      const response = await request(app)
+        .get('/v1/run/' + runId)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.runId).toBe(runId);
+      delete response.body.runId;
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the run does not exist', async () => {
+      const response = await request(app)
+        .get('/v1/run/' + 'non-existent-run-id')
+        .send();
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
