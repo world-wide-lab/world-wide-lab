@@ -121,9 +121,6 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
-          info: {
-            description: columnComments.info,
-          },
         }
       }
     },
