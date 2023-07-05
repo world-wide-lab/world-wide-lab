@@ -1,9 +1,9 @@
-import { populator, paramConverter } from 'adminjs'
+import { populator, paramConverter, ActionRequest, ActionResponse, ActionContext } from 'adminjs'
 import sequelize from '../db'
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts
-async function newStudyHandler (request, response, context) {
+async function newStudyHandler (request: ActionRequest, response: ActionResponse, context: ActionContext) {
   const { resource, h, currentAdmin, translateMessage } = context
   if (request.method === 'post') {
     const params = paramConverter.prepareParams(request.payload ?? {}, resource)
