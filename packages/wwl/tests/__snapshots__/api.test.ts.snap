@@ -34,6 +34,18 @@ exports[`API Routes GET /study/:studyId/data/:dataType should fail when the stud
 }
 `;
 
+exports[`API Routes GET /study/:studyId/data/:dataType should require authentication 1`] = `
+{
+  "error": "Authentication via API Key required",
+}
+`;
+
+exports[`API Routes GET /study/:studyId/data/:dataType should require the correct API KEY 1`] = `
+{
+  "error": "The provided API Key is invalid.",
+}
+`;
+
 exports[`API Routes POST /run/finish should fail when the run does not exist 1`] = `
 {
   "error": "Unknown runId",

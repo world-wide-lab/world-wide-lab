@@ -19,3 +19,5 @@ console.log("Database URL: " + dbUrl)
 
 // Manually set package version, which is normally set by npm
 process.env.npm_package_version = app.getVersion()
+
+process.env.DEFAULT_API_KEY = "wwl-electron"

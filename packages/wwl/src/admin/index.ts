@@ -22,6 +22,11 @@ if (config.apiDocs.enabled) {
   pages['Public API'] = {
     component: Components.ApiDocsPage,
     icon: 'Book',
+    handler: async (request, response, context) => {
+      return {
+        apiKey: config.api.apiKey,
+      };
+    },
   } as AdminPage
 }
 

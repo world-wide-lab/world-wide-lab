@@ -37,7 +37,16 @@ const options = {
         name: "update",
         description: "Update information about participants or runs."
       }
-    ]
+    ],
+    components: {
+      securitySchemes: {
+        apiKey: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "WWL API KEY",
+        }
+      }
+    }
   },
   apis: [
     path.join(__dirname, "../api/*.ts"),

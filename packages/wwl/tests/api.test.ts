@@ -6,6 +6,7 @@ import sequelize from '../src/db';
 import app from '../src/app';
 
 const STUDY_ID = 'abc123';
+const API_KEY = 'jest-key';
 
 describe('API Routes', () => {
   beforeAll(async () => {
@@ -242,6 +243,7 @@ describe('API Routes', () => {
     it('should download a raw list of responses', async () => {
       const response = await request(app)
         .get(`/v1/study/${studyId}/data/responses-raw`)
+        .set('Authorization', `Bearer ${API_KEY}`)
         .send();
 
       expect(response.status).toBe(200);
@@ -251,6 +253,7 @@ describe('API Routes', () => {
     it('should download a raw list of runs', async () => {
       const response = await request(app)
         .get(`/v1/study/${studyId}/data/runs-raw`)
+        .set('Authorization', `Bearer ${API_KEY}`)
         .send();
 
       expect(response.status).toBe(200);
@@ -260,15 +263,36 @@ describe('API Routes', () => {
     it('should download a raw list of participant', async () => {
       const response = await request(app)
         .get(`/v1/study/${studyId}/data/participants-raw`)
+        .set('Authorization', `Bearer ${API_KEY}`)
         .send();
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
     });
 
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .send();
+
+      expect(response.status).toBe(401);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should require the correct API KEY', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .set('Authorization', `Bearer wrong-key`)
+        .send();
+
+      expect(response.status).toBe(401);
+      expect(response.body).toMatchSnapshot();
+    });
+
     it('should fail when the study does not exist', async () => {
       const response = await request(app)
         .get(`/v1/study/non-existent-study/data/participants-raw`)
+        .set('Authorization', `Bearer ${API_KEY}`)
         .send();
 
       expect(response.status).toBe(400);

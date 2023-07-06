@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
+import { requireAuth } from "./auth"
 
 const router = express.Router();
 
@@ -382,6 +383,8 @@ router.post('/response', async (req: Request, res: Response) => {
  *       on the amount of data and whether or not it needs to be transformed.
  *     tags:
  *       - main
+ *     security:
+ *      - apiKey: []
  *     parameters:
  *       - in: path
  *         name: studyId
@@ -410,8 +413,11 @@ router.post('/response', async (req: Request, res: Response) => {
  *         description: Failed to download study data
  */
 router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response) => {
-  const { studyId, dataType } = req.params;
   try {
+    if (!requireAuth(req, res)) { return }
+
+    const { studyId, dataType } = req.params;
+
     let study = await sequelize.models.Study.findOne({ where: { studyId } });
     if (!study) {
       res.status(400).json({ error: 'Unknown studyId' });
