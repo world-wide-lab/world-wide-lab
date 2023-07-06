@@ -4,7 +4,8 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "npm run build --prefix packages/wwl/"
   },
   "devDependencies": {
     "jest": "^29.5.0"
