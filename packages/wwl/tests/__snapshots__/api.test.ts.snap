@@ -46,6 +46,18 @@ exports[`API Routes GET /study/:studyId/data/:dataType should require the correc
 }
 `;
 
+exports[`API Routes POST /response should fail to submit a response when the run does not exist 1`] = `
+{
+  "error": "Unknown runId",
+}
+`;
+
+exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = `
+{
+  "error": "Payload has to be a JSON object, undefined or null.",
+}
+`;
+
 exports[`API Routes POST /run/finish should fail when the run does not exist 1`] = `
 {
   "error": "Unknown runId",

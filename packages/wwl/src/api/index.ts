@@ -357,18 +357,30 @@ router.get('/run/:runId', async (req: Request, res: Response) => {
  *     responses:
  *       '200':
  *         description: Response created successfully
+ *       '400':
+ *         description: Invalid request body, either misformatted or the runId does not exist
  *       '500':
  *         description: Failed to create response
  */
 router.post('/response', async (req: Request, res: Response) => {
   const { runId, name, payload } = req.body;
 
+  // Validate payload, it can be NULL (undefined) or a JSON object
+  if (!(payload === null || payload === undefined || typeof payload === 'object')) {
+    res.status(400).json({ error: 'Payload has to be a JSON object, undefined or null.' });
+    return
+  }
+
   try {
     const response = await sequelize.models.Response.create({ runId, name, payload });
     res.json(response);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create response' });
+    if (error instanceof Error && error.name === 'SequelizeForeignKeyConstraintError') {
+      res.status(400).json({ error: 'Unknown runId' });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to create response' });
+    }
   }
 });
 

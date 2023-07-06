@@ -213,6 +213,35 @@ describe('API Routes', () => {
       expect(runResponse).toHaveProperty('name', 'test_trail');
       expect(runResponse).toHaveProperty('payload', { key_1: 'value 1', key_2: 'value 2', });
     });
+
+    it('should fail to submit a response when the run does not exist', async () => {
+      const response = await request(app)
+        .post('/v1/response')
+        .send({
+          runId: "non-existent-run-id",
+          name: 'test_trail',
+          payload: {
+            key_1: 'value 1',
+            key_2: 'value 2',
+          },
+        });;
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail to submit non-JSON payload', async () => {
+      const response = await request(app)
+        .post('/v1/response')
+        .send({
+          runId,
+          name: 'test_trail',
+          payload: "this-is-not-json",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
   });
 
   describe('GET /study/:studyId/data/:dataType', () => {
