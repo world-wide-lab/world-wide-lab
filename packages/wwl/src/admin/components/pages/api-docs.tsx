@@ -40,7 +40,7 @@ const ApiDocsPage = () => {
     if (allAreTrue) { sendMessage(); }
   }
   function sendMessage() {
-    console.log({ setApiKey: apiKey });
+    console.log("Sending message to iframe", { setApiKey: apiKey });
     // @ts-ignore
     if (!frameRef || !frameRef.current || !frameRef.current.contentWindow) {
       console.error("frameRef.current.contentWindow does not exist");

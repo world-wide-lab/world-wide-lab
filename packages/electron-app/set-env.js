@@ -9,6 +9,10 @@ process.env.PORT = 8787
 process.env.ADMIN_UI = "true"
 process.env.USE_AUTHENTICATION = "false"
 
+const loggingDir = path.join(BASE_DIR, "logs")
+process.env.LOGGING_DIR = loggingDir
+console.log("Logs Directory: " + loggingDir)
+
 const adminJsTmpDir = path.join(BASE_DIR, "adminjs-tmp")
 process.env.ADMIN_JS_TMP_DIR = adminJsTmpDir
 console.log("AdminJS Temp Directory: " + adminJsTmpDir)

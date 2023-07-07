@@ -37,6 +37,12 @@ const config = {
 
   version: process.env.npm_package_version as string,
 
+  logging: {
+    dir: getValueFromEnv("LOGGING_DIR") || "logs",
+    // Change to 'verbose' to log SQL queries
+    consoleLevel: getValueFromEnv("LOGGING_LEVEL_CONSOLE") || "info",
+  },
+
   admin: {
     enabled: getBooleanFromEnv("ADMIN_UI", true),
     auth: {

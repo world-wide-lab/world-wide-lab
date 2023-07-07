@@ -15,3 +15,6 @@ dist/
 
 # Ignore generated adminjs folder
 .adminjs/
+
+# Ignore logs
+logs/

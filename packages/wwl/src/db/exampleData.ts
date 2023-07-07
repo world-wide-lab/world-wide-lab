@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize'
+import { logger } from '../logger'
 
 async function generateExampleData (sequelize: Sequelize) {
   const studyId = "example"
@@ -13,7 +14,7 @@ async function generateExampleData (sequelize: Sequelize) {
     // Data has already been generated
     return
   }
-  console.log("Generating Example Data")
+  logger.info("Generating Example Data")
   await sequelize.models.Study.create({
       studyId,
   })
