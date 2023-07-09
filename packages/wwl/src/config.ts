@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 function getValueFromEnv(key: string): string | undefined {
   const value = process.env[key]
   // This catches undefined, null and ""
