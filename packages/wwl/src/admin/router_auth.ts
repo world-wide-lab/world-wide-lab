@@ -28,8 +28,7 @@ function initializeRouter(admin: AdminJS) {
     const SequelizeStore = connect(session.Store)
     const sessionStore = new SequelizeStore({
       db: sequelize,
-      modelKey: 'AdminSession',
-      tableName: 'wwl_admin_sessions',
+      table: 'InternalAdminSession',
     })
 
     // Initialize router w/ authentication

@@ -1,0 +1,239 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Database Migrations should always create the same table structures 1`] = `
+[
+  {
+    "name": {
+      "allowNull": false,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "VARCHAR(255)",
+      "unique": true,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "extraInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "publicInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "studyId": {
+      "allowNull": false,
+      "defaultValue": null,
+      "primaryKey": true,
+      "type": "VARCHAR(255)",
+      "unique": true,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "extraInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "participantId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "UUID",
+      "unique": true,
+    },
+    "publicInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "extraInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "finished": {
+      "allowNull": true,
+      "defaultValue": false,
+      "primaryKey": false,
+      "type": "TINYINT(1)",
+      "unique": false,
+    },
+    "participantId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
+      "unique": false,
+    },
+    "publicInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "runId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "UUID",
+      "unique": true,
+    },
+    "studyId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
+      "unique": false,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "name": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
+      "unique": false,
+    },
+    "payload": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "responseId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "INTEGER",
+      "unique": false,
+    },
+    "runId": {
+      "allowNull": false,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
+      "unique": false,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "data": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "TEXT",
+      "unique": false,
+    },
+    "expires": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "sid": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "VARCHAR(36)",
+      "unique": true,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+]
+`;
+
+exports[`Database Migrations should always create the same tables 1`] = `
+[
+  "wwl_internal_migrations",
+  "wwl_studies",
+  "wwl_participants",
+  "wwl_runs",
+  "wwl_responses",
+  "wwl_internal_admin_sessions",
+]
+`;

@@ -3,19 +3,26 @@ import app from './app';
 import config from './config';
 import { logger } from './logger';
 import generateExampleData from './db/exampleData';
+import { up } from './db/migrate'
 
 async function init() {
   logger.verbose(`Initializing with configuration`, { config });
 
   // Check the database
-  logger.info(`Checking database connection...`);
 	try {
-		// Note: This can modify databases
-    await sequelize.sync({alter: false});
-    // or use instead sequelize.authenticate();
-		logger.info(`Database connection OK!`);
+    logger.info(`Checking database connection...`);
+    await sequelize.authenticate();
+		logger.info(`Database connection: OK`);
 	} catch (error) {
 		logger.error(`Unable to connect to the database: ${(error as Error).message}`);
+		process.exit(1);
+	}
+	try {
+    logger.info(`Checking for migrations...`);
+    await up();
+    logger.info(`Database migrations: OK`);
+	} catch (error) {
+		logger.error(`Unable to apply migrations: ${(error as Error).message}`);
 		process.exit(1);
 	}
 
