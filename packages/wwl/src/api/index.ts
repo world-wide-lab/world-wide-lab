@@ -421,6 +421,8 @@ router.post('/response', async (req: Request, res: Response) => {
  *         description: Successfully downloaded study data
  *       '400':
  *         description: Study does not exist
+ *       '401':
+ *         description: Unauthorized, either the wrong apiKey or no apiKey has been supplied.
  *       '500':
  *         description: Failed to download study data
  */
