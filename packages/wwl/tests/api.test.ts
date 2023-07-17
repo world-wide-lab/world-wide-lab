@@ -242,9 +242,8 @@ describe('API Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
-  });
 
-  describe('GET /study/:studyId/data/:dataType', () => {
+    // These extra responses are for the GET /study/* tests cases
     it('should store additional data', async () => {
       const exampleData = {
         name: 'test_trail',
@@ -268,6 +267,50 @@ describe('API Routes', () => {
         .post('/v1/response')
         .send({ runId: newRunResponse.body.runId, ...exampleData });
     });
+  });
+
+  describe('GET /study/:studyId/count/:countType', () => {
+    it('should return the correct count (for all runs)', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/all`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(2);
+    });
+
+    it('should return the correct count (for only finished runs)', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/finished`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+    });
+
+    it('should fail when the countType does not exist', async () => {
+      // Don't pass on console.error message, as it is expected
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/non-existent-type`)
+        .send();
+
+      expect(response.status).toBe(500);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the study does not exist', async () => {
+      const response = await request(app)
+        .get(`/v1/study/non-existent-study/count/all`)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+  });
+
+  describe('GET /study/:studyId/data/:dataType', () => {
 
     it('should download a raw list of responses', async () => {
       const response = await request(app)

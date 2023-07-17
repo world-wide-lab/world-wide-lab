@@ -386,6 +386,78 @@ router.post('/response', async (req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /study/{studyId}/count/{countFilter}:
+ *   get:
+ *     summary: Retrieve the number of runs for a study
+ *     description: >
+ *       This endpoint is used to retrieve the number of runs for a study.
+ *     tags:
+ *       - main
+ *     security:
+ *      - apiKey: []
+ *     parameters:
+ *       - in: path
+ *         name: studyId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the study to retrieve data for
+ *       - in: path
+ *         name: countType
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             all,
+ *             finished
+ *          ]
+ *         required: true
+ *         description: >
+ *           Which type of count should be used?
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved study count.
+ *       '400':
+ *         description: Study does not exist.
+ *       '500':
+ *         description: Failed to retrieve study count.
+ */
+router.get('/study/:studyId/count/:countType', async (req: Request, res: Response) => {
+  const { studyId, countType } = req.params;
+
+  try {
+    // Filter by studyId by default
+    const where: {[key: string]: any} = { studyId };
+    if (countType === "all") {
+      // Do nothing, retrieve all
+    } else if (countType === "finished") {
+      where.finished = true
+    } else {
+      throw new Error(`Unknown countType: ${countType}`)
+    }
+
+    // TODO: Add caching or even a self-updating table or something to increase efficiency
+    const count = await sequelize.models.Run.count({
+      where,
+    })
+
+    // When the count is 0, check whether it may be due to the study not existing
+    if (count === 0) {
+      let study = await sequelize.models.Study.findOne({ where: { studyId } });
+      if (!study) {
+        res.status(400).json({ error: 'Unknown studyId' });
+        return
+      }
+    }
+
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to retrieve study count' });
+  }
+});
+
+/**
+ * @openapi
  * /study/{studyId}/data/{dataType}:
  *   get:
  *     summary: Download a study's data
