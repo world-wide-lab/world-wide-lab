@@ -390,11 +390,9 @@ router.post('/response', async (req: Request, res: Response) => {
  *   get:
  *     summary: Retrieve the number of runs for a study
  *     description: >
- *       This endpoint is used to retrieve the number of runs for a study.
+ *       This endpoint is used to count the number of runs for a study.
  *     tags:
  *       - main
- *     security:
- *      - apiKey: []
  *     parameters:
  *       - in: path
  *         name: studyId
