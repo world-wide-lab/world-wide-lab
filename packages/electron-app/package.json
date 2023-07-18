@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "electron .",
     "build": "npm run build:wwl && npm run package",
+    "build:dev": "npm run build:wwl && npm run package:dev",
     "build:wwl": "npm run build --prefix ../wwl/",
     "package": "electron-builder",
     "package:dev": "electron-builder --dir",
