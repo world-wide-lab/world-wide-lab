@@ -320,6 +320,17 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(4);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "payload",
+          "runId",
+          "Run.participantId",
+        ]
+      `);
     });
 
     it('should download a raw list of runs', async () => {
@@ -330,6 +341,18 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "runId",
+          "createdAt",
+          "updatedAt",
+          "extraInfo",
+          "publicInfo",
+          "finished",
+          "participantId",
+          "studyId",
+        ]
+      `);
     });
 
     it('should download a raw list of participant', async () => {
@@ -340,6 +363,18 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "participantId",
+          "createdAt",
+          "updatedAt",
+          "extraInfo",
+          "publicInfo",
+          "Runs.runId",
+        ]
+      `);
+    });
+
     });
 
     it('should require authentication', async () => {
