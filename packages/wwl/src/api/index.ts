@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
+import Sequelize from "sequelize";
 import { requireAuth } from "./auth"
 
 const router = express.Router();
@@ -189,14 +190,20 @@ router.post('/study', async (req: Request, res: Response) => {
  *     responses:
  *       '200':
  *         description: Run created successfully
+ *       '400':
+ *         description: Malformed request
  *       '500':
  *         description: Failed to create run
  */
 router.post('/run', async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
-    const run = await sequelize.models.Run.create({ participantId, studyId });
-    res.json(run);
+    if (participantId !== undefined && studyId !== undefined) {
+      const run = await sequelize.models.Run.create({ participantId, studyId });
+      res.json(run);
+    } else {
+      res.status(400).json({ error: 'Missing participantId or studyId.' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create run' });
@@ -386,6 +393,76 @@ router.post('/response', async (req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /study/{studyId}/count/{countFilter}:
+ *   get:
+ *     summary: Retrieve the number of runs for a study
+ *     description: >
+ *       This endpoint is used to count the number of runs for a study.
+ *     tags:
+ *       - main
+ *     parameters:
+ *       - in: path
+ *         name: studyId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the study to retrieve data for
+ *       - in: path
+ *         name: countType
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             all,
+ *             finished
+ *          ]
+ *         required: true
+ *         description: >
+ *           Which type of count should be used?
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved study count.
+ *       '400':
+ *         description: Study does not exist.
+ *       '500':
+ *         description: Failed to retrieve study count.
+ */
+router.get('/study/:studyId/count/:countType', async (req: Request, res: Response) => {
+  const { studyId, countType } = req.params;
+
+  try {
+    // Filter by studyId by default
+    const where: {[key: string]: any} = { studyId };
+    if (countType === "all") {
+      // Do nothing, retrieve all
+    } else if (countType === "finished") {
+      where.finished = true
+    } else {
+      throw new Error(`Unknown countType: ${countType}`)
+    }
+
+    // TODO: Add caching or even a self-updating table or something to increase efficiency
+    const count = await sequelize.models.Run.count({
+      where,
+    })
+
+    // When the count is 0, check whether it may be due to the study not existing
+    if (count === 0) {
+      let study = await sequelize.models.Study.findOne({ where: { studyId } });
+      if (!study) {
+        res.status(400).json({ error: 'Unknown studyId' });
+        return
+      }
+    }
+
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to retrieve study count' });
+  }
+});
+
+/**
+ * @openapi
  * /study/{studyId}/data/{dataType}:
  *   get:
  *     summary: Download a study's data
@@ -411,7 +488,8 @@ router.post('/response', async (req: Request, res: Response) => {
  *           enum: [
  *             responses-raw,
  *             runs-raw,
- *             participants-raw
+ *             participants-raw,
+ *             responses-extracted-payload
  *          ]
  *         required: true
  *         description: >
@@ -421,6 +499,8 @@ router.post('/response', async (req: Request, res: Response) => {
  *         description: Successfully downloaded study data
  *       '400':
  *         description: Study does not exist
+ *       '401':
+ *         description: Unauthorized, either the wrong apiKey or no apiKey has been supplied.
  *       '500':
  *         description: Failed to download study data
  */
@@ -460,6 +540,43 @@ router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response)
         },
         raw: true,
       });
+    } else if (dataType == "responses-extracted-payload") {
+      const keysResult = await sequelize.query(`
+        SELECT DISTINCT payload_json.key as key
+        FROM wwl_responses, json_each(payload) payload_json
+        INNER JOIN wwl_runs ON wwl_runs.runId = wwl_responses.runId
+        WHERE wwl_runs.studyId = :studyId;
+      `, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements: { studyId },
+      })
+
+      // Create a the list of keys in the payload in a safe format
+      const jsonKeys = keysResult
+        .map(row => 'key' in row ? row.key : undefined)
+        .filter(key => key !== undefined)
+      const jsonFieldsString = jsonKeys.map(jsonKey => `wwl_responses.payload->>"${jsonKey}" AS ${jsonKey}`).join(", ")
+
+      // Collect list of table fields, so we can select them without the payload
+      const modelAttributes = sequelize.models.Response.getAttributes()
+      const tableFields = Object.keys(modelAttributes)
+      const fields = tableFields
+        .filter(field => field !== "payload")
+        .map(field => `wwl_responses.${field}`)
+      const tableFieldsString = fields.join(", ")
+
+      // Combine the table and json fields
+      const fieldsString = jsonKeys.length > 0 ? `${tableFieldsString}, ${jsonFieldsString}` : `${tableFieldsString}`
+
+      // Create the final query
+      data = await sequelize.query(`
+        SELECT ${fieldsString} FROM wwl_responses
+        INNER JOIN wwl_runs ON wwl_runs.runId = wwl_responses.runId
+        WHERE wwl_runs.studyId = :studyId;
+      `, {
+        type: Sequelize.QueryTypes.SELECT,
+        replacements: { studyId },
+      })
     } else {
       throw new Error(`Unknown dataType: ${dataType}`)
     }

@@ -28,6 +28,18 @@ exports[`API Routes GET /run/:runId should retrieve public information about a r
 }
 `;
 
+exports[`API Routes GET /study/:studyId/count/:countType should fail when the countType does not exist 1`] = `
+{
+  "error": "Failed to retrieve study count",
+}
+`;
+
+exports[`API Routes GET /study/:studyId/count/:countType should fail when the study does not exist 1`] = `
+{
+  "error": "Unknown studyId",
+}
+`;
+
 exports[`API Routes GET /study/:studyId/data/:dataType should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",

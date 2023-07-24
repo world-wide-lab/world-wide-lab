@@ -111,6 +111,21 @@ describe('API Routes', () => {
       // Set the shared runId
       runId = response.body.runId;
     });
+
+    it('missing participantId should lead to an error', async () => {
+      const response = await request(app)
+        .post('/v1/run')
+        .send({ participantId });
+
+      expect(response.status).toBe(400);
+    });
+    it('missing studyId should lead to an error', async () => {
+      const response = await request(app)
+        .post('/v1/run')
+        .send({ studyId });
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('POST /run/finish', () => {
@@ -242,9 +257,8 @@ describe('API Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
-  });
 
-  describe('GET /study/:studyId/data/:dataType', () => {
+    // These extra responses are for the GET /study/* tests cases
     it('should store additional data', async () => {
       const exampleData = {
         name: 'test_trail',
@@ -268,6 +282,50 @@ describe('API Routes', () => {
         .post('/v1/response')
         .send({ runId: newRunResponse.body.runId, ...exampleData });
     });
+  });
+
+  describe('GET /study/:studyId/count/:countType', () => {
+    it('should return the correct count (for all runs)', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/all`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(2);
+    });
+
+    it('should return the correct count (for only finished runs)', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/finished`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+    });
+
+    it('should fail when the countType does not exist', async () => {
+      // Don't pass on console.error message, as it is expected
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/count/non-existent-type`)
+        .send();
+
+      expect(response.status).toBe(500);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the study does not exist', async () => {
+      const response = await request(app)
+        .get(`/v1/study/non-existent-study/count/all`)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+  });
+
+  describe('GET /study/:studyId/data/:dataType', () => {
 
     it('should download a raw list of responses', async () => {
       const response = await request(app)
@@ -277,6 +335,17 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(4);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "payload",
+          "runId",
+          "Run.participantId",
+        ]
+      `);
     });
 
     it('should download a raw list of runs', async () => {
@@ -287,6 +356,18 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "runId",
+          "createdAt",
+          "updatedAt",
+          "extraInfo",
+          "publicInfo",
+          "finished",
+          "participantId",
+          "studyId",
+        ]
+      `);
     });
 
     it('should download a raw list of participant', async () => {
@@ -297,6 +378,86 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "participantId",
+          "createdAt",
+          "updatedAt",
+          "extraInfo",
+          "publicInfo",
+          "Runs.runId",
+        ]
+      `);
+    });
+
+    it('should download an extracted list of responses', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "runId",
+          "key_1",
+          "key_2",
+        ]
+      `);
+      expect(response.body[0].key_1).toBe("value 1");
+      expect(response.body[3].key_2).toBe("value 2");
+    });
+
+    it('should handle empty studies as well', async () => {
+      const studyIdEmpty = "empty-study"
+      // Create new empty study
+      await request(app)
+        .post('/v1/study')
+        .send({ studyId: studyIdEmpty});
+
+      const response = await request(app)
+        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should handle studies without payload as well', async () => {
+      const studyIdNoPayload = "no-payload-study"
+      // Create new empty study and add one run with one response
+      await request(app)
+        .post('/v1/study')
+        .send({ studyId: studyIdNoPayload});
+      const runResponse = await request(app)
+        .post('/v1/run')
+        .send({ participantId, studyId: studyIdNoPayload });
+      await request(app)
+        .post('/v1/response')
+        .send({ runId: runResponse.body.runId })
+
+      const response = await request(app)
+        .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(1);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "runId",
+        ]
+      `);
     });
 
     it('should require authentication', async () => {
