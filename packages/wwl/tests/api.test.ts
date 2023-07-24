@@ -390,6 +390,74 @@ describe('API Routes', () => {
       `);
     });
 
+    it('should download an extracted list of responses', async () => {
+      const response = await request(app)
+        .get(`/v1/study/${studyId}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "runId",
+          "key_1",
+          "key_2",
+        ]
+      `);
+      expect(response.body[0].key_1).toBe("value 1");
+      expect(response.body[3].key_2).toBe("value 2");
+    });
+
+    it('should handle empty studies as well', async () => {
+      const studyIdEmpty = "empty-study"
+      // Create new empty study
+      await request(app)
+        .post('/v1/study')
+        .send({ studyId: studyIdEmpty});
+
+      const response = await request(app)
+        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should handle studies without payload as well', async () => {
+      const studyIdNoPayload = "no-payload-study"
+      // Create new empty study and add one run with one response
+      await request(app)
+        .post('/v1/study')
+        .send({ studyId: studyIdNoPayload});
+      const runResponse = await request(app)
+        .post('/v1/run')
+        .send({ participantId, studyId: studyIdNoPayload });
+      await request(app)
+        .post('/v1/response')
+        .send({ runId: runResponse.body.runId })
+
+      const response = await request(app)
+        .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload`)
+        .set('Authorization', `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(1);
+      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
+        [
+          "responseId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "runId",
+        ]
+      `);
     });
 
     it('should require authentication', async () => {
