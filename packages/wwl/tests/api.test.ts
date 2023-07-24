@@ -111,6 +111,21 @@ describe('API Routes', () => {
       // Set the shared runId
       runId = response.body.runId;
     });
+
+    it('missing participantId should lead to an error', async () => {
+      const response = await request(app)
+        .post('/v1/run')
+        .send({ participantId });
+
+      expect(response.status).toBe(400);
+    });
+    it('missing studyId should lead to an error', async () => {
+      const response = await request(app)
+        .post('/v1/run')
+        .send({ studyId });
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('POST /run/finish', () => {

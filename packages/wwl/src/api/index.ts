@@ -189,14 +189,20 @@ router.post('/study', async (req: Request, res: Response) => {
  *     responses:
  *       '200':
  *         description: Run created successfully
+ *       '400':
+ *         description: Malformed request
  *       '500':
  *         description: Failed to create run
  */
 router.post('/run', async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
-    const run = await sequelize.models.Run.create({ participantId, studyId });
-    res.json(run);
+    if (participantId !== undefined && studyId !== undefined) {
+      const run = await sequelize.models.Run.create({ participantId, studyId });
+      res.json(run);
+    } else {
+      res.status(400).json({ error: 'Missing participantId or studyId.' });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create run' });
