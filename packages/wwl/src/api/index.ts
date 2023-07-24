@@ -552,7 +552,9 @@ router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response)
       })
 
       // Create a the list of keys in the payload in a safe format
-      const jsonKeys = keysResult.map(row => row.key)
+      const jsonKeys = keysResult
+        .map(row => 'key' in row ? row.key : undefined)
+        .filter(key => key !== undefined)
       const jsonFieldsString = jsonKeys.map(jsonKey => `wwl_responses.payload->>"${jsonKey}" AS ${jsonKey}`).join(", ")
 
       // Collect list of table fields, so we can select them without the payload
