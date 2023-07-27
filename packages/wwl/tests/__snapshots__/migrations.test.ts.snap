@@ -3,15 +3,6 @@
 exports[`Database Migrations should always create the same table structures 1`] = `
 [
   {
-    "name": {
-      "allowNull": false,
-      "defaultValue": undefined,
-      "primaryKey": true,
-      "type": "VARCHAR(255)",
-      "unique": true,
-    },
-  },
-  {
     "createdAt": {
       "allowNull": true,
       "defaultValue": undefined,
@@ -19,25 +10,25 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "DATETIME",
       "unique": false,
     },
-    "extraInfo": {
+    "data": {
       "allowNull": true,
       "defaultValue": undefined,
       "primaryKey": false,
-      "type": "JSON",
+      "type": "TEXT",
       "unique": false,
     },
-    "publicInfo": {
+    "expires": {
       "allowNull": true,
       "defaultValue": undefined,
       "primaryKey": false,
-      "type": "JSON",
+      "type": "DATETIME",
       "unique": false,
     },
-    "studyId": {
-      "allowNull": false,
-      "defaultValue": null,
+    "sid": {
+      "allowNull": true,
+      "defaultValue": undefined,
       "primaryKey": true,
-      "type": "VARCHAR(255)",
+      "type": "VARCHAR(36)",
       "unique": true,
     },
     "updatedAt": {
@@ -46,6 +37,15 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "primaryKey": false,
       "type": "DATETIME",
       "unique": false,
+    },
+  },
+  {
+    "name": {
+      "allowNull": false,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "VARCHAR(255)",
+      "unique": true,
     },
   },
   {
@@ -75,6 +75,50 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "defaultValue": undefined,
       "primaryKey": false,
       "type": "JSON",
+      "unique": false,
+    },
+    "updatedAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+  },
+  {
+    "createdAt": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "DATETIME",
+      "unique": false,
+    },
+    "name": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
+      "unique": false,
+    },
+    "payload": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
+    "responseId": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": true,
+      "type": "INTEGER",
+      "unique": false,
+    },
+    "runId": {
+      "allowNull": false,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "VARCHAR(255)",
       "unique": false,
     },
     "updatedAt": {
@@ -151,69 +195,25 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "DATETIME",
       "unique": false,
     },
-    "name": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "VARCHAR(255)",
-      "unique": false,
-    },
-    "payload": {
+    "extraInfo": {
       "allowNull": true,
       "defaultValue": undefined,
       "primaryKey": false,
       "type": "JSON",
       "unique": false,
     },
-    "responseId": {
+    "publicInfo": {
       "allowNull": true,
       "defaultValue": undefined,
-      "primaryKey": true,
-      "type": "INTEGER",
+      "primaryKey": false,
+      "type": "JSON",
       "unique": false,
     },
-    "runId": {
+    "studyId": {
       "allowNull": false,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "VARCHAR(255)",
-      "unique": false,
-    },
-    "updatedAt": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "DATETIME",
-      "unique": false,
-    },
-  },
-  {
-    "createdAt": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "DATETIME",
-      "unique": false,
-    },
-    "data": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "TEXT",
-      "unique": false,
-    },
-    "expires": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "DATETIME",
-      "unique": false,
-    },
-    "sid": {
-      "allowNull": true,
-      "defaultValue": undefined,
+      "defaultValue": null,
       "primaryKey": true,
-      "type": "VARCHAR(36)",
+      "type": "VARCHAR(255)",
       "unique": true,
     },
     "updatedAt": {
@@ -229,11 +229,11 @@ exports[`Database Migrations should always create the same table structures 1`] 
 
 exports[`Database Migrations should always create the same tables 1`] = `
 [
-  "wwl_internal_migrations",
-  "wwl_studies",
-  "wwl_participants",
-  "wwl_runs",
-  "wwl_responses",
   "wwl_internal_admin_sessions",
+  "wwl_internal_migrations",
+  "wwl_participants",
+  "wwl_responses",
+  "wwl_runs",
+  "wwl_studies",
 ]
 `;
