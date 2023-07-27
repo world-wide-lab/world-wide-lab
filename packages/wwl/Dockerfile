@@ -5,16 +5,23 @@ LABEL org.opencontainers.image.source="https://github.com/world-wide-lab/world-w
 LABEL org.opencontainers.image.description="Container image of the World-Wide-Lab server"
 LABEL org.opencontainers.image.licenses="NO_LICENSE_YET"
 
-# Copy application files
-COPY ../dist /usr/app/dist
-COPY ../static /usr/app/static
-COPY ../package.json /usr/app
-
 # Navigate to correct directory
-WORKDIR /usr/app
+WORKDIR /usr/src/app
+
+env NODE_ENV=production
 
 # Install dependencies
-RUN npm install --production
+COPY package.json ./
+# TODO: Use a lockfile here (will require a switch away from npm as package manager)
+RUN npm install --omit=dev
+
+# Copy application files
+COPY dist ./dist
+COPY static ./static
+
+# Expose the app's port
+ENV PORT=8787
+EXPOSE 8787
 
 # Start application
 CMD ["npm", "start"]
