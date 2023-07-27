@@ -15,7 +15,7 @@ const columnComments = {
 }
 
 export const up: Migration = async ({ context }) => {
-  context.createTable('wwl_studies', {
+  await context.createTable('wwl_studies', {
     studyId: {
       primaryKey: true,
       type: DataTypes.STRING,
@@ -50,7 +50,7 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  context.createTable('wwl_participants', {
+  await context.createTable('wwl_participants', {
     participantId: {
       type: DataTypes.UUID,
       primaryKey: true,
@@ -80,7 +80,7 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  context.createTable('wwl_runs', {
+  await context.createTable('wwl_runs', {
     runId: {
       type: DataTypes.UUID,
       primaryKey: true,
@@ -123,7 +123,7 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  context.createTable('wwl_responses', {
+  await context.createTable('wwl_responses', {
     responseId : {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -158,8 +158,8 @@ export const up: Migration = async ({ context }) => {
   });
 };
 export const down: Migration = async ({ context }) => {
-  context.dropTable('wwl_studies');
-  context.dropTable('wwl_participants');
-  context.dropTable('wwl_runs');
-  context.dropTable('wwl_responses');
+  await context.dropTable('wwl_studies');
+  await context.dropTable('wwl_participants');
+  await context.dropTable('wwl_runs');
+  await context.dropTable('wwl_responses');
 };

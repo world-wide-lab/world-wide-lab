@@ -3,7 +3,7 @@ import type { Migration } from '../migrate';
 import { DataTypes } from 'sequelize';
 
 export const up: Migration = async ({ context }) => {
-  context.createTable('wwl_internal_admin_sessions', {
+  await context.createTable('wwl_internal_admin_sessions', {
     sid: {
       type: DataTypes.STRING(36),
       primaryKey: true
@@ -22,5 +22,5 @@ export const up: Migration = async ({ context }) => {
   });
 };
 export const down: Migration = async ({ context }) => {
-  context.dropTable('wwl_internal_admin_sessions');
+  await context.dropTable('wwl_internal_admin_sessions');
 };
