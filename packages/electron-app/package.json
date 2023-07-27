@@ -13,7 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "",
+  "license": "NO_LICENSE_YET",
   "dependencies": {
     "@world-wide-lab/wwl": "file:../wwl"
   },
