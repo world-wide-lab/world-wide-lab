@@ -8,6 +8,8 @@ import app from '../src/app';
 const STUDY_ID = 'abc123';
 const API_KEY = 'jest-key';
 
+const endpoint = request(app)
+
 describe('API Routes', () => {
   beforeAll(async () => {
     // Initialize Database
@@ -24,7 +26,7 @@ describe('API Routes', () => {
 
   describe('POST /participant', () => {
     it('should create a new participant', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/participant')
         .send();
 
@@ -38,7 +40,7 @@ describe('API Routes', () => {
 
   describe('PUT /participant/:participantId', () => {
     it('should update an existing participant', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .put('/v1/participant/' + participantId)
         .send({
           extraInfo: { lorem: 'ipsum' },
@@ -56,7 +58,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the participant does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .put('/v1/participant/' + 'some-non-existing-ID')
         .send({ extraInfo: { lorem: 'ipsum' } });
 
@@ -67,7 +69,7 @@ describe('API Routes', () => {
 
   describe('GET /participant/:participantId', () => {
     it('should retrieve public information about a participant', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get('/v1/participant/' + participantId)
         .send();
 
@@ -78,7 +80,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the participant does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get('/v1/participant/' + 'non-existent-participant-id')
         .send();
 
@@ -89,7 +91,7 @@ describe('API Routes', () => {
 
   describe('POST /study', () => {
     it('should create a new study', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/study')
         .send({ studyId: STUDY_ID});
 
@@ -100,7 +102,7 @@ describe('API Routes', () => {
 
   describe('POST /run', () => {
     it('should start a new run', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/run')
         .send({ participantId, studyId });
 
@@ -113,14 +115,14 @@ describe('API Routes', () => {
     });
 
     it('missing participantId should lead to an error', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/run')
         .send({ participantId });
 
       expect(response.status).toBe(400);
     });
     it('missing studyId should lead to an error', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/run')
         .send({ studyId });
 
@@ -130,7 +132,7 @@ describe('API Routes', () => {
 
   describe('POST /run/finish', () => {
     it('should mark a run as finished', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/run/finish')
         .send({ runId: runId });
 
@@ -144,7 +146,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the run does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/run/finish')
         .send({ runId: 'non-existent' });
 
@@ -155,7 +157,7 @@ describe('API Routes', () => {
 
   describe('PUT /run/:runId', () => {
     it('should update a run', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .put('/v1/run/' + runId)
         .send({
           extraInfo: { lorem: 'ipsum' },
@@ -173,7 +175,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the run does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .put('/v1/run/' + 'non-existent-run-id')
         .send({ extraInfo: { lorem: 'ipsum' } });
 
@@ -184,7 +186,7 @@ describe('API Routes', () => {
 
   describe('GET /run/:runId', () => {
     it('should retrieve public information about a run', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get('/v1/run/' + runId)
         .send();
 
@@ -195,7 +197,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the run does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get('/v1/run/' + 'non-existent-run-id')
         .send();
 
@@ -206,7 +208,7 @@ describe('API Routes', () => {
 
   describe('POST /response', () => {
     it('should submit a response', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/response')
         .send({
           runId,
@@ -230,7 +232,7 @@ describe('API Routes', () => {
     });
 
     it('should fail to submit a response when the run does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/response')
         .send({
           runId: "non-existent-run-id",
@@ -246,7 +248,7 @@ describe('API Routes', () => {
     });
 
     it('should fail to submit non-JSON payload', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .post('/v1/response')
         .send({
           runId,
@@ -268,17 +270,17 @@ describe('API Routes', () => {
         },
       }
       // Two more responses for first run
-      await request(app)
+      await endpoint
         .post('/v1/response')
         .send({ runId, ...exampleData });
-      await request(app)
+      await endpoint
         .post('/v1/response')
         .send({ runId, ...exampleData });
       // And one additional responses in a new run
-      const newRunResponse = await request(app)
+      const newRunResponse = await endpoint
         .post('/v1/run')
         .send({ participantId, studyId });
-      await request(app)
+      await endpoint
         .post('/v1/response')
         .send({ runId: newRunResponse.body.runId, ...exampleData });
     });
@@ -286,7 +288,7 @@ describe('API Routes', () => {
 
   describe('GET /study/:studyId/count/:countType', () => {
     it('should return the correct count (for all runs)', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/count/all`)
         .send();
 
@@ -295,7 +297,7 @@ describe('API Routes', () => {
     });
 
     it('should return the correct count (for only finished runs)', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/count/finished`)
         .send();
 
@@ -307,7 +309,7 @@ describe('API Routes', () => {
       // Don't pass on console.error message, as it is expected
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/count/non-existent-type`)
         .send();
 
@@ -316,7 +318,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the study does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/non-existent-study/count/all`)
         .send();
 
@@ -328,7 +330,7 @@ describe('API Routes', () => {
   describe('GET /study/:studyId/data/:dataType', () => {
 
     it('should download a raw list of responses', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/responses-raw`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -349,7 +351,7 @@ describe('API Routes', () => {
     });
 
     it('should download a raw list of runs', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/runs-raw`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -371,7 +373,7 @@ describe('API Routes', () => {
     });
 
     it('should download a raw list of participant', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/participants-raw`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -391,7 +393,7 @@ describe('API Routes', () => {
     });
 
     it('should download an extracted list of responses', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/responses-extracted-payload`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -416,11 +418,11 @@ describe('API Routes', () => {
     it('should handle empty studies as well', async () => {
       const studyIdEmpty = "empty-study"
       // Create new empty study
-      await request(app)
+      await endpoint
         .post('/v1/study')
         .send({ studyId: studyIdEmpty});
 
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -432,17 +434,17 @@ describe('API Routes', () => {
     it('should handle studies without payload as well', async () => {
       const studyIdNoPayload = "no-payload-study"
       // Create new empty study and add one run with one response
-      await request(app)
+      await endpoint
         .post('/v1/study')
         .send({ studyId: studyIdNoPayload});
-      const runResponse = await request(app)
+      const runResponse = await endpoint
         .post('/v1/run')
         .send({ participantId, studyId: studyIdNoPayload });
-      await request(app)
+      await endpoint
         .post('/v1/response')
         .send({ runId: runResponse.body.runId })
 
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
@@ -461,7 +463,7 @@ describe('API Routes', () => {
     });
 
     it('should require authentication', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/participants-raw`)
         .send();
 
@@ -470,7 +472,7 @@ describe('API Routes', () => {
     });
 
     it('should require the correct API KEY', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/${studyId}/data/participants-raw`)
         .set('Authorization', `Bearer wrong-key`)
         .send();
@@ -480,7 +482,7 @@ describe('API Routes', () => {
     });
 
     it('should fail when the study does not exist', async () => {
-      const response = await request(app)
+      const response = await endpoint
         .get(`/v1/study/non-existent-study/data/participants-raw`)
         .set('Authorization', `Bearer ${API_KEY}`)
         .send();
