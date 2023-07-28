@@ -24,13 +24,19 @@ docker run -p 8787:8787 \
 To build the container, run the following command, which will build the docker container for your current platform.
 
 ```bash
+# Build the latest version of the project
+npm run build --prefix packages/wwl/
+# Build the container
 docker build -t world-wide-lab/server packages/wwl/
 ```
 
 If you plan to deploy the container into the cloud, you may need to use `docker buildx` to build it for a different architecture as e.g. modern Macs use a different chip architecture compared to most cloud providers. You can build for the two most common architectures (amd64 and arm64) using the following command:
 
 ```bash
-docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64 packages/wwl/
+# Build the latest version of the project
+npm run build --prefix packages/wwl/
+# Build the container
+docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64/v8 packages/wwl/
 ```
 
 ### Pushing the Container to a Registry
@@ -40,4 +46,11 @@ By default we use the GitHub Container Registry: ghcr.io. To publish the contain
 ```bash
 docker tag world-wide-lab/server ghcr.io/world-wide-lab/server:latest
 docker push ghcr.io/world-wide-lab/server:latest
+```
+
+## Running Tests
+
+```bash
+docker-compose -f docker/docker-compose.testing.yml run test-server
+docker-compose -f docker/docker-compose.testing.yml down
 ```

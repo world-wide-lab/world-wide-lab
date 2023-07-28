@@ -1,0 +1,40 @@
+version: "3.7"
+services:
+
+  db:
+    image: postgres:15
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: wwl
+      # Note: These are example credentials, you MUST change these before deploying anything
+      POSTGRES_USER: example_db_user
+      POSTGRES_PASSWORD: example_db_password
+
+  wwl-server:
+    image: world-wide-lab/server
+    ports:
+      - 8787:8787
+    depends_on:
+      - db
+    environment:
+      # Note: These are example credentials, you MUST change these before deploying anything
+      DATABASE_URL: "postgresql://example_db_user:example_db_password@db:5432/wwl"
+      ADMIN_AUTH_DEFAULT_EMAIL: "admin@admin.com"
+      ADMIN_AUTH_DEFAULT_PASSWORD: "admin"
+      ADMIN_AUTH_SESSION_SECRET: "asdfgh12345"
+      DEFAULT_API_KEY: "DEFAULT_API_KEY"
+    volumes:
+       - ../packages/test-server/server-logs:/usr/src/app/logs
+
+  test-server:
+    build:
+      context: ../packages/test-server/
+      dockerfile: Dockerfile
+    depends_on:
+      - wwl-server
+    environment:
+      DEFAULT_API_KEY: "DEFAULT_API_KEY"
+      WWL_SERVER_URL: "http://wwl-server:8787"
+    volumes:
+       - ../packages/test-server:/usr/src/app
