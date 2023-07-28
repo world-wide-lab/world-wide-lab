@@ -4,6 +4,8 @@ type ApiOptions = {
 
 type HTTPMethod = 'GET' | 'POST' | 'PUT'
 
+const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
+
 export class Api {
   constructor(public options: ApiOptions) {
     console.log('Initializing Api', options);
@@ -32,6 +34,7 @@ export class Api {
 
   /**
    * Create a new participant  from sractch. Use getParticipant() if you want to get an existing participant
+   * or store their id. This function will not keep track of a participant's id.
    * @returns A new Participant instance
    */
   async createParticipant () : Promise<Participant> {
@@ -63,14 +66,46 @@ export class Api {
   }
 
   /**
+   * Store the participant id of the last person that participated using your website.
+   * @param participantId The participant id to store
+   * @returns true if the id was stored successfully
+   */
+  storeParticipantId(participantId: string): boolean {
+    if (!window.localStorage) {
+      console.warn("localStorage API is not available. Participant-information will not be stored.")
+      return false
+    }
+    window.localStorage.setItem(PARTICIPANT_ID_KEY, participantId)
+    return true
+  }
+
+  /**
+   * Get the participantid of the last person that participated using your website (if their id
+   * was stored).
+   * @returns The participant id or undefined if no id was stored
+   */
+  getStoredParticipantId(): string | undefined {
+    if (!window.localStorage) {
+      console.warn("localStorage API is not available. Participant-information will not be stored.")
+      return undefined
+    }
+    return window.localStorage.getItem(PARTICIPANT_ID_KEY) || undefined
+  }
+
+  /**
    * Get a Participant. If someone has already participanted on this machine and their IDs is
-   * saved, will return this existing participant. Otherwise, will create a new participant.
+   * saved, will return this existing participant. Otherwise, will create a new participant and
+   * store the corresponding id.
    * @returns A Participant instance
    */
   async getParticipant () : Promise<Participant> {
-    const cachedParticipant = undefined;
-    // TODO: get cached participant & check whether we can cache participant IDs w/o vioalitng GDPR or sth
-    return cachedParticipant || this.createParticipant();
+    const id = this.getStoredParticipantId();
+    if (id !== undefined) {
+      return new Participant(this, id);
+    }
+    const participant = await this.createParticipant();
+    this.storeParticipantId(participant.participantId);
+    return participant;
   }
 
   /**
