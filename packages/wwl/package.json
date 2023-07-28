@@ -30,6 +30,7 @@
     "swagger-ui-express": "^4.6.3",
     "tslib": "^2.6.0",
     "umzug": "^3.2.1",
+    "validator": "^13.9.0",
     "winston": "^3.9.0"
   },
   "devDependencies": {

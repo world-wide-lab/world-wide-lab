@@ -55,6 +55,7 @@ export const up: Migration = async ({ context }) => {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
       comment: columnComments.participantId,
     },
     createdAt: {
@@ -85,6 +86,7 @@ export const up: Migration = async ({ context }) => {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
       comment: columnComments.runId,
     },
     createdAt: {
@@ -114,12 +116,16 @@ export const up: Migration = async ({ context }) => {
       comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
     },
     participantId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
+      allowNull: false,
       comment: columnComments.participantId,
+      references: { model: 'wwl_participants', key: 'participantId' }
     },
     studyId: {
       type: DataTypes.STRING,
+      allowNull: false,
       comment: columnComments.studyId,
+      references: { model: 'wwl_studies', key: 'studyId' }
     },
   });
 
@@ -151,9 +157,10 @@ export const up: Migration = async ({ context }) => {
       allowNull: true,
     },
     runId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       comment: columnComments.runId,
+      references: { model: 'wwl_runs', key: 'runId' }
     },
   });
 };

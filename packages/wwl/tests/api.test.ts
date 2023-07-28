@@ -8,6 +8,8 @@ import app from '../src/app';
 const STUDY_ID = 'abc123';
 const API_KEY = 'jest-key';
 
+const NON_EXISTENT_UUID = "00000000-0000-0000-0000-000000000000";
+
 const endpoint = request(app)
 
 describe('API Routes', () => {
@@ -59,6 +61,15 @@ describe('API Routes', () => {
 
     it('should fail when the participant does not exist', async () => {
       const response = await endpoint
+        .put('/v1/participant/' + NON_EXISTENT_UUID)
+        .send({ extraInfo: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the participant is invalid', async () => {
+      const response = await endpoint
         .put('/v1/participant/' + 'some-non-existing-ID')
         .send({ extraInfo: { lorem: 'ipsum' } });
 
@@ -80,6 +91,15 @@ describe('API Routes', () => {
     });
 
     it('should fail when the participant does not exist', async () => {
+      const response = await endpoint
+        .get('/v1/participant/' + NON_EXISTENT_UUID)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the participant is invalid', async () => {
       const response = await endpoint
         .get('/v1/participant/' + 'non-existent-participant-id')
         .send();
@@ -114,14 +134,14 @@ describe('API Routes', () => {
       runId = response.body.runId;
     });
 
-    it('missing participantId should lead to an error', async () => {
+    it('missing studyId should lead to an error', async () => {
       const response = await endpoint
         .post('/v1/run')
         .send({ participantId });
 
       expect(response.status).toBe(400);
     });
-    it('missing studyId should lead to an error', async () => {
+    it('missing participantId should lead to an error', async () => {
       const response = await endpoint
         .post('/v1/run')
         .send({ studyId });
@@ -146,6 +166,15 @@ describe('API Routes', () => {
     });
 
     it('should fail when the run does not exist', async () => {
+      const response = await endpoint
+        .post('/v1/run/finish')
+        .send({ runId: NON_EXISTENT_UUID });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the runId is invalid', async () => {
       const response = await endpoint
         .post('/v1/run/finish')
         .send({ runId: 'non-existent' });
@@ -176,6 +205,15 @@ describe('API Routes', () => {
 
     it('should fail when the run does not exist', async () => {
       const response = await endpoint
+        .put('/v1/run/' + NON_EXISTENT_UUID)
+        .send({ extraInfo: { lorem: 'ipsum' } });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the runId is invalid', async () => {
+      const response = await endpoint
         .put('/v1/run/' + 'non-existent-run-id')
         .send({ extraInfo: { lorem: 'ipsum' } });
 
@@ -197,6 +235,15 @@ describe('API Routes', () => {
     });
 
     it('should fail when the run does not exist', async () => {
+      const response = await endpoint
+        .get('/v1/run/' + NON_EXISTENT_UUID)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail when the runId is invalid', async () => {
       const response = await endpoint
         .get('/v1/run/' + 'non-existent-run-id')
         .send();
@@ -232,6 +279,22 @@ describe('API Routes', () => {
     });
 
     it('should fail to submit a response when the run does not exist', async () => {
+      const response = await endpoint
+        .post('/v1/response')
+        .send({
+          runId: NON_EXISTENT_UUID,
+          name: 'test_trail',
+          payload: {
+            key_1: 'value 1',
+            key_2: 'value 2',
+          },
+        });;
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it('should fail to submit a response when the runId is invalid', async () => {
       const response = await endpoint
         .post('/v1/response')
         .send({

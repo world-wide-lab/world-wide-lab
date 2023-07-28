@@ -117,11 +117,13 @@ function defineModels(sequelize: Sequelize) {
       comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
     },
     participantId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
+      allowNull: false,
       comment: columnComments.participantId,
     },
     studyId: {
       type: DataTypes.STRING,
+      allowNull: false,
       comment: columnComments.studyId,
     },
   }, {
@@ -156,7 +158,7 @@ function defineModels(sequelize: Sequelize) {
       allowNull: true,
     },
     runId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       comment: columnComments.runId,
     },

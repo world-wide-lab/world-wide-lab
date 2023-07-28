@@ -6,6 +6,12 @@ exports[`API Routes GET /participant/:participantId should fail when the partici
 }
 `;
 
+exports[`API Routes GET /participant/:participantId should fail when the participant is invalid 1`] = `
+{
+  "error": "participantId is not a valid UUID",
+}
+`;
+
 exports[`API Routes GET /participant/:participantId should retrieve public information about a participant 1`] = `
 {
   "publicInfo": {
@@ -17,6 +23,12 @@ exports[`API Routes GET /participant/:participantId should retrieve public infor
 exports[`API Routes GET /run/:runId should fail when the run does not exist 1`] = `
 {
   "error": "Unknown runId",
+}
+`;
+
+exports[`API Routes GET /run/:runId should fail when the runId is invalid 1`] = `
+{
+  "error": "runId is not a valid UUID",
 }
 `;
 
@@ -64,6 +76,12 @@ exports[`API Routes POST /response should fail to submit a response when the run
 }
 `;
 
+exports[`API Routes POST /response should fail to submit a response when the runId is invalid 1`] = `
+{
+  "error": "runId is not a valid UUID",
+}
+`;
+
 exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = `
 {
   "error": "Payload has to be a JSON object, undefined or null.",
@@ -76,6 +94,12 @@ exports[`API Routes POST /run/finish should fail when the run does not exist 1`]
 }
 `;
 
+exports[`API Routes POST /run/finish should fail when the runId is invalid 1`] = `
+{
+  "error": "runId is not a valid UUID",
+}
+`;
+
 exports[`API Routes POST /run/finish should mark a run as finished 1`] = `{}`;
 
 exports[`API Routes PUT /participant/:participantId should fail when the participant does not exist 1`] = `
@@ -84,11 +108,23 @@ exports[`API Routes PUT /participant/:participantId should fail when the partici
 }
 `;
 
+exports[`API Routes PUT /participant/:participantId should fail when the participant is invalid 1`] = `
+{
+  "error": "participantId is not a valid UUID",
+}
+`;
+
 exports[`API Routes PUT /participant/:participantId should update an existing participant 1`] = `{}`;
 
 exports[`API Routes PUT /run/:runId should fail when the run does not exist 1`] = `
 {
   "error": "Unknown runId",
+}
+`;
+
+exports[`API Routes PUT /run/:runId should fail when the runId is invalid 1`] = `
+{
+  "error": "runId is not a valid UUID",
 }
 `;
 

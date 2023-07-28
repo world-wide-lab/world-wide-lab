@@ -64,7 +64,7 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "unique": false,
     },
     "participantId": {
-      "allowNull": true,
+      "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": true,
       "type": "UUID",
@@ -118,7 +118,11 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": false,
-      "type": "VARCHAR(255)",
+      "references": {
+        "key": "runId",
+        "model": "wwl_runs",
+      },
+      "type": "UUID",
       "unique": false,
     },
     "updatedAt": {
@@ -152,10 +156,14 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "unique": false,
     },
     "participantId": {
-      "allowNull": true,
+      "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": false,
-      "type": "VARCHAR(255)",
+      "references": {
+        "key": "participantId",
+        "model": "wwl_participants",
+      },
+      "type": "UUID",
       "unique": false,
     },
     "publicInfo": {
@@ -166,16 +174,20 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "unique": false,
     },
     "runId": {
-      "allowNull": true,
+      "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": true,
       "type": "UUID",
       "unique": true,
     },
     "studyId": {
-      "allowNull": true,
+      "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": false,
+      "references": {
+        "key": "studyId",
+        "model": "wwl_studies",
+      },
       "type": "VARCHAR(255)",
       "unique": false,
     },
