@@ -1,5 +1,5 @@
 {
-  "name": "@world-wide-lab/wwl",
+  "name": "@world-wide-lab/server",
   "version": "0.0.1",
   "description": "",
   "main": "src/index.ts",
@@ -11,7 +11,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "",
+  "license": "NO_LICENSE_YET",
   "dependencies": {
     "@adminjs/express": "^5.1.0",
     "@adminjs/sequelize": "^3.0.0",
@@ -30,6 +30,7 @@
     "swagger-ui-express": "^4.6.3",
     "tslib": "^2.6.0",
     "umzug": "^3.2.1",
+    "validator": "^13.9.0",
     "winston": "^3.9.0"
   },
   "devDependencies": {

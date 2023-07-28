@@ -5,14 +5,14 @@
   ],
   "scripts": {
     "test": "jest",
-    "build": "npm run build --prefix packages/wwl/"
+    "build": "npm run build --prefix packages/server/"
   },
   "devDependencies": {
     "jest": "^29.5.0"
   },
   "jest": {
     "projects": [
-      "<rootDir>/packages/wwl"
+      "<rootDir>/packages/server"
     ]
   }
 }

@@ -47,7 +47,7 @@ function initializeRouter(admin: AdminJS) {
         secret: config.admin.auth.sessionSecret as string,
         cookie: {
           httpOnly: process.env.NODE_ENV === 'production',
-          secure: process.env.NODE_ENV === 'production',
+          secure: false,
         },
         proxy: true,
         name: 'adminjs.sid',

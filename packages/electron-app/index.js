@@ -2,7 +2,7 @@
 require("./set-env")
 
 const { app, BrowserWindow } = require('electron')
-const { init } = require('@world-wide-lab/wwl/dist/init.js')
+const { init } = require('@world-wide-lab/server/dist/init.js')
 
 // To prevent super slow start up
 // via: https://stackoverflow.com/questions/55726947/electron-why-is-there-a-big-delay-when-loading-the-main-window-through-localho

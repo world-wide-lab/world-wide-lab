@@ -13,7 +13,7 @@
         "name": "WWL: Debug Dev Server",
         "type": "node",
         "request": "launch",
-        "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/packages/wwl/node_modules/.bin/nodemon"],
+        "runtimeArgs": ["--inspect-brk", "${workspaceRoot}/packages/server/node_modules/.bin/nodemon"],
         "console": "integratedTerminal",
         "internalConsoleOptions": "neverOpen"
     }

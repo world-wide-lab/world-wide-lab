@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
 import Sequelize from "sequelize";
+import validator from 'validator';
 import { requireAuth } from "./auth"
 
 const router = express.Router();
@@ -79,6 +80,10 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
   const { participantId } = req.params;
   const newData = req.body;
   try {
+    if (!validator.isUUID(participantId)) {
+      res.status(400).json({ error: 'participantId is not a valid UUID' });
+      return
+    }
     const updatedRows = await sequelize.models.Participant.update(newData, { where: { participantId } });
     if (updatedRows[0] == 1) {
       res.status(200).send();
@@ -116,6 +121,10 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
 router.get('/participant/:participantId', async (req: Request, res: Response) => {
   const { participantId } = req.params;
   try {
+    if (!validator.isUUID(participantId)) {
+      res.status(400).json({ error: 'participantId is not a valid UUID' });
+      return
+    }
     const participant = await sequelize.models.Participant.findOne({
       where: { participantId },
       attributes: ['participantId', 'publicInfo']
@@ -199,6 +208,10 @@ router.post('/run', async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
     if (participantId !== undefined && studyId !== undefined) {
+      if (!validator.isUUID(participantId)) {
+        res.status(400).json({ error: 'participantId is not a valid UUID' });
+        return
+      }
       const run = await sequelize.models.Run.create({ participantId, studyId });
       res.json(run);
     } else {
@@ -237,6 +250,10 @@ router.post('/run', async (req: Request, res: Response) => {
 router.post('/run/finish', async (req: Request, res: Response) => {
   const { runId } = req.body;
   try {
+    if (!validator.isUUID(runId)) {
+      res.status(400).json({ error: 'runId is not a valid UUID' });
+      return
+    }
     const updatedRows = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
     if (updatedRows[0] == 1) {
       res.status(200).send();
@@ -285,6 +302,10 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
   const newData = req.body;
   try {
+    if (!validator.isUUID(runId)) {
+      res.status(400).json({ error: 'runId is not a valid UUID' });
+      return
+    }
     const updatedRows = await sequelize.models.Run.update(newData, { where: { runId } });
     if (updatedRows[0] == 1) {
       res.status(200).send();
@@ -322,6 +343,10 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
 router.get('/run/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
   try {
+    if (!validator.isUUID(runId)) {
+      res.status(400).json({ error: 'runId is not a valid UUID' });
+      return
+    }
     const run = await sequelize.models.Run.findOne({
       where: { runId },
       attributes: ['runId', 'publicInfo']
@@ -375,6 +400,10 @@ router.post('/response', async (req: Request, res: Response) => {
   // Validate payload, it can be NULL (undefined) or a JSON object
   if (!(payload === null || payload === undefined || typeof payload === 'object')) {
     res.status(400).json({ error: 'Payload has to be a JSON object, undefined or null.' });
+    return
+  }
+  if (!validator.isUUID(runId)) {
+    res.status(400).json({ error: 'runId is not a valid UUID' });
     return
   }
 
@@ -542,10 +571,14 @@ router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response)
       });
     } else if (dataType == "responses-extracted-payload") {
       const keysResult = await sequelize.query(`
-        SELECT DISTINCT payload_json.key as key
-        FROM wwl_responses, json_each(payload) payload_json
-        INNER JOIN wwl_runs ON wwl_runs.runId = wwl_responses.runId
-        WHERE wwl_runs.studyId = :studyId;
+        SELECT DISTINCT
+          payload_json.key as key
+        FROM
+          wwl_responses
+            INNER JOIN wwl_runs ON (wwl_runs."runId" = wwl_responses."runId"),
+          json_each(payload) payload_json
+        WHERE wwl_runs."studyId" = :studyId
+        ORDER BY key ASC;
       `, {
         type: Sequelize.QueryTypes.SELECT,
         replacements: { studyId },
@@ -555,14 +588,14 @@ router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response)
       const jsonKeys = keysResult
         .map(row => 'key' in row ? row.key : undefined)
         .filter(key => key !== undefined)
-      const jsonFieldsString = jsonKeys.map(jsonKey => `wwl_responses.payload->>"${jsonKey}" AS ${jsonKey}`).join(", ")
+      const jsonFieldsString = jsonKeys.map(jsonKey => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`).join(", ")
 
       // Collect list of table fields, so we can select them without the payload
       const modelAttributes = sequelize.models.Response.getAttributes()
       const tableFields = Object.keys(modelAttributes)
       const fields = tableFields
         .filter(field => field !== "payload")
-        .map(field => `wwl_responses.${field}`)
+        .map(field => `wwl_responses."${field}"`)
       const tableFieldsString = fields.join(", ")
 
       // Combine the table and json fields
@@ -570,9 +603,11 @@ router.get('/study/:studyId/data/:dataType', async (req: Request, res: Response)
 
       // Create the final query
       data = await sequelize.query(`
-        SELECT ${fieldsString} FROM wwl_responses
-        INNER JOIN wwl_runs ON wwl_runs.runId = wwl_responses.runId
-        WHERE wwl_runs.studyId = :studyId;
+        SELECT
+          ${fieldsString}
+        FROM wwl_responses
+          INNER JOIN wwl_runs ON (wwl_runs."runId" = wwl_responses."runId")
+        WHERE wwl_runs."studyId" = :studyId;
       `, {
         type: Sequelize.QueryTypes.SELECT,
         replacements: { studyId },

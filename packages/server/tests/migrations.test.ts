@@ -20,11 +20,13 @@ describe('Database Migrations', () => {
 
   it('should always create the same tables', async () => {
     const tableNames: Array<string> = await sequelize.getQueryInterface().showAllTables()
+    tableNames.sort()
     expect(tableNames).toMatchSnapshot()
   });
 
   it('should always create the same table structures', async () => {
     const tableNames: Array<string> = await sequelize.getQueryInterface().showAllTables()
+    tableNames.sort()
 
     const tableInfos = await Promise.all(tableNames.map(async (tableName) => {
       const tableInfo = await sequelize.getQueryInterface().describeTable(tableName)

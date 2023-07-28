@@ -1,4 +1,6 @@
-import { Sequelize, DataTypes } from 'sequelize';
+import type { Migration } from '../migrate';
+
+import { DataTypes } from 'sequelize';
 
 const columnComments = {
   studyId: `The unique identifier for each study. This id is used to link runs with studies. Must be unique across all studies.`,
@@ -12,9 +14,8 @@ const columnComments = {
   publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
 }
 
-function defineModels(sequelize: Sequelize) {
-
-  const Study = sequelize.define('Study', {
+export const up: Migration = async ({ context }) => {
+  await context.createTable('wwl_studies', {
     studyId: {
       primaryKey: true,
       type: DataTypes.STRING,
@@ -47,15 +48,14 @@ function defineModels(sequelize: Sequelize) {
       allowNull: true,
       comment: columnComments.publicInfo,
     },
-  }, {
-    tableName: 'wwl_studies',
   });
 
-  const Participant = sequelize.define('Participant', {
+  await context.createTable('wwl_participants', {
     participantId: {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
       comment: columnComments.participantId,
     },
     createdAt: {
@@ -79,15 +79,14 @@ function defineModels(sequelize: Sequelize) {
       allowNull: true,
       comment: columnComments.publicInfo,
     },
-  }, {
-    tableName: 'wwl_participants'
   });
 
-  const Run = sequelize.define('Run', {
+  await context.createTable('wwl_runs', {
     runId: {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
       comment: columnComments.runId,
     },
     createdAt: {
@@ -117,18 +116,20 @@ function defineModels(sequelize: Sequelize) {
       comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
     },
     participantId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
+      allowNull: false,
       comment: columnComments.participantId,
+      references: { model: 'wwl_participants', key: 'participantId' }
     },
     studyId: {
       type: DataTypes.STRING,
+      allowNull: false,
       comment: columnComments.studyId,
+      references: { model: 'wwl_studies', key: 'studyId' }
     },
-  }, {
-    tableName: 'wwl_runs'
   });
 
-  const Response = sequelize.define('Response', {
+  await context.createTable('wwl_responses', {
     responseId : {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -156,46 +157,16 @@ function defineModels(sequelize: Sequelize) {
       allowNull: true,
     },
     runId: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       comment: columnComments.runId,
+      references: { model: 'wwl_runs', key: 'runId' }
     },
-  }, {
-    tableName: 'wwl_responses'
   });
-
-  // Associations
-  Participant.hasMany(Run, { foreignKey: 'participantId' });
-  Run.belongsTo(Participant, { foreignKey: 'participantId' });
-
-  Study.hasMany(Run, { sourceKey: 'studyId', foreignKey: 'studyId' });
-  Run.belongsTo(Study, { targetKey: 'studyId', foreignKey: 'studyId' });
-
-  Run.hasMany(Response, { foreignKey: 'runId' });
-  Response.belongsTo(Run, { foreignKey: 'runId' });
-
-  const InternalAdminSession = sequelize.define('InternalAdminSession', {
-    sid: {
-      type: DataTypes.STRING(36),
-      primaryKey: true
-    },
-    expires: DataTypes.DATE,
-    data: DataTypes.TEXT,
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-    },
-    updatedAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
-    },
-  }, {
-    tableName: 'wwl_internal_admin_sessions',
-  });
-}
-
-export {
-  defineModels,
-  columnComments,
+};
+export const down: Migration = async ({ context }) => {
+  await context.dropTable('wwl_studies');
+  await context.dropTable('wwl_participants');
+  await context.dropTable('wwl_runs');
+  await context.dropTable('wwl_responses');
 };
