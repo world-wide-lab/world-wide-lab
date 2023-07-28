@@ -15,3 +15,5 @@ The project is split up into multiple packages. If you want to just give it a tr
 - Planned (Not yet implemented)
   - jsPsych Integration ([`jsPsych`](./packages/jsPsych/)): A helper package making it easy to use World-Wide-Lab in combination with jsPsych experiments.
   - API Helper ([`api`](./packages/api/)): A small package to make it easier to use the World-Wide-Lab API in your own study or to store some custom data in World-Wide-Lab. If you use one of the libraries with a supported integration package, you will most probably not need this package.
+- Internal Packages (only used for development)
+  - Server Tester ([`test-server`](./packages/test-server/)): Used to test a running World-Wide-Lab server.
