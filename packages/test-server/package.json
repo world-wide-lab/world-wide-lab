@@ -1,12 +1,8 @@
 {
   "name": "@world-wide-lab/test-server",
   "version": "0.0.1",
-  "description": "Package for running tests against the WWL server",
-  "main": "src/index.ts",
+  "description": "Package for running tests against the World-Wide-Lab server",
   "scripts": {
-    "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
-    "build": "tsc -p tsconfig-build.json",
-    "start": "node dist/index.js",
     "test": "jest"
   },
   "keywords": [],
