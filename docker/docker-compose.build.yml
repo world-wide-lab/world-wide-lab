@@ -16,7 +16,7 @@ services:
 
   wwl-server:
     build:
-      context: ../packages/wwl/
+      context: ../packages/server/
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:

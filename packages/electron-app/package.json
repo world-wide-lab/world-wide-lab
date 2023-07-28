@@ -7,7 +7,7 @@
     "dev": "electron .",
     "build": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
-    "build:wwl": "npm run build --prefix ../wwl/",
+    "build:wwl": "npm run build --prefix ../server/",
     "package": "electron-builder",
     "package:dev": "electron-builder --dir",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -15,7 +15,7 @@
   "author": "",
   "license": "NO_LICENSE_YET",
   "dependencies": {
-    "@world-wide-lab/wwl": "file:../wwl"
+    "@world-wide-lab/server": "file:../server"
   },
   "devDependencies": {
     "electron": "^24.6.1",

@@ -25,18 +25,18 @@ To build the container, run the following command, which will build the docker c
 
 ```bash
 # Build the latest version of the project
-npm run build --prefix packages/wwl/
+npm run build --prefix packages/server/
 # Build the container
-docker build -t world-wide-lab/server packages/wwl/
+docker build -t world-wide-lab/server packages/server/
 ```
 
 If you plan to deploy the container into the cloud, you may need to use `docker buildx` to build it for a different architecture as e.g. modern Macs use a different chip architecture compared to most cloud providers. You can build for the two most common architectures (amd64 and arm64) using the following command:
 
 ```bash
 # Build the latest version of the project
-npm run build --prefix packages/wwl/
+npm run build --prefix packages/server/
 # Build the container
-docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64/v8 packages/wwl/
+docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64/v8 packages/server/
 ```
 
 ### Pushing the Container to a Registry
