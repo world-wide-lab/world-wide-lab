@@ -8,7 +8,7 @@ const columnComments = {
 
   createdAt: `The timestamp this record has been created. Generated automatically.`,
   updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
-  extraInfo: `Additional information for this record, stored as a JSON object.`,
+  privateInfo: `Additional information for this record, stored as a JSON object.`,
   publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
 }
 
@@ -37,10 +37,10 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    extraInfo: {
+    privateInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.extraInfo,
+      comment: columnComments.privateInfo,
     },
     publicInfo: {
       type: DataTypes.JSON,
@@ -69,10 +69,10 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    extraInfo: {
+    privateInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.extraInfo,
+      comment: columnComments.privateInfo,
     },
     publicInfo: {
       type: DataTypes.JSON,
@@ -101,10 +101,10 @@ function defineModels(sequelize: Sequelize) {
       onUpdate: 'CASCADE',
       comment: columnComments.updatedAt,
     },
-    extraInfo: {
+    privateInfo: {
       type: DataTypes.JSON,
       allowNull: true,
-      comment: columnComments.extraInfo,
+      comment: columnComments.privateInfo,
     },
     publicInfo: {
       type: DataTypes.JSON,

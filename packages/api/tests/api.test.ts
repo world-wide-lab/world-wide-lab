@@ -47,8 +47,8 @@ describe('Api', () => {
   it('should store and retrieve participant data', async () => {
     const participant = await api.createParticipant()
 
-    const participantUpdateResult = await participant.update({
-      extraInfo: {
+    const participantUpdateResult = await participant.setMetadata({
+      privateInfo: {
         name: "John Doe"
       },
       publicInfo: {
@@ -65,8 +65,8 @@ describe('Api', () => {
     const participant = await api.createParticipant()
     const run = await participant.startRun("example")
 
-    const runUpdateResult = await run.update({
-      extraInfo: {
+    const runUpdateResult = await run.setMetadata({
+      privateInfo: {
         name: "Run No Uno"
       },
       publicInfo: {

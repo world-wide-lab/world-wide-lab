@@ -56,19 +56,19 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "DATETIME",
       "unique": false,
     },
-    "extraInfo": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "JSON",
-      "unique": false,
-    },
     "participantId": {
       "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": true,
       "type": "UUID",
       "unique": true,
+    },
+    "privateInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
     },
     "publicInfo": {
       "allowNull": true,
@@ -141,13 +141,6 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "DATETIME",
       "unique": false,
     },
-    "extraInfo": {
-      "allowNull": true,
-      "defaultValue": undefined,
-      "primaryKey": false,
-      "type": "JSON",
-      "unique": false,
-    },
     "finished": {
       "allowNull": true,
       "defaultValue": false,
@@ -164,6 +157,13 @@ exports[`Database Migrations should always create the same table structures 1`] 
         "model": "wwl_participants",
       },
       "type": "UUID",
+      "unique": false,
+    },
+    "privateInfo": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
       "unique": false,
     },
     "publicInfo": {
@@ -207,7 +207,7 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "DATETIME",
       "unique": false,
     },
-    "extraInfo": {
+    "privateInfo": {
       "allowNull": true,
       "defaultValue": undefined,
       "primaryKey": false,

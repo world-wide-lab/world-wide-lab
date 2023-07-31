@@ -149,10 +149,12 @@ export class Participant extends ApiModel {
 
   /**
    * Update the participant's meta-data.
-   * @param data The data to update. Can contain extraInfo and/or publicInfo.
+   * @param data The data to update. Can contain privateInfo and/or publicInfo.
+   *   The publicInfo can be retrieved later on without authentication, the
+   *   privateInfo can only be downlaoded later on by the researcher.
    * @returns true if the update was successful
    */
-  async update (data: { extraInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
+  async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
     const result = await this.apiInstance.call('PUT', `/participant/${this.participantId}`, data);
     return result.success;
   }
@@ -177,10 +179,11 @@ export class Run extends ApiModel {
 
   /**
    * Update the run's meta-data.
-   * @param data The data to update. Can contain extraInfo and/or publicInfo.
-   * @returns true if the update was successful
+   * @param data The data to update. Can contain privateInfo and/or publicInfo.
+   *   The publicInfo can be retrieved later on without authentication, the
+   *   privateInfo can only be downlaoded later on by the researcher.
    */
-  async update (data: { extraInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
+  async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
     const result = await this.apiInstance.call('PUT', `/run/${this.runId}`, data);
     return result.success;
   }

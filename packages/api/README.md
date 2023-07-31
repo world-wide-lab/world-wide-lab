@@ -32,9 +32,9 @@ run.finish();
 You can also update information about runs and participants:
 
 ```js
-participant.update({
-  // extraInfo is private and can normally not be retrieved via the api
-  extraInfo: {
+participant.setMetadata({
+  // privateInfo is private and can normally not be retrieved via the api
+  privateInfo: {
     email: 'private@email.com'
   },
   // publicInfo is public and can be retrieved via the api
@@ -43,9 +43,9 @@ participant.update({
   }
 })
 
-run.update({
-  // extraInfo is private and can normally not be retrieved via the api
-  extraInfo: {
+run.setMetadata({
+  // privateInfo is private and can normally not be retrieved via the api
+  privateInfo: {
     performance: 100
   },
   // publicInfo is public and can be retrieved via the api

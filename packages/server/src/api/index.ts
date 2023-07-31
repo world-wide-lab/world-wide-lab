@@ -66,7 +66,7 @@ router.post('/participant', async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               extraInfo:
+ *               privateInfo:
  *                 type: object
  *               publicInfo:
  *                 type: object
@@ -288,7 +288,7 @@ router.post('/run/finish', async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               extraInfo:
+ *               privateInfo:
  *                 type: object
  *               publicInfo:
  *                 type: object

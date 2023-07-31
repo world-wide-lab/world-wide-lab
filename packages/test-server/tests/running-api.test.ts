@@ -36,7 +36,7 @@ describe('API Routes', () => {
       const response = await endpoint
         .put('/v1/participant/' + participantId)
         .send({
-          extraInfo: { lorem: 'ipsum' },
+          privateInfo: { lorem: 'ipsum' },
           publicInfo: { participantHasDoneSomething: true }
         });
 
@@ -47,7 +47,7 @@ describe('API Routes', () => {
     it('should fail when the participant does not exist', async () => {
       const response = await endpoint
         .put('/v1/participant/' + NON_EXISTENT_UUID)
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({ privateInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -56,7 +56,7 @@ describe('API Routes', () => {
     it('should fail when the participant is invalid', async () => {
       const response = await endpoint
         .put('/v1/participant/' + 'some-non-existing-ID')
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({ privateInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -169,7 +169,7 @@ describe('API Routes', () => {
       const response = await endpoint
         .put('/v1/run/' + runId)
         .send({
-          extraInfo: { lorem: 'ipsum' },
+          privateInfo: { lorem: 'ipsum' },
           publicInfo: { dolor: 'sit' },
         });
 
@@ -180,7 +180,7 @@ describe('API Routes', () => {
     it('should fail when the run does not exist', async () => {
       const response = await endpoint
         .put('/v1/run/' + NON_EXISTENT_UUID)
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({ privateInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -189,7 +189,7 @@ describe('API Routes', () => {
     it('should fail when the runId is invalid', async () => {
       const response = await endpoint
         .put('/v1/run/' + 'non-existent-run-id')
-        .send({ extraInfo: { lorem: 'ipsum' } });
+        .send({ privateInfo: { lorem: 'ipsum' } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -392,7 +392,7 @@ describe('API Routes', () => {
           "runId",
           "createdAt",
           "updatedAt",
-          "extraInfo",
+          "privateInfo",
           "publicInfo",
           "finished",
           "participantId",
@@ -414,7 +414,7 @@ describe('API Routes', () => {
           "participantId",
           "createdAt",
           "updatedAt",
-          "extraInfo",
+          "privateInfo",
           "publicInfo",
           "Runs.runId",
         ]
