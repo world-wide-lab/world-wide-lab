@@ -1,12 +1,12 @@
 {
-  "name": "@world-wide-lab/api",
+  "name": "@world-wide-lab/client",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig-build.json",
     "test": "jest",
-    "test:build": "API=build npm run build && jest"
+    "test:build": "CLIENT=build npm run build && jest"
   },
   "author": "",
   "license": "NO_LICENSE_YET",

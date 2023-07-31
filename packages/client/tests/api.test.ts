@@ -1,21 +1,21 @@
 // Set up fake environment variables
 import "./setup_env";
 
-import { Api as DevApi, Participant, Run } from '../src/'
+import { Client as DevClient, Participant, Run } from '../src'
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import { init as initDev, Server } from '@world-wide-lab/server/src/init.ts'
 
-const Api = process.env.API === 'build' ? import('../dist/') : DevApi
+const Client = process.env.CLIENT === 'build' ? import('../dist') : DevClient
 
-describe('Api', () => {
+describe('Client', () => {
   let server: Server
-  let api: DevApi
+  let client: DevClient
   beforeAll(async () => {
     server = await initDev()
 
     // @ts-ignore - We know that the server will only be returned after listen() is finished
-    api = new Api({ url: `http://localhost:${server.address().port}` })
+    client = new Client({ url: `http://localhost:${server.address().port}` })
   }, 10000)
   afterAll(async () => {
     await server.close()
@@ -23,14 +23,14 @@ describe('Api', () => {
 
 
   it('should create a new participant', async () => {
-    const participant = await api.createParticipant()
+    const participant = await client.createParticipant()
 
     expect(participant instanceof Participant).toBe(true)
     expect(participant.participantId).toBeDefined()
   })
 
   it('should start a new run', async () => {
-    const participant = await api.createParticipant()
+    const participant = await client.createParticipant()
     const run = await participant.startRun("example")
 
     expect(run instanceof Run).toBe(true)
@@ -38,14 +38,14 @@ describe('Api', () => {
   })
 
   it('should store responses', async () => {
-    const participant = await api.createParticipant()
+    const participant = await client.createParticipant()
     const run = await participant.startRun("example")
 
     expect(await run.response("example_name", { ex_key: "ex_value" })).toBe(true)
   })
 
   it('should store and retrieve participant data', async () => {
-    const participant = await api.createParticipant()
+    const participant = await client.createParticipant()
 
     const participantUpdateResult = await participant.setMetadata({
       privateInfo: {
@@ -62,7 +62,7 @@ describe('Api', () => {
   })
 
   it('should store and retrieve run data', async () => {
-    const participant = await api.createParticipant()
+    const participant = await client.createParticipant()
     const run = await participant.startRun("example")
 
     const runUpdateResult = await run.setMetadata({

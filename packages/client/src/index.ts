@@ -1,4 +1,4 @@
-type ApiOptions = {
+type ClientOptions = {
   url: string
 }
 
@@ -10,9 +10,9 @@ type ObjectWithData = {
   [key: string]: string
 }
 
-export class Api {
-  constructor(public options: ApiOptions) {
-    console.log('Initializing Api', options);
+export class Client {
+  constructor(public options: ClientOptions) {
+    console.log('Initializing Client', options);
   }
 
   /**
@@ -129,13 +129,13 @@ export class Api {
 }
 
 // Base class that all data model classes inherit from
-class ApiModel {
-  constructor (public apiInstance: Api) { }
+class ClientModel {
+  constructor (public clientInstance: Client) { }
 }
 
-export class Participant extends ApiModel {
-  constructor (apiInstance: Api, public participantId: string) {
-    super(apiInstance);
+export class Participant extends ClientModel {
+  constructor (clientInstance: Client, public participantId: string) {
+    super(clientInstance);
   }
 
   /**
@@ -144,7 +144,7 @@ export class Participant extends ApiModel {
    * @returns A new Run instance
    */
   startRun (studyId: string) : Promise<Run> {
-    return this.apiInstance.createRun(this.participantId, studyId);
+    return this.clientInstance.createRun(this.participantId, studyId);
   }
 
   /**
@@ -155,7 +155,7 @@ export class Participant extends ApiModel {
    * @returns true if the update was successful
    */
   async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
-    const result = await this.apiInstance.call('PUT', `/participant/${this.participantId}`, data);
+    const result = await this.clientInstance.call('PUT', `/participant/${this.participantId}`, data);
     return result.success;
   }
 
@@ -164,17 +164,17 @@ export class Participant extends ApiModel {
    * @returns The participant's publicInfo meta data
    */
   getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
-    return this.apiInstance.call('GET', `/participant/${this.participantId}`);
+    return this.clientInstance.call('GET', `/participant/${this.participantId}`);
   }
 }
 
-export class Run extends ApiModel {
-  constructor (apiInstance: Api, public runId: string) {
-    super(apiInstance);
+export class Run extends ClientModel {
+  constructor (clientInstance: Client, public runId: string) {
+    super(clientInstance);
   }
 
   response (name: string, payload: ObjectWithData) : Promise<boolean> {
-    return this.apiInstance.createResponse(this.runId, name, payload);
+    return this.clientInstance.createResponse(this.runId, name, payload);
   }
 
   /**
@@ -184,7 +184,7 @@ export class Run extends ApiModel {
    *   privateInfo can only be downlaoded later on by the researcher.
    */
   async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
-    const result = await this.apiInstance.call('PUT', `/run/${this.runId}`, data);
+    const result = await this.clientInstance.call('PUT', `/run/${this.runId}`, data);
     return result.success;
   }
 
@@ -193,6 +193,6 @@ export class Run extends ApiModel {
    * @returns The run's publicInfo meta data
    */
   getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
-    return this.apiInstance.call('GET', `/run/${this.runId}`);
+    return this.clientInstance.call('GET', `/run/${this.runId}`);
   }
 }
