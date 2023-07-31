@@ -86,7 +86,7 @@ router.put('/participant/:participantId', async (req: Request, res: Response) =>
     }
     const updatedRows = await sequelize.models.Participant.update(newData, { where: { participantId } });
     if (updatedRows[0] == 1) {
-      res.status(200).send();
+      res.status(200).send({ success: true });
     } else {
       res.status(400).json({ error: 'Unknown participantId' });
     }
@@ -256,7 +256,7 @@ router.post('/run/finish', async (req: Request, res: Response) => {
     }
     const updatedRows = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
     if (updatedRows[0] == 1) {
-      res.status(200).send();
+      res.status(200).send({ success: true });
     } else {
       res.status(400).json({ error: 'Unknown runId' });
     }
@@ -308,7 +308,7 @@ router.put('/run/:runId', async (req: Request, res: Response) => {
     }
     const updatedRows = await sequelize.models.Run.update(newData, { where: { runId } });
     if (updatedRows[0] == 1) {
-      res.status(200).send();
+      res.status(200).send({ success: true });
     } else {
       res.status(400).json({ error: 'Unknown runId' });
     }
