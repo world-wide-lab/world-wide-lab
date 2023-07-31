@@ -130,8 +130,6 @@ export class Api {
 
 // Base class that all data model classes inherit from
 class ApiModel {
-  private api: Api;
-
   constructor (public apiInstance: Api) { }
 }
 

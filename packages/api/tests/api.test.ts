@@ -1,7 +1,8 @@
 // Set up fake environment variables
 import "./setup_env";
 
-import { Api, Participant, Run } from '../src/'
+// import { Api, Participant, Run } from '../src/'
+import { Api, Participant, Run } from '../dist/'
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import { init as initDev, Server } from '@world-wide-lab/server/src/init.ts'
