@@ -12,7 +12,8 @@
   },
   "jest": {
     "projects": [
-      "<rootDir>/packages/server"
+      "<rootDir>/packages/server",
+      "<rootDir>/packages/api"
     ]
   }
 }

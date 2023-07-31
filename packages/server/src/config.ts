@@ -43,6 +43,7 @@ const config = {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",
     // Change to 'verbose' to log SQL queries
     consoleLevel: getValueFromEnv("LOGGING_LEVEL_CONSOLE") || "info",
+    http: getBooleanFromEnv("LOGGING_HTTP", true),
   },
 
   admin: {

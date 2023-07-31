@@ -100,7 +100,11 @@ exports[`API Routes POST /run/finish should fail when the runId is invalid 1`] =
 }
 `;
 
-exports[`API Routes POST /run/finish should mark a run as finished 1`] = `{}`;
+exports[`API Routes POST /run/finish should mark a run as finished 1`] = `
+{
+  "success": true,
+}
+`;
 
 exports[`API Routes PUT /participant/:participantId should fail when the participant does not exist 1`] = `
 {
@@ -114,7 +118,11 @@ exports[`API Routes PUT /participant/:participantId should fail when the partici
 }
 `;
 
-exports[`API Routes PUT /participant/:participantId should update an existing participant 1`] = `{}`;
+exports[`API Routes PUT /participant/:participantId should update an existing participant 1`] = `
+{
+  "success": true,
+}
+`;
 
 exports[`API Routes PUT /run/:runId should fail when the run does not exist 1`] = `
 {
@@ -128,4 +136,8 @@ exports[`API Routes PUT /run/:runId should fail when the runId is invalid 1`] = 
 }
 `;
 
-exports[`API Routes PUT /run/:runId should update a run 1`] = `{}`;
+exports[`API Routes PUT /run/:runId should update a run 1`] = `
+{
+  "success": true,
+}
+`;
