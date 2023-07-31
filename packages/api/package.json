@@ -5,8 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig-build.json",
-    "test": "npm run test:build",
-    "test:dev": "jest",
+    "test": "jest",
     "test:build": "API=build npm run build && jest"
   },
   "author": "",

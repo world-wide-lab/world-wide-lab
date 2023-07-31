@@ -2,12 +2,11 @@
 import "./setup_env";
 
 import { Api as DevApi, Participant, Run } from '../src/'
-import { Api as BuiltApi } from '../dist/'
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import { init as initDev, Server } from '@world-wide-lab/server/src/init.ts'
 
-const Api = process.env.API === 'build' ? BuiltApi : DevApi
+const Api = process.env.API === 'build' ? import('../dist/') : DevApi
 
 describe('Api', () => {
   let server: Server
