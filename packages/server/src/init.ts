@@ -4,8 +4,12 @@ import config from './config';
 import { logger } from './logger';
 import generateExampleData from './db/exampleData';
 import { up } from './db/migrate'
+import type Server from 'http';
 
-async function init() {
+// Export Server type for convenience
+export type Server = Server.Server;
+
+async function init() : Promise<Server.Server> {
   logger.verbose(`Initializing with configuration`, { config });
 
   // Check the database
@@ -32,10 +36,16 @@ async function init() {
 
   // Start the server
   const root = config.root;
-  const port = config.port;
-  await new Promise((resolve, reject) => {
+  const configPort = config.port;
+  return await new Promise((resolve, reject) => {
     try {
-      app.listen(port, () => {
+      const server = app.listen(configPort, () => {
+        // Get assigned port from the operating system (if configPort == 0)
+        const serverAdress = server.address();
+        const port = (serverAdress !== null && typeof serverAdress === 'object') ?
+          serverAdress.port :
+          configPort;
+
         logger.info(`Listening on: ${root}:${port}`);
         if (config.admin.enabled) {
           logger.info(`Admin UI at: ${root}:${port}/admin`);
@@ -43,7 +53,7 @@ async function init() {
         if (config.apiDocs.enabled) {
           logger.info(`API Docs at: ${root}:${port}/api-docs`);
         }
-        resolve(null)
+        resolve(server)
       });
     } catch (error) {
       console.error(`Unable to launch express server: ${(error as Error).message}`);
