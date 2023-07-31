@@ -5,6 +5,7 @@
   ],
   "scripts": {
     "test": "jest",
+    "test:docker": "./docker/run-test.sh",
     "build": "npm run build --prefix packages/server/"
   },
   "devDependencies": {
