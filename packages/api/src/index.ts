@@ -6,6 +6,10 @@ type HTTPMethod = 'GET' | 'POST' | 'PUT'
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
 
+type ObjectWithData = {
+  [key: string]: string
+}
+
 export class Api {
   constructor(public options: ApiOptions) {
     console.log('Initializing Api', options);
@@ -20,12 +24,17 @@ export class Api {
    * @returns The JSON body of the response from the server
    */
   async call(method: HTTPMethod, endpoint: string, data?: Object, options?: Object) : Promise<any> {
-    const url = this.options.url + endpoint;
+    const slash = endpoint.startsWith('/') ? '' : '/';
+    const url = new URL('v1'+ slash + endpoint, this.options.url);
+    const body = data ? JSON.stringify(data) : undefined;
     const fetchOptions: RequestInit = {
       method,
-    }
-    if (data) {
-      fetchOptions.body = JSON.stringify(data)
+      headers: {
+        'Content-Type': data ? 'application/json' : 'none',
+      },
+      body,
+
+      ...options
     }
 
     const response = await fetch(url, fetchOptions);
@@ -145,15 +154,16 @@ export class Participant extends ApiModel {
    * @param data The data to update. Can contain extraInfo and/or publicInfo.
    * @returns true if the update was successful
    */
-  update (data: { extraInfo?: Object, publicInfo?: Object }) : Promise<boolean> {
-    return this.apiInstance.call('PUT', `/participant/${this.participantId}`, data);
+  async update (data: { extraInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
+    const result = await this.apiInstance.call('PUT', `/participant/${this.participantId}`, data);
+    return result.success;
   }
 
   /**
    * Retrieve public meta-data for a participant
    * @returns The participant's publicInfo meta data
    */
-  getPublicInfo () : Promise<{ publicInfo: Object }> {
+  getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
     return this.apiInstance.call('GET', `/participant/${this.participantId}`);
   }
 }
@@ -163,7 +173,7 @@ export class Run extends ApiModel {
     super(apiInstance);
   }
 
-  response (name: string, payload: Object) : Promise<boolean> {
+  response (name: string, payload: ObjectWithData) : Promise<boolean> {
     return this.apiInstance.createResponse(this.runId, name, payload);
   }
 
@@ -172,15 +182,16 @@ export class Run extends ApiModel {
    * @param data The data to update. Can contain extraInfo and/or publicInfo.
    * @returns true if the update was successful
    */
-  update (data: { extraInfo?: Object, publicInfo?: Object }) : Promise<boolean> {
-    return this.apiInstance.call('PUT', `/run/${this.runId}`, data);
+  async update (data: { extraInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
+    const result = await this.apiInstance.call('PUT', `/run/${this.runId}`, data);
+    return result.success;
   }
 
   /**
    * Retrieve public meta-data for a run
    * @returns The run's publicInfo meta data
    */
-  getPublicInfo () : Promise<{ publicInfo: Object }> {
+  getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
     return this.apiInstance.call('GET', `/run/${this.runId}`);
   }
 }
