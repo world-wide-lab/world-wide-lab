@@ -1,6 +1,20 @@
-# World Wide Lab: Client
+<p align="center">
+  <img alt="The World-Wide-Lab Logo" src="../server/static/logo.svg" width="60%">
+</p>
 
-Example Client Usage
+# World-Wide-Lab: Client
+
+A small package to make it easier to use the World-Wide-Lab API in your own study or to store some custom data in World-Wide-Lab. If you use one of the libraries with a supported integration package, you will most probably not need this package.
+
+## Installation
+
+You can install the package via npm:
+
+```bash
+npm install -S @world-wide-lab/client
+```
+
+## Example Usage
 
 ```js
 import { Client } from '@world-wide-lab/client';
