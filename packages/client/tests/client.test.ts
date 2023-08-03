@@ -78,4 +78,12 @@ describe('Client', () => {
     const publicRunInfo = await run.getPublicInfo()
     expect(publicRunInfo.publicInfo.condition).toBe("A")
   })
+
+  it('should finish a run', async () => {
+    const participant = await client.createParticipant()
+    const run = await participant.startRun("example")
+
+    const runFinishResult = await run.finish()
+    expect(runFinishResult).toBe(true)
+  })
 })

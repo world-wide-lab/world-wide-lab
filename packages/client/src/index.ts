@@ -7,7 +7,7 @@ type HTTPMethod = 'GET' | 'POST' | 'PUT'
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
 
 type ObjectWithData = {
-  [key: string]: string
+  [key: string]: any
 }
 
 export class Client {
@@ -66,7 +66,7 @@ export class Client {
    * Create a new Response. See also Run.response()
    * @param runId Id of the run this response belongs to
    * @param name Name identifying this trial or response
-   * @param payload The actual of this response
+   * @param payload The actual data of this response
    * @returns true if the response was created successfully
    */
   async createResponse (runId: string, name: string, payload: Object) : Promise<boolean> {
@@ -173,8 +173,23 @@ export class Run extends ClientModel {
     super(clientInstance);
   }
 
+  /**
+   * Create a new Response.
+   * @param name Name identifying this trial or response
+   * @param payload The actual data of this response
+   * @returns true if the response was created successfully
+   */
   response (name: string, payload: ObjectWithData) : Promise<boolean> {
     return this.clientInstance.createResponse(this.runId, name, payload);
+  }
+
+  /**
+   * Finish the run. This will mark the run as finished.
+   * @returns true if the run was finished successfully
+   */
+  async finish () : Promise<boolean> {
+    const result = await this.clientInstance.call('POST', `/run/finish`, { runId: this.runId });
+    return result.success;
   }
 
   /**
