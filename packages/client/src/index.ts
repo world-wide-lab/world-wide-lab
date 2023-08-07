@@ -1,8 +1,11 @@
 type ClientOptions = {
+  /**
+   * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
+   */
   url: string
 }
 
-type HTTPMethod = 'GET' | 'POST' | 'PUT'
+export type HTTPMethod = 'GET' | 'POST' | 'PUT'
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
 
@@ -25,7 +28,7 @@ export class Client {
    */
   async call(method: HTTPMethod, endpoint: string, data?: Object, options?: Object) : Promise<any> {
     const slash = endpoint.startsWith('/') ? '' : '/';
-    const url = new URL('v1'+ slash + endpoint, this.options.url);
+    const url = new URL('v1'+ slash + endpoint, this.options.url).toString();
     const body = data ? JSON.stringify(data) : undefined;
     const fetchOptions: RequestInit = {
       method,
