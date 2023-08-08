@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "electron .",
-    "build": "npm run build:wwl && npm run package",
+    "build:electron": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
     "build:wwl": "npm run build --prefix ../server/",
     "package": "electron-builder",
