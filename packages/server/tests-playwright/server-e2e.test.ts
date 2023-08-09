@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+
+config({ path: '.env.playwright' });
 
 test('has basic welcome message', async ({ page }) => {
   await page.goto('/');
