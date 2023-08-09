@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
 
 function getValueFromEnv(key: string): string | undefined {
   const value = process.env[key]
@@ -32,6 +32,11 @@ function getBooleanFromEnv(key: string, defaultValue: boolean = false): boolean 
     throw new Error(`Invalid value for ${key}: ${value}. Only "true" and "false" are supported.`)
   }
 }
+
+// Load .env file
+dotenvConfig({
+  path: getValueFromEnv("WWL_ENV_FILE") || ".env",
+});
 
 const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",

@@ -6,7 +6,7 @@ import sequelize from '../src/db';
 import app from '../src/app';
 
 const STUDY_ID = 'abc123';
-const API_KEY = 'jest-key';
+const API_KEY = process.env.DEFAULT_API_KEY;
 
 const NON_EXISTENT_UUID = "00000000-0000-0000-0000-000000000000";
 

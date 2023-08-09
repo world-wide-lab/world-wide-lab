@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig-build.json",
     "start": "npm run build && node dist/index.js",
     "test": "jest",
-    "test:playwright": "npx playwright test"
+    "start:playwright": "WWL_ENV_FILE=.env.playwright npm run build && node dist/index.js",
+    "test:playwright": "WWL_ENV_FILE=.env.playwright npx playwright test"
   },
   "keywords": [],
   "author": "",
