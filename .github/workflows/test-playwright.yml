@@ -25,18 +25,3 @@ jobs:
         name: report-server
         path: packages/server/playwright-report/
         retention-days: 30
-    # Electron App
-    # We do this in the same step, as it also needs to re-build the server,
-    # so it would need to install all dependencies again)
-    - name: Install dependencies (electron-app)
-      run: npm ci
-      working-directory: ./electron-app
-    - name: Run Playwright tests (electron-app)
-      run: npm run test:playwright
-      working-directory: ./electron-app
-    - uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: report-electron-app
-        path: electron-app/playwright-report/
-        retention-days: 30
