@@ -37,8 +37,8 @@ test('has a working admin UI', async ({ page }) => {
   // Header and one row of entries
   expect(rows).toHaveCount(2);
 
-  // Check whether table screenshot matches
-  await expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.1 });
+  // Check whether table screenshot matches (this one has timestamps in it)
+  await expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.2 });
 
   // Log out
   await page.goto('/admin/logout');
