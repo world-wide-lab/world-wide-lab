@@ -38,7 +38,7 @@ const admin = new AdminJS({
     app: config.version,
   },
   branding: {
-    companyName: 'World Wide Lab',
+    companyName: 'World-Wide-Lab',
     logo: '/static/logo.svg',
     favicon: '/static/favicon.png',
     withMadeWithLove: false,

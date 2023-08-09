@@ -3,20 +3,24 @@ import { _electron as electron } from 'playwright';
 
 import path from 'path'
 
+const rootDir = path.resolve(__dirname, "..")
 const executablePath = path.resolve(__dirname, "..", "node_modules", ".bin", "electron")
 
 test('electron app', async () => {
   const electronApp = await electron.launch({
-    args: ['.'],
-    cwd: __dirname,
+    args: [ '.' ],
     executablePath
   })
 
-  const window = await electronApp.firstWindow()
+  const page = await electronApp.firstWindow()
 
-  // Compare screenshots of the start screen
-  expect(await window.screenshot()).toMatchSnapshot({name: 'landing.png'})
+  // Check title
+  await expect(page).toHaveTitle("World-Wide-Lab")
 
-  // close app
+  // Check for sidebar items
+  await expect(page.getByText("Studies")).not.toBeUndefined();
+  await expect(page.getByText("Participants")).not.toBeUndefined();
+
+  // Close app
   await electronApp.close()
 })

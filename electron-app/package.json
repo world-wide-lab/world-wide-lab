@@ -7,20 +7,20 @@
     "dev": "electron .",
     "build:electron": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
-    "build:wwl": "npm run build --prefix ../server/",
+    "build:wwl": "npm run build --prefix ../packages/server/",
     "package": "electron-builder",
     "package:dev": "electron-builder --dir",
-    "test:playwright-wip": "../../node_modules/@playwright/test/cli.js test"
+    "test:playwright": "npm run build:wwl && npx playwright test"
   },
   "author": "",
   "license": "NO_LICENSE_YET",
-  "dependencies": {
-    "@world-wide-lab/server": "file:../server"
-  },
   "devDependencies": {
     "@playwright/test": "^1.36.2",
     "electron": "^24.6.1",
     "electron-builder": "^24.4.0",
     "playwright": "^1.36.2"
+  },
+  "dependencies": {
+    "@world-wide-lab/server": "file:../packages/server"
   }
 }
