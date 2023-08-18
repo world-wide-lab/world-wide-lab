@@ -1,6 +1,6 @@
 import { initJsPsych, JsPsych, JsPsychPlugin, PluginInfo, ParameterType, TrialType } from "jspsych";
 
-import { Client, Participant, Run } from "@world-wide-lab/client";
+import { Client, Run, RunResponseOptions } from "@world-wide-lab/client";
 
 
 interface InitializeParameters {}
@@ -20,6 +20,13 @@ interface SetupOptions {
    * The studyId of the experiment in which the data should be stored
    */
   studyId: string;
+  /**
+   * Whether to link each run with a participant.
+   *
+   * Note: If you want store identify participants between runs, you should
+   * use jsPsychWorldWideLab.storeParticipantId().
+   */
+  linkParticipant?: boolean;
 }
 
 // Configure our own JsPsychOptions type, as there is no official one yet
@@ -37,12 +44,6 @@ type JsPsychOptions = {
  */
 type ObjectWithData = {
   [key: string]: any
-}
-
-// Internal: All data needed to store / send a response (used for queueing)
-interface ResponseEntry {
-  trialName: string;
-  data: ObjectWithData;
 }
 
 /**
@@ -180,9 +181,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     // Use the internal saveResponse function so we know for sure whether data
     // was saved correctly
     const success = await jsPsychWorldWideLab._saveResponse({
-      trialName: trial.data_name,
+      name: trial.data_name,
       // TODO: find a more elegant solution here to mark data as already in JSON format, avoiding the back-and forth conversion
-      data: typeof trial.data_string == "string" ? JSON.parse(trial.data_string) : trial.data_string,
+      payload: typeof trial.data_string == "string" ? JSON.parse(trial.data_string) : trial.data_string,
     });
 
     display_element.innerHTML = "";
@@ -208,22 +209,38 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   public static client: Client;
   public static studyId: string;
   public static run: Run;
+  public static ready: boolean = false;
 
-  static get ready(): boolean {
-    return !!this.run;
-  }
-
-  static async setup(options: SetupOptions): Promise<void> {
+  public static async setup(options: SetupOptions): Promise<void> {
     this.client = new Client({
       url: options.url,
     });
     this.studyId = options.studyId;
 
-    this.run = await this.client.startRun(this.studyId);
+    this.run = await this.client.createRun({ studyId: this.studyId, linkParticipant: options.linkParticipant });
+    this.ready = true;
+    this.callSetupCompletedListeners();
     this.sendQueuedResponses();
   }
 
-  static initJsPsych(jsPsychOptions: JsPsychOptions, setupOptions: SetupOptions): JsPsych {
+  private static setupCompletedListeners: Array<Function> = [];
+  private static callSetupCompletedListeners () {
+    while (this.setupCompletedListeners.length > 0) {
+      const listener = this.setupCompletedListeners.shift();
+      listener();
+    }
+  }
+  public static async setupCompleted(): Promise<void> {
+    return new Promise((resolve => {
+      // Register the promise's resolve function as a listener
+      this.setupCompletedListeners.push(resolve)
+
+      // If already initialized, call listeners
+      if (this.ready) { this.callSetupCompletedListeners() }
+    }))
+  }
+
+  public static initJsPsych(jsPsychOptions: JsPsychOptions, setupOptions: SetupOptions): JsPsych {
     // Setup the JsPsychWorldWideLab-integration
     this.setup(setupOptions);
 
@@ -247,9 +264,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return initJsPsych(jsPsychOptions)
   }
 
-  private static responseQueue: ResponseEntry[] = [];
-  static async save(trialName: string, data: ObjectWithData) {
-    const response: ResponseEntry = { trialName, data };
+  private static responseQueue: RunResponseOptions[] = [];
+  public static async save(trialName: string, data: ObjectWithData) {
+    const response: RunResponseOptions = { name: trialName, payload: data };
     if (this.ready) {
       await this._saveResponse(response);
     } else {
@@ -257,18 +274,24 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       this.responseQueue.push(response);
     }
   }
-  static async sendQueuedResponses() {
+  private static async sendQueuedResponses() {
     while (this.responseQueue.length > 0) {
       const entry = this.responseQueue.shift();
       await this._saveResponse(entry);
     }
   }
-  private static async _saveResponse(response: ResponseEntry) {
-    await this.run.response(response.trialName, response.data);
+  private static async _saveResponse(response: RunResponseOptions) {
+    await this.run.response(response);
   }
 
-  static async onExperimentFinish() {
+  public static async onExperimentFinish() {
     await this.run.finish();
+  }
+
+  public static storeParticipantId() {
+    if (!this.ready) { console.error("Client is not yet initialized.") }
+
+    this.run.storeParticipantId();
   }
 }
 

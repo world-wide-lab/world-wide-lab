@@ -13,7 +13,6 @@ There are multiple ways of using the jsPsych integration for World-Wide-Lab.
 The easiest method is to use the plugin's `initJsPsych()` function, to create a jsPsych instance where the functions to save data are already attached. When using this method, data from every trial will be saved to World-Wide-Lab and the experiment will be marked as finished upon completion. This is the recommended method.
 
 ```js
-import { initJsPsych } from 'jsPsych'
 import jsPsychHtmlKeyboardResponse from '@jspsych/plugin-html-keyboard-response'
 import jsPsychWorldWideLab from '@world-wide-lab/integration-jspsych'
 
@@ -39,6 +38,12 @@ const timeline = [
 
 jsPsych.run(timeline);
 ```
+
+### Linking Participants
+
+If you are running multiple studies on your website at once, you can link participants across studies by setting `linkParticipants` to `true`.
+
+### Advanced
 
 Alternatively, you can separately initialze jsPsych and the jsPsychWorldWideLab plugin. This allows you to use the plugin's `save()` and `onExperimentFinish()` functions to save data to World-Wide-Lab in a more fine-grained manner. However, you will have to manually call `onExperimentFinish()` to mark the experiment as finished and `save()` to save data.
 

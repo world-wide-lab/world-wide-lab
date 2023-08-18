@@ -5,6 +5,38 @@ type ClientOptions = {
   url: string
 }
 
+export type ClientRunOptions = {
+  /**
+   * The id of the study to create a run for. Required.
+   */
+  studyId: string,
+  /**
+   * Link the run to an existing participant
+   */
+  participant?: Participant,
+  /**
+   * If true, a participant will be linked to the run.
+   * If a participantId is stored, this will automatically be used to link
+   * the run to an existing participant.
+   */
+  linkParticipant?: boolean
+}
+
+export type ClientResponseOptions = {
+  /**
+   * Id of the run this response belongs to
+   */
+  runId: string,
+  /**
+   * Name identifying this trial or response
+   */
+  name: string | undefined,
+  /**
+   * The actual data of this response
+   */
+  payload: ObjectWithData,
+}
+
 export type HTTPMethod = 'GET' | 'POST' | 'PUT'
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
@@ -55,31 +87,57 @@ export class Client {
   }
 
   /**
-   *  Create a new run from sractch. See also startRun().
-   * @param participantId Id of the participant who does this run
-   * @param studyId Id of the study the participant is doing
+   * Start a new Run. If a participant's id is stored, it will be used. see getParticipant().
+   * @param runOptions Options to create the run with
    * @returns A new Run instance
    */
-  async createRun (participantId: string, studyId: string) : Promise<Run> {
-    const result = await this.call('POST', `/run/`, { participantId, studyId })
-    return new Run(this, result.runId);
+  async createRun (runOptions: ClientRunOptions) : Promise <Run> {
+    const runData: {
+      studyId: string,
+      participantId?: string,
+    } = {
+      studyId: runOptions.studyId
+    }
+
+    // Create a participant if requested
+    let participant: Participant | undefined;
+    if (runOptions.participant && runOptions.linkParticipant) {
+      console.warn("Both participant and linkParticipant are set. Ignoring linkParticipant.")
+    }
+    if (runOptions.participant) {
+      participant = runOptions.participant;
+    } else if (runOptions.linkParticipant) {
+      participant = await this.getParticipant();
+    }
+    if (participant) { runData.participantId = participant.participantId }
+
+    const result = await this.call('POST', `/run/`, runData)
+    const run = new Run(this, result.runId);
+
+    // Link participant
+    if (participant) {
+      run.participant = participant;
+    }
+
+    return run;
   }
 
   /**
    * Create a new Response. See also Run.response()
-   * @param runId Id of the run this response belongs to
-   * @param name Name identifying this trial or response
-   * @param payload The actual data of this response
+   * @param opts Options to create the response with
+   * @param opts.runId Id of the run this response belongs to
+   * @param opts.name Name identifying this trial or response
+   * @param opts.payload The actual data of this response
    * @returns true if the response was created successfully
    */
-  async createResponse (runId: string, name: string, payload: Object) : Promise<boolean> {
-    const result = await this.call('POST', `/response/`, { runId, payload })
+  async createResponse (opts: ClientResponseOptions) : Promise<boolean> {
+    const result = await this.call('POST', `/response/`, opts)
     return true;
   }
 
   /**
-   * Store the participant id of the last person that participated using your website.
-   * @param participantId The participant id to store
+   * Store the participantId of the last person that participated using your website.
+   * @param participantId The participantId to store
    * @returns true if the id was stored successfully
    */
   storeParticipantId(participantId: string): boolean {
@@ -92,9 +150,9 @@ export class Client {
   }
 
   /**
-   * Get the participantid of the last person that participated using your website (if their id
+   * Get the participantId of the last person that participated using your website (if their id
    * was stored).
-   * @returns The participant id or undefined if no id was stored
+   * @returns The participantId or undefined if no id was stored
    */
   getStoredParticipantId(): string | undefined {
     if (!window.localStorage) {
@@ -116,18 +174,7 @@ export class Client {
       return new Participant(this, id);
     }
     const participant = await this.createParticipant();
-    this.storeParticipantId(participant.participantId);
     return participant;
-  }
-
-  /**
-   * Start a new Run. If a participant's id is stored, it will be used. see getParticipant().
-   * @param studyId Id of the study the participant is doing
-   * @returns A new Run instance
-   */
-  async startRun (studyId: string) : Promise <Run> {
-    const participant = await this.getParticipant();
-    return await participant.startRun(studyId);
   }
 }
 
@@ -139,15 +186,6 @@ class ClientModel {
 export class Participant extends ClientModel {
   constructor (clientInstance: Client, public participantId: string) {
     super(clientInstance);
-  }
-
-  /**
-   * Start a new Run for this participant.
-   * @param studyId Id of the study the participant is doing
-   * @returns A new Run instance
-   */
-  startRun (studyId: string) : Promise<Run> {
-    return this.clientInstance.createRun(this.participantId, studyId);
   }
 
   /**
@@ -169,21 +207,32 @@ export class Participant extends ClientModel {
   getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
     return this.clientInstance.call('GET', `/participant/${this.participantId}`);
   }
+
+  /**
+   * Store a participant's participantId, so it can later be re-used via
+   * client.getParticipant().
+   * @returns true if the participantId was stored successfully
+   */
+  storeParticipantId (): boolean {
+    return this.clientInstance.storeParticipantId(this.participantId);
+  }
 }
 
+export type RunResponseOptions = Omit<ClientResponseOptions, 'runId'>;
+
 export class Run extends ClientModel {
+  public participant?: Participant;
+
   constructor (clientInstance: Client, public runId: string) {
     super(clientInstance);
   }
 
   /**
    * Create a new Response.
-   * @param name Name identifying this trial or response
-   * @param payload The actual data of this response
-   * @returns true if the response was created successfully
    */
-  response (name: string, payload: ObjectWithData) : Promise<boolean> {
-    return this.clientInstance.createResponse(this.runId, name, payload);
+  response (opts: RunResponseOptions) : Promise<boolean> {
+    const createResponseOptions = { runId: this.runId, ...opts}
+    return this.clientInstance.createResponse(createResponseOptions);
   }
 
   /**
@@ -212,5 +261,18 @@ export class Run extends ClientModel {
    */
   getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
     return this.clientInstance.call('GET', `/run/${this.runId}`);
+  }
+
+  /**
+   * Store the participantId of the participant that is doing this run.
+   * @returns true if the participantId was stored successfully
+   */
+  storeParticipantId (): boolean {
+    if (this.participant) {
+      return this.participant.storeParticipantId();
+    } else {
+      console.error("Cannot store participantId: No participant set / created. Do you maybe want to set linkParticipant to true?")
+      return false;
+    }
   }
 }

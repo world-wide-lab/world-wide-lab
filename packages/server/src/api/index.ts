@@ -189,12 +189,11 @@ router.post('/study', async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               participantId:
- *                 type: string
  *               studyId:
  *                 type: string
+ *               participantId:
+ *                 type: string
  *             required:
- *               - participantId
  *               - studyId
  *     responses:
  *       '200':
@@ -207,12 +206,24 @@ router.post('/study', async (req: Request, res: Response) => {
 router.post('/run', async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
-    if (participantId !== undefined && studyId !== undefined) {
+    const runData: {
+      studyId: string,
+      participantId?: string
+    } = {
+      studyId
+    };
+
+    // Check for participantId (optional)
+    if (participantId !== undefined) {
       if (!validator.isUUID(participantId)) {
         res.status(400).json({ error: 'participantId is not a valid UUID' });
         return
       }
-      const run = await sequelize.models.Run.create({ participantId, studyId });
+      runData.participantId = participantId;
+    }
+
+    if (studyId !== undefined) {
+      const run = await sequelize.models.Run.create(runData);
       res.json(run);
     } else {
       res.status(400).json({ error: 'Missing participantId or studyId.' });

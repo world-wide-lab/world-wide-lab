@@ -141,12 +141,14 @@ describe('API Routes', () => {
 
       expect(response.status).toBe(400);
     });
-    it('missing participantId should lead to an error', async () => {
+    it('missing participantId should be ok', async () => {
       const response = await endpoint
         .post('/v1/run')
         .send({ studyId });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('studyId', studyId);
+      expect(response.body).toHaveProperty('runId');
     });
   });
 
@@ -356,7 +358,7 @@ describe('API Routes', () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.body.count).toBe(2);
+      expect(response.body.count).toBe(3);
     });
 
     it('should return the correct count (for only finished runs)', async () => {
@@ -420,7 +422,7 @@ describe('API Routes', () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(2);
+      expect(response.body.length).toBe(3);
       expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
         [
           "runId",

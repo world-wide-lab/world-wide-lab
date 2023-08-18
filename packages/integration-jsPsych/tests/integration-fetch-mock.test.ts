@@ -63,14 +63,9 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       studyId: 'my-study',
     })
     expect(fetch).toHaveBeenCalledWith(
-      `${url}v1/participant/`,
-      {"body": undefined, "headers": {"Content-Type": "none"}, "method": "POST"}
-    )
-    expect(fetch).toHaveBeenCalledWith(
       `${url}v1/run/`,
       {
         "body": JSON.stringify({
-          "participantId": "my-participant-id",
           "studyId": "my-study"
         }),
         "headers": {"Content-Type": "application/json"},
@@ -112,6 +107,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       {
         "body": JSON.stringify({
           "runId": "my-run-id",
+          "name": "trial-favorite-key",
           "payload": { "rt": 1, "stimulus": "Please press your favorite key on the keyboard.", "response": "a", "trial_type": "html-keyboard-response", "trial_index": 0, "time_elapsed": 123, "internal_node_id": "0.0-0.0" }
         }),
         "headers": {"Content-Type": "application/json"},
@@ -136,16 +132,10 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       studyId: 'my-study',
     })
 
-    // TODO: Re-think how we want to deal with participant-id caching, which should be optional and explicitly stated
-    // expect(fetch).toHaveBeenCalledWith(
-    //   `${url}v1/participant/`,
-    //   {"body": undefined, "headers": {"Content-Type": "none"}, "method": "POST"}
-    // )
     expect(fetch).toHaveBeenCalledWith(
       `${url}v1/run/`,
       {
         "body": JSON.stringify({
-          "participantId": "my-participant-id",
           "studyId": "my-study"
         }),
         "headers": {"Content-Type": "application/json"},
@@ -230,16 +220,10 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     const time_elapsed = jsPsych.data.getDataByTimelineNode("0.0-0.0").values()[0].time_elapsed
     const rt = jsPsych.data.getDataByTimelineNode("0.0-0.0").values()[0].rt
 
-    // TODO: Re-think how we want to deal with participant-id caching, which should be optional and explicitly stated
-    // expect(fetch).toHaveBeenCalledWith(
-    //   `${url}v1/participant/`,
-    //   {"body": undefined, "headers": {"Content-Type": "none"}, "method": "POST"}
-    // )
     expect(fetch).toHaveBeenCalledWith(
       `${url}v1/run/`,
       {
         "body": JSON.stringify({
-          "participantId": "my-participant-id",
           "studyId": "plugin-study"
         }),
         "headers": {"Content-Type": "application/json"},
@@ -265,6 +249,107 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       {
         "body": JSON.stringify({
           "runId": "my-run-id"
+        }),
+        "headers": {"Content-Type": "application/json"},
+        "method": "POST"
+      }
+    )
+  });
+
+  it("should support linking participants", async () => {
+    const jsPsych = jsPsychWorldWideLab.initJsPsych({}, {
+      url,
+      studyId: 'my-study',
+      linkParticipant: true,
+    });
+    await jsPsychWorldWideLab.setupCompleted();
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${url}v1/participant/`,
+      {"body": undefined, "headers": {"Content-Type": "none"}, "method": "POST"}
+    )
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${url}v1/run/`,
+      {
+        "body": JSON.stringify({
+          "studyId": "my-study",
+          "participantId": "my-participant-id"
+        }),
+        "headers": {"Content-Type": "application/json"},
+        "method": "POST"
+      }
+    )
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    fetch.mockClear();
+
+    await startTimeline(
+      [
+        {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: 'Please press your favorite key on the keyboard.',
+          on_finish: (data) => {
+            // Save the data from this trial in World-Wide-Lab
+            jsPsychWorldWideLab.save('trial-favorite-key', data)
+          },
+        }
+      ],
+      jsPsych
+    )
+    pressKey('a')
+
+    const time_elapsed = jsPsych.data.getLastTrialData().values()[0].time_elapsed
+    const rt = jsPsych.data.getLastTrialData().values()[0].rt
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${url}v1/response/`,
+      {
+        "body": JSON.stringify({
+          "runId": "my-run-id",
+          "payload": { "rt": rt, "stimulus": "Please press your favorite key on the keyboard.", "response": "a", "trial_type": "html-keyboard-response", "trial_index": 0, "time_elapsed": time_elapsed, "internal_node_id": "0.0-0.0" }
+        }),
+        "headers": {"Content-Type": "application/json"},
+        "method": "POST"
+      }
+    )
+
+    expect(fetch).toHaveBeenCalledWith(
+      `${url}v1/run/finish`,
+      {
+        "body": JSON.stringify({
+          "runId": "my-run-id"
+        }),
+        "headers": {"Content-Type": "application/json"},
+        "method": "POST"
+      }
+    )
+
+    // Store the current participant ID
+    jsPsychWorldWideLab.storeParticipantId()
+
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    fetch.mockClear();
+
+    const jsPsych2 = await jsPsychWorldWideLab.initJsPsych({}, {
+      url,
+      studyId: 'my-study',
+      linkParticipant: true,
+    })
+
+    // There shouldn't have been another call to create a participant, since the ID should be cached
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch).not.toHaveBeenCalledWith(
+      `${url}v1/participant/`,
+      {"body": undefined, "headers": {"Content-Type": "none"}, "method": "POST"}
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      `${url}v1/run/`,
+      {
+        "body": JSON.stringify({
+          "studyId": "my-study",
+          "participantId": "my-participant-id"
         }),
         "headers": {"Content-Type": "application/json"},
         "method": "POST"
