@@ -5,7 +5,7 @@ import { columnComments } from '../db/models'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
 import config from '../config'
-import { newStudyHandler } from './study'
+import { newStudyHandler, downloadStudyDataHandler } from './study'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -74,6 +74,13 @@ const admin = new AdminJS({
         actions: {
           new: {
             handler: newStudyHandler
+          },
+          downloadData: {
+            actionType: 'record',
+            label: 'Download Data',
+            icon: 'Download',
+            handler: downloadStudyDataHandler,
+            component: Components.StudyDownloadAction
           }
         }
       }

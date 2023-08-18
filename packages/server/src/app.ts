@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import api from './api';
+import { routerProtectedWithoutAuthentication } from './api/protected';
 import apiDocs from './api-docs';
 import { admin, adminRouter } from './admin'
 import config from './config'
@@ -48,6 +49,9 @@ if (config.apiDocs.enabled) {
 
 // Use adminJS
 if (config.admin.enabled) {
+  // Make protected API routes available in Admin UI
+  adminRouter.use("/wwl/", routerProtectedWithoutAuthentication)
+
   app.use(admin.options.rootPath, adminRouter)
 }
 
