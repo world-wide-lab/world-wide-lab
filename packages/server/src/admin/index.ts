@@ -44,6 +44,9 @@ const admin = new AdminJS({
     withMadeWithLove: false,
   },
   componentLoader,
+  dashboard: {
+    component: Components.Dashboard,
+  },
 
   resources: [
     {
