@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {useState, useEffect} from 'react'
 import styled from 'styled-components'
 import {
   Box,
@@ -9,7 +9,10 @@ import {
   Illustration,
   IllustrationProps,
   Button,
+  Icon,
 } from '@adminjs/design-system'
+import { ApiClient } from 'adminjs'
+import { DashboardLineChart } from '../charts/DashboardLineChart'
 
 const pageHeaderHeight = 284
 const pageHeaderPaddingY = 74
@@ -45,7 +48,7 @@ export const DashboardHeader: React.FC = () => {
         <Text textAlign="center" color="white">
           <H2> Welcome to World-Wide-Lab! </H2>
           <Text opacity={0.8}>
-            Citizen Science for Everyone!
+            A complete solution for storing data in online-studies with special support for supporting citizen science projects.
           </Text>
         </Text>
       </Box>
@@ -62,37 +65,24 @@ type BoxType = {
 
 const boxes : Array<BoxType> = [{
   variant: 'Planet',
-  title: 'addingResources_title',
-  subtitle: 'addingResources_subtitle',
-  href: 'https://adminjs.co/tutorial-passing-resources.html',
+  title: 'Launch your Next Study',
+  subtitle: 'Click here to create a new study on World-Wide-Lab.',
+  href: '/admin/resources/wwl_studies/actions/new',
 }, {
   variant: 'DocumentCheck',
-  title: 'customizeResources_title',
-  subtitle: 'customizeResources_subtitle',
-  href: 'https://adminjs.co/tutorial-customizing-resources.html',
-}, {
-  variant: 'DocumentSearch',
-  title: 'customizeActions_title',
-  subtitle: 'customizeActions_subtitle',
-  href: 'https://adminjs.co/tutorial-actions.html',
-}, {
-  variant: 'FlagInCog',
-  title: 'writeOwnComponents_title',
-  subtitle: 'writeOwnComponents_subtitle',
-  href: 'https://adminjs.co/tutorial-writing-react-components.html',
-}, {
-  variant: 'Folders',
-  title: 'customDashboard_title',
-  subtitle: 'customDashboard_subtitle',
-  href: 'https://adminjs.co/tutorial-custom-dashboard.html',
+  title: 'Read the Docs',
+  subtitle: 'Learn everything about using World-Wide-Lab in our official documentation.',
+  href: 'https://world-wide-lab.github.io/world-wide-lab/',
 }, {
   variant: 'Astronaut',
-  title: 'roleBasedAccess_title',
-  subtitle: 'roleBasedAccess_subtitle',
-  href: 'https://adminjs.co/tutorial-rbac.html',
+  title: 'Check out the Code',
+  subtitle: 'World-Wide-Lab is open-source, so you can look directly at its codebase.',
+  href: 'https://github.com/world-wide-lab/world-wide-lab',
 }]
 
 const Card = styled(Box)`
+  position: relative;
+  overflow: hidden;
   display: ${({ flex }): string => (flex ? 'flex' : 'block')};
   color: ${({ theme }): string => theme.colors.grey100};
   text-decoration: none;
@@ -103,12 +93,48 @@ const Card = styled(Box)`
   }
 `
 
+const CardLabel = styled(Text)`
+  margin-bottom: 1rem;
+`
+
+const LargeNumber = styled(Box)`
+  font-size: 3.5rem;
+  line-height: 1.2;
+`
+
+const LargeNumberBoxBackground = styled(Box)`
+  position: absolute;
+  z-index: 0;
+  opacity: 0.15;
+  right: 2rem;
+  top: 1rem;
+`
+
 Card.defaultProps = {
   variant: 'white',
   boxShadow: 'card',
 }
 
 export const Dashboard: React.FC = () => {
+  const [studyCountData, setStudyCountData] = useState("X")
+  const [chartData, setChartData] = useState(null)
+
+  // Retrieve data from dashboard handler
+  const api = new ApiClient()
+  useEffect(() => {
+    api.getDashboard()
+      .then((response) => {
+        console.log("Retrieved dashboard data", response.data)
+
+        setStudyCountData(response.data.studyCount.toString())
+        setChartData(response.data.fullRunCounts)
+      })
+      .catch((error) => {
+        // Handle errors here
+        console.error("Error retrieving dashboard data", error)
+      })
+  }, [])
+
   return (
     <Box>
       <DashboardHeader />
@@ -123,10 +149,28 @@ export const Dashboard: React.FC = () => {
         flexWrap="wrap"
         width={[1, 1, 1, 1024]}
       >
+
+        <Box width={[1, 1 / 2, 1 / 2, 2 / 3]} p="lg">
+          <Card>
+            <Box><CardLabel>Started / Finished Runs this Week</CardLabel></Box>
+            <DashboardLineChart data={chartData}></DashboardLineChart>
+          </Card>
+        </Box>
+        <Box width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">
+          <Card as="a" href="/admin/resources/wwl_studies">
+          <LargeNumberBoxBackground>
+            <Illustration variant="FlagInCog" />
+          </LargeNumberBoxBackground>
+            <Box>
+              <CardLabel>Number of Studies</CardLabel>
+              <LargeNumber>{ studyCountData }</LargeNumber>
+            </Box>
+          </Card>
+        </Box>
         {boxes.map((box, index) => (
           // eslint-disable-next-line react/no-array-index-key
           <Box key={index} width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">
-            <Card as="a" href={box.href} target="_blank">
+            <Card as="a" href={box.href} target={box.href.startsWith("http") ? "_blank" : "_self"}>
               <Text textAlign="center">
                 <Illustration
                   variant={box.variant as IllustrationProps['variant']}
@@ -139,7 +183,8 @@ export const Dashboard: React.FC = () => {
             </Card>
           </Box>
         ))}
-        <Box width={[1, 1, 1 / 2]} p="lg">
+        {/* Disable the second part of the Dashboard for now, as we don't have all the relevant ressources yet */}
+        {/* <Box width={[1, 1, 1 / 2]} p="lg">
           <Card as="a" flex href="https://adminjs.page.link/slack" target="_blank">
             <Box flexShrink={0}><Illustration variant="SlackLogo" /></Box>
             <Box ml="xl">
@@ -173,7 +218,7 @@ export const Dashboard: React.FC = () => {
               </Button>
             </Text>
           </Text>
-        </Box>
+        </Box> */}
       </Box>
     </Box>
   )

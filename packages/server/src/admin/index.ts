@@ -5,7 +5,8 @@ import { columnComments } from '../db/models'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
 import config from '../config'
-import { newStudyHandler, downloadStudyDataHandler } from './study'
+import { newStudyHandler, downloadStudyDataHandler } from './handlers/study'
+import { dashboardHandler } from './handlers/dashboard'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -46,6 +47,7 @@ const admin = new AdminJS({
   componentLoader,
   dashboard: {
     component: Components.Dashboard,
+    handler: dashboardHandler,
   },
 
   resources: [

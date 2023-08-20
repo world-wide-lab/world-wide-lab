@@ -1,5 +1,5 @@
 import { populator, paramConverter, ActionRequest, ActionResponse, ActionContext } from 'adminjs'
-import sequelize from '../db'
+import sequelize from '../../db'
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts
