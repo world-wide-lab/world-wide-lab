@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="The World-Wide-Lab Logo" src="../server/static/logo.svg" width="60%">
+  <img alt="The World-Wide-Lab Logo" src="../../img/logo.svg" width="60%">
 </p>
 
 # World-Wide-Lab: jsPsych Integration
@@ -41,7 +41,52 @@ jsPsych.run(timeline);
 
 ### Linking Participants
 
-If you are running multiple studies on your website at once, you can link participants across studies by setting `linkParticipants` to `true`.
+If you are running multiple studies on your website at once, you can link individual runs to a single participants across studies. To do this you will need to do two things: First, set `linkParticipants` to `true` which will link each run to a new created participant and second, you will need to call `jsPsychWorldWideLab.storeParticipantId()` to store the linked participant's id in the browser (this only needs to be done once per participant).
+
+We don't automatically store participant Ids for privacy reasons and therefore recommend to always ask for consent before running `jsPsychWorldWideLab.storeParticipantId()`.
+
+
+```js
+import jsPsychHtmlKeyboardResponse from '@jspsych/plugin-html-keyboard-response'
+import jsPsychHtmlButtonResponse from '@jspsych/plugin-html-button-response'
+import jsPsychWorldWideLab from '@world-wide-lab/integration-jspsych'
+
+const jsPsych = jsPsychWorldWideLab.initJsPsych(
+  {
+    // Options to pass to the normal initJsPsych()
+  },
+  {
+    // Options for the World-Wide-Lab Integration
+    url: 'https://localhost:8787',
+    studyId: 'my-study',
+
+    // Step 1: Link each run to a participant
+    linkParticipants: true,
+  }
+)
+
+const timeline = [
+	{
+		type: jsPsychHtmlButtonResponse,
+    stimulus: "We support linking participants across studies on this website. Would you be ok if we store a randomly-generated identifier to match your data between the different studies on this website?",
+    options: ["yes", "no"],
+    // Step 2: Ask for consent and then store participant id
+    on_finish: (data) => {
+      if (data.response === "yes") {
+        jsPsychWorldWideLab.storeParticipantId();
+      } else {
+        jsPsychWorldWideLab.deleteStoreParticipantId();
+      }
+    }
+	},
+	{
+		type: jsPsychHtmlKeyboardResponse,
+    stimulus: "Please press your favourite key on the keyboard.",
+	}
+]
+
+jsPsych.run(timeline);
+```
 
 ### Advanced
 

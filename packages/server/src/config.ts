@@ -44,6 +44,8 @@ const config = {
 
   version: process.env.npm_package_version as string,
 
+  electronApp: getBooleanFromEnv("WWL_ELECTRON_APP", false),
+
   logging: {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",
     // Change to 'verbose' to log SQL queries
