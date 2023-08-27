@@ -1,6 +1,7 @@
 import { PageHandler, PageContext } from 'adminjs'
 import { Op } from 'sequelize'
 import sequelize from '../../db'
+import config from '../../config'
 
 const DASHBOARD_TIMEFRAME = 6;
 
@@ -73,5 +74,6 @@ export const dashboardHandler : PageHandler = async function (
  return {
   studyCount,
   fullRunCounts,
+  electronApp: config.electronApp,
  }
 }

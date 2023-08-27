@@ -48,7 +48,7 @@ export const DashboardHeader: React.FC = () => {
         <Text textAlign="center" color="white">
           <H2> Welcome to World-Wide-Lab! </H2>
           <Text opacity={0.8}>
-            A complete solution for storing data in online-studies with special support for supporting citizen science projects.
+            The end-to-end solution for storing data in online-studies with special support for citizen science research.
           </Text>
         </Text>
       </Box>
@@ -75,9 +75,9 @@ const boxes : Array<BoxType> = [{
   href: 'https://world-wide-lab.github.io/world-wide-lab/',
 }, {
   variant: 'Astronaut',
-  title: 'Check out the Code',
-  subtitle: 'World-Wide-Lab is open-source, so you can look directly at its codebase.',
-  href: 'https://github.com/world-wide-lab/world-wide-lab',
+  title: 'Join the Community',
+  subtitle: 'Feel free to join our community to ask questions, get help and share ideas.',
+  href: 'https://github.com/world-wide-lab/world-wide-lab/discussions',
 }]
 
 const Card = styled(Box)`
@@ -118,6 +118,7 @@ Card.defaultProps = {
 export const Dashboard: React.FC = () => {
   const [studyCountData, setStudyCountData] = useState("X")
   const [chartData, setChartData] = useState(null)
+  const [isElectron, setIsElectron] = useState(undefined)
 
   // Retrieve data from dashboard handler
   const api = new ApiClient()
@@ -126,6 +127,7 @@ export const Dashboard: React.FC = () => {
       .then((response) => {
         console.log("Retrieved dashboard data", response.data)
 
+        setIsElectron(response.data.electronApp)
         setStudyCountData(response.data.studyCount.toString())
         setChartData(response.data.fullRunCounts)
       })
@@ -184,41 +186,74 @@ export const Dashboard: React.FC = () => {
           </Box>
         ))}
         {/* Disable the second part of the Dashboard for now, as we don't have all the relevant ressources yet */}
-        {/* <Box width={[1, 1, 1 / 2]} p="lg">
-          <Card as="a" flex href="https://adminjs.page.link/slack" target="_blank">
-            <Box flexShrink={0}><Illustration variant="SlackLogo" /></Box>
+        <Box width={[1, 1, 1 / 2]} p="lg">
+          <Card flex>
+            <Box flexShrink={0}><img width="72" src="/static/favicon.png"/></Box>
             <Box ml="xl">
-              <H4>{'community_title'}</H4>
-              <Text>{'community_subtitle'}</Text>
+              {
+                isElectron === undefined ? (
+                    <>
+                      <H4>Loading...</H4>
+                      <Text>Waiting to load further information.</Text>
+                    </>
+                  ) : (
+                    <>
+                    <H4> World-Wide-Lab {isElectron ? 'Desktop Application' : 'Server' }</H4>
+                    <Text>
+                      { isElectron ?
+                        (
+                          <>
+                            You are currently using the <em>World-Wide-Lab App</em>.<br/>
+                            The App is best suited for running local studies and testing out the platform.<br/>
+                            If you want to run a large-scale study, we recommend checking out the <em>World-Wide-Lab Server</em>.
+                          </>
+                        ) :
+                        (
+                          <>
+                            You are currently using the <em>World-Wide-Lab Server</em>.<br/>
+                            The Server is best suited for online data collection and running large-scale citizen science studies.<br/>
+                            We also recommend checking out the <em>World-Wide-Lab Desktop App</em>.
+                          </>
+                        )
+                      }
+                    </Text>
+                    </>
+                  )
+              }
             </Box>
           </Card>
         </Box>
         <Box width={[1, 1, 1 / 2]} p="lg">
-          <Card as="a" flex href="https://github.com/SoftwareBrothers/adminjs/issues" target="_blank">
+          <Card as="a" flex href="https://github.com/world-wide-lab/world-wide-lab" target="_blank">
             <Box flexShrink={0}><Illustration variant="GithubLogo" /></Box>
             <Box ml="xl">
-              <H4>{'foundBug_title'}</H4>
-              <Text>{'foundBug_subtitle'}</Text>
+              <H4>Check out the Code</H4>
+              <Text>
+                World-Wide-Lab is open-source, so you can look directly at its codebase and even help us to build new features. <br/>
+                If you encounter any bugs you can also file an issue to tell us about them there.
+              </Text>
             </Box>
           </Card>
         </Box>
         <Box variant="white" boxShadow="card" width={1} m="lg">
           <Text textAlign="center">
-            <Illustration variant="AdminJSLogo" />
-            <H4>{'needMoreSolutions_title'}</H4>
-            <Text>{'needMoreSolutions_subtitle'}</Text>
+            {/* <Illustration variant="AdminJSLogo" /> */}
+            <H4>Need Additional Help?</H4>
+            <Text>
+              Get in touch with us if you need further help in getting started with World-Wide-Lab.
+            </Text>
             <Text mt="xxl">
               <Button
                 as="a"
                 variant="primary"
-                href="https://share.hsforms.com/1IedvmEz6RH2orhcL6g2UHA8oc5a"
+                href="mailto:info@world-wide-lab.org"
                 target="_blank"
               >
-                {'contactUs'}
+                Contact Us
               </Button>
             </Text>
           </Text>
-        </Box> */}
+        </Box>
       </Box>
     </Box>
   )
