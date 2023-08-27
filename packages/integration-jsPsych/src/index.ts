@@ -212,6 +212,11 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   public static ready: boolean = false;
 
   public static async setup(options: SetupOptions): Promise<void> {
+    if (this.ready) {
+      console.warn("JsPsychWorldWideLab.setup() is being called more than once, this is not recommended and can lead to surprising issues.")
+      // Reset ready to false in case set
+      this.ready = false;
+    }
     this.client = new Client({
       url: options.url,
     });
