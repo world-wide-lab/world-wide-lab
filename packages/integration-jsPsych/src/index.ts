@@ -288,10 +288,20 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     await this.run.finish();
   }
 
-  public static storeParticipantId() {
+  private static checkReady() {
     if (!this.ready) { console.error("Client is not yet initialized.") }
-
+  }
+  public static storeParticipantId() {
+    this.checkReady()
     this.run.storeParticipantId();
+  }
+  public static deleteStoredParticipantId() {
+    this.checkReady()
+    this.client.deleteStoredParticipantId();
+  }
+  public static hasStoredParticpantId() {
+    this.checkReady()
+    return this.client.getStoredParticipantId() !== undefined
   }
 }
 

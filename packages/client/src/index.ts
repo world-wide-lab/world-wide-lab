@@ -163,6 +163,13 @@ export class Client {
   }
 
   /**
+   * Delete the stored participantId.
+   */
+  deleteStoredParticipantId(): void {
+    window.localStorage.removeItem(PARTICIPANT_ID_KEY)
+  }
+
+  /**
    * Get a Participant. If someone has already participanted on this machine and their IDs is
    * saved, will return this existing participant. Otherwise, will create a new participant and
    * store the corresponding id.
