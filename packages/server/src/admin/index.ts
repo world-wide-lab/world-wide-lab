@@ -39,7 +39,7 @@ const admin = new AdminJS({
   },
   branding: {
     companyName: 'World-Wide-Lab',
-    logo: '/static/logo.svg',
+    logo: config.electronApp ? '/static/logo-app.svg' : '/static/logo-server.svg',
     favicon: '/static/favicon.png',
     withMadeWithLove: false,
   },

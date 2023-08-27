@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="The World-Wide-Lab Logo" src="packages/server/static/logo.svg" width="60%" align="center">
+  <img alt="The World-Wide-Lab Logo" src="img/logo.svg" width="60%" align="center">
 </p>
 
 # World-Wide-Lab
