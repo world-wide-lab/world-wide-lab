@@ -18,13 +18,13 @@ describe('Database Models', () => {
       expect(nStudies).toBe(1)
 
       const nParticipants = await sequelize.models.Participant.count()
-      expect(nParticipants).toBe(2)
+      expect(nParticipants).toBe(4)
 
       const nRuns = await sequelize.models.Run.count()
-      expect(nRuns).toBe(3)
+      expect(nRuns).toBe(8)
 
       const nResponses = await sequelize.models.Response.count()
-      expect(nResponses).toBe(7)
+      expect(nResponses).toBe(20)
     });
   });
 
