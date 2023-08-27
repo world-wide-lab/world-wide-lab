@@ -2,7 +2,7 @@ import { PageHandler, PageContext } from 'adminjs'
 import { Op } from 'sequelize'
 import sequelize from '../../db'
 
-const DASHBOARD_TIMEFRAME = 7;
+const DASHBOARD_TIMEFRAME = 6;
 
 type RunCountEntry = {
   createdAtDate: string,
@@ -51,7 +51,7 @@ export const dashboardHandler : PageHandler = async function (
     if (entry && entry.createdAtDate == currentDateString) {
       entryToAdd = entry
       // Remove the just added entry from array
-      runCounts.pop()
+      runCounts.shift()
     } else {
       entryToAdd = {
         createdAtDate: currentDateString,
