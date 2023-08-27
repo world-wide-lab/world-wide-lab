@@ -161,6 +161,9 @@ const admin = new AdminJS({
         wwl_participants: 'Participants',
         wwl_runs: 'Runs',
         wwl_responses: 'Responses',
+      },
+      messages: {
+        loginWelcome: 'to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.',
       }
     }
   },
