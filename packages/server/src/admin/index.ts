@@ -80,6 +80,9 @@ const admin = new AdminJS({
           new: {
             handler: newStudyHandler
           },
+          show: {
+            component: Components.StudyShowAction,
+          },
           downloadData: {
             actionType: 'record',
             label: 'Download Data',

@@ -26,6 +26,7 @@
     "express-formidable": "^1.2.0",
     "express-session": "^1.17.3",
     "helmet": "^7.0.0",
+    "highlight.js": "^11.8.0",
     "pg": "^8.11.0",
     "recharts": "^2.7.3",
     "sequelize": "^6.32.1",
