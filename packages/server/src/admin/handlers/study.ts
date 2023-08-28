@@ -1,5 +1,5 @@
 import { populator, paramConverter, ActionRequest, ActionResponse, ActionContext } from 'adminjs'
-import sequelize from '../db'
+import sequelize from '../../db'
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts
@@ -49,4 +49,18 @@ async function newStudyHandler (request: ActionRequest, response: ActionResponse
   throw new Error('new action can be invoked only via `post` http method')
 }
 
-export { newStudyHandler }
+async function downloadStudyDataHandler (request: ActionRequest, response: ActionResponse, context: ActionContext) {
+  const { record, currentAdmin } = context
+  if (record === undefined) {
+    throw new Error("Missing record information")
+  }
+
+  return {
+    record: record.toJSON(currentAdmin)
+  }
+}
+
+export {
+  newStudyHandler,
+  downloadStudyDataHandler,
+}

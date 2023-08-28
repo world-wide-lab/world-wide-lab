@@ -6,6 +6,7 @@ const DATABASE_NAME = "world-wide-lab-database.sqlite"
 
 // Set environment variables manually via JS
 process.env.PORT = 8787
+process.env.WWL_ELECTRON_APP = "true"
 process.env.ADMIN_UI = "true"
 process.env.USE_AUTHENTICATION = "false"
 

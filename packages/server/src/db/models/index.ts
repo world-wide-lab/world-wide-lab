@@ -118,7 +118,7 @@ function defineModels(sequelize: Sequelize) {
     },
     participantId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       comment: columnComments.participantId,
     },
     studyId: {

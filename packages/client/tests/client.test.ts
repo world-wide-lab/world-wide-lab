@@ -18,7 +18,12 @@ describe('Client', () => {
     client = new Client({ url: `http://localhost:${server.address().port}` })
   }, 10000)
   afterAll(async () => {
-    await server.close()
+    await new Promise((resolve, reject) => {
+       server.close((error) => {
+        if (error) { reject(error) }
+        else { resolve(undefined) }
+       })
+    })
   }, 10000)
 
 
@@ -29,19 +34,30 @@ describe('Client', () => {
     expect(participant.participantId).toBeDefined()
   })
 
-  it('should start a new run', async () => {
-    const participant = await client.createParticipant()
-    const run = await participant.startRun("example")
+  it('should start a new run (without a linked participant)', async () => {
+    const run = await client.createRun({ studyId: "example" })
 
     expect(run instanceof Run).toBe(true)
     expect(run.runId).toBeDefined()
   })
 
-  it('should store responses', async () => {
+  it('should start a new run (with a linked participant)', async () => {
     const participant = await client.createParticipant()
-    const run = await participant.startRun("example")
+    const run = await client.createRun({ studyId: "example", participant })
 
-    expect(await run.response("example_name", { ex_key: "ex_value" })).toBe(true)
+    expect(run instanceof Run).toBe(true)
+    expect(run.runId).toBeDefined()
+    expect(run.participant instanceof Participant).toBe(true)
+    expect(run.participant?.participantId).toBeDefined()
+  })
+
+  it('should store responses', async () => {
+    const run = await client.createRun({ studyId: "example" })
+
+    expect(await run.response({
+      name: "example_name",
+      payload: { ex_key: "ex_value" }
+    })).toBe(true)
   })
 
   it('should store and retrieve participant data', async () => {
@@ -62,8 +78,7 @@ describe('Client', () => {
   })
 
   it('should store and retrieve run data', async () => {
-    const participant = await client.createParticipant()
-    const run = await participant.startRun("example")
+    const run = await client.createRun({ studyId: "example" })
 
     const runUpdateResult = await run.setMetadata({
       privateInfo: {
@@ -77,5 +92,12 @@ describe('Client', () => {
 
     const publicRunInfo = await run.getPublicInfo()
     expect(publicRunInfo.publicInfo.condition).toBe("A")
+  })
+
+  it('should finish a run', async () => {
+    const run = await client.createRun({ studyId: "example" })
+
+    const runFinishResult = await run.finish()
+    expect(runFinishResult).toBe(true)
   })
 })

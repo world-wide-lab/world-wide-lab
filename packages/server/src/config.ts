@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
 
 function getValueFromEnv(key: string): string | undefined {
   const value = process.env[key]
@@ -33,11 +33,18 @@ function getBooleanFromEnv(key: string, defaultValue: boolean = false): boolean 
   }
 }
 
+// Load .env file
+dotenvConfig({
+  path: getValueFromEnv("WWL_ENV_FILE") || ".env",
+});
+
 const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",
   port: getValueFromEnv("PORT") || 8787,
 
   version: process.env.npm_package_version as string,
+
+  electronApp: getBooleanFromEnv("WWL_ELECTRON_APP", false),
 
   logging: {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",

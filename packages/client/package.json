@@ -1,9 +1,10 @@
 {
   "name": "@world-wide-lab/client",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "prepack": "npm run build",
     "build": "tsc -p tsconfig-build.json",
     "test": "jest",
     "test:build": "CLIENT=build npm run build && jest"

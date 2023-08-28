@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="The World-Wide-Lab Logo" src="../server/static/logo.svg" width="60%">
+  <img alt="The World-Wide-Lab Logo" src="../../img/logo.svg" width="60%">
 </p>
 
 # World-Wide-Lab: Client
@@ -16,20 +16,19 @@ npm install -S @world-wide-lab/client
 
 ## Example Usage
 
+Whenever a person participates in your study, we call this a `Run`. Each `Run` needs to belong to a `Study`, which can be created in the World-Wide-Lab Admin UI.
+
 ```js
 import { Client } from '@world-wide-lab/client';
 
 const client = new Client({ url: 'http://localhost:8787' });
 
-// Create a new participant or retrieve the current one, if a participant_id
-// has been stored (by default this is done in localStorage)
-const participant = await client.getParticipant();
+// Start a new run
+const run = await client.createRun({ studyId: 'my-awesome-study' });
 
-// Start a new run for this participant
-const run = await participant.startRun();
-
-// Collect responses and send them to the API
+// Send responses to the API
 run.response({
+  name: 'my-trial',
   payload: {
     some: 'data'
   }
@@ -41,11 +40,72 @@ run.response({
 run.finish();
 ```
 
-### Updating Meta-Information
+### Participants
 
-You can also update information about runs and participants:
+If you expect that participants take part in your studies multiple times or if you have multiple studies on your site, you can identify participants across studies using `participantId`s.
+
+World-Wide-Lab does not do this by default to protect participant's privacy. To enable this feature, you will have to do two things: First, you'll need to tell World-Wide-Lab that you want to link your runs to participants and second, you'll need to store the participant's id to identify them when they take part in another study. We strongly recommend to only store a participant's id after asking for their consent.
 
 ```js
+import { Client } from '@world-wide-lab/client';
+
+const client = new Client({
+  url: 'http://localhost:8787'
+});
+
+// Start a new run
+const run = await client.createRun({
+  studyId: 'my-awesome-study',
+  // Always link a participant to each run, if a participantId is stored
+  // this will automatically be used
+  linkParticipant: true,
+});
+
+// Ask the user for their consent to store their participantId
+// (You probably want to do this in a fancier way than this)
+const userConsented = confirm("We can store an ID to recognize you if take part in other studies on this website. Are you OK with this?")
+if (userConsented) {
+  // Store the participant's id
+  run.storeParticipantId()
+}
+
+// Send responses to the API
+// Note that you can also send responses before storing the participantId
+run.response({
+  name: 'my-trial',
+  payload: {
+    some: 'data'
+  }
+})
+
+// ... collect many more responses via run.response()
+
+// Mark the run as finished at the end of your experiment
+run.finish();
+```
+
+You can reference the participant-object of a run via `run.participant` and you can check whether a particpant_id is stored via:
+
+```js
+const participantId = await client.getStoredParticipantId();
+```
+
+### Updating Meta-Information
+
+You can also add information to runs and participants:
+
+```js
+run.setMetadata({
+  // privateInfo is private and can normally not be retrieved via the client
+  privateInfo: {
+    performance: 100
+  },
+  // publicInfo is public and can be retrieved via the client
+  publicInfo: {
+    highscoreBoardName: 'JOHN'
+  }
+})
+
 participant.setMetadata({
   // privateInfo is private and can normally not be retrieved via the client
   privateInfo: {
@@ -57,15 +117,9 @@ participant.setMetadata({
   }
 })
 
-run.setMetadata({
-  // privateInfo is private and can normally not be retrieved via the client
-  privateInfo: {
-    performance: 100
-  },
-  // publicInfo is public and can be retrieved via the client
-  publicInfo: {
-    highscoreBoardName: 'JOHN'
-  }
+// you can also do
+run.participant.setMetdata({
+  // ...
 })
 ```
 
@@ -81,20 +135,20 @@ const participantPublicInfo = await participant.getPublicInfo()
 const runPublicInfo = await run.getPublicInfo()
 ```
 
+## Advanced Usage
+
 ### Retrieving Participants or Runs
 
-Participants and runs can be retrieved via their id:
+Participants and runs can also be directly created via their id, if you have stored it.
 
 ```js
-const participant = await client.getParticipant({ id: 'ABCDE-12345-...' });
+import { Client, Participant, Run } from '@world-wide-lab/client';
 
-const run = await client.getRun({ id: 'ABCDE-12345-...' });
-```
+const client = new Client({ url: 'http://localhost:8787' });
 
-When no id is provided and no participant_id is stored, a new participant will be created automatically. You can check whether a particpant_id is stored via:
+const participant = new Participant(client, 'ABCDE-12345-...');
 
-```js
-const participantId = await client.getStoredParticipantId();
+const run = new Run(client, 'ABCDE-12345-...');
 ```
 
 ### Creating a Participant Manually

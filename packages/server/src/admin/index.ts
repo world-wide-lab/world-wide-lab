@@ -5,7 +5,8 @@ import { columnComments } from '../db/models'
 import { initializeRouter } from './router_auth'
 import { componentLoader, Components } from './components'
 import config from '../config'
-import { newStudyHandler } from './study'
+import { newStudyHandler, downloadStudyDataHandler } from './handlers/study'
+import { dashboardHandler } from './handlers/dashboard'
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
@@ -38,12 +39,16 @@ const admin = new AdminJS({
     app: config.version,
   },
   branding: {
-    companyName: 'World Wide Lab',
-    logo: '/static/logo.svg',
+    companyName: 'World-Wide-Lab',
+    logo: config.electronApp ? '/static/logo-app.svg' : '/static/logo-server.svg',
     favicon: '/static/favicon.png',
     withMadeWithLove: false,
   },
   componentLoader,
+  dashboard: {
+    component: Components.Dashboard,
+    handler: dashboardHandler,
+  },
 
   resources: [
     {
@@ -74,6 +79,16 @@ const admin = new AdminJS({
         actions: {
           new: {
             handler: newStudyHandler
+          },
+          show: {
+            component: Components.StudyShowAction,
+          },
+          downloadData: {
+            actionType: 'record',
+            label: 'Download Data',
+            icon: 'Download',
+            handler: downloadStudyDataHandler,
+            component: Components.StudyDownloadAction
           }
         }
       }
@@ -149,6 +164,9 @@ const admin = new AdminJS({
         wwl_participants: 'Participants',
         wwl_runs: 'Runs',
         wwl_responses: 'Responses',
+      },
+      messages: {
+        loginWelcome: 'to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.',
       }
     }
   },

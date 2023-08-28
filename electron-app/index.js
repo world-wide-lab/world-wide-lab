@@ -31,12 +31,10 @@ function openUrlInWindow() {
 }
 
 app.on('ready', async function() {
-  createWindow(false)
-
   // Start server
   await init()
 
-  openUrlInWindow()
+  createWindow(true)
 });
 
 app.on('activate', function () {

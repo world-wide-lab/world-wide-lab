@@ -5,8 +5,9 @@
   ],
   "scripts": {
     "test": "jest",
+    "test:playwright": "npm run test:playwright --workspaces --if-present",
     "test:docker": "./docker/run-test.sh",
-    "build": "npm run build --prefix packages/server/"
+    "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "jest": "^29.5.0"
@@ -14,7 +15,8 @@
   "jest": {
     "projects": [
       "<rootDir>/packages/server",
-      "<rootDir>/packages/client"
+      "<rootDir>/packages/client",
+      "<rootDir>/packages/integration-jsPsych"
     ]
   }
 }
