@@ -36,7 +36,8 @@ test('has a working admin UI', async ({ page }) => {
   await expect(page).not.toHaveURL("/admin/login");
 
   // Check whether screenshot matches
-  await expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.1 });
+  // Providing a large amount of leeway here to account for differences in animation progress
+  await expect(page).toHaveScreenshot({ maxDiffPixelRatio: 0.3 });
 
   // Check out studies table
   await page.goto('/admin/resources/wwl_studies');
