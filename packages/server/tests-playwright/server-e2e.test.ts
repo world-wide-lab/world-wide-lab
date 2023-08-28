@@ -4,6 +4,13 @@ import { config } from 'dotenv';
 
 config({ path: '.env.playwright' });
 
+// Remove platform name from snapshots
+// see https://github.com/microsoft/playwright/issues/7575
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.snapshotPath = (name: string) =>
+    `${testInfo.file}-snapshots/${name}`;
+});
+
 test('has basic welcome message', async ({ page }) => {
   await page.goto('/');
 
