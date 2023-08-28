@@ -13,11 +13,6 @@ AdminJS.registerAdapter({
   Database: AdminJSSequelize.Database,
 })
 
-const databaseParent = {
-  name: 'Database',
-  icon: 'Folder',
-}
-
 const pages: AdminPages = {}
 if (config.apiDocs.enabled) {
   pages['Public API'] = {
@@ -54,7 +49,10 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.Study,
       options: {
-        parent: databaseParent,
+        navigation: {
+          name: null,
+          icon: 'Rocket',
+        },
         properties: {
           studyId: {
             isTitle: true,
@@ -96,7 +94,10 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.Participant,
       options: {
-        parent: databaseParent,
+        navigation: {
+          name: null,
+          icon: 'Group',
+        },
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
@@ -118,7 +119,10 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.Run,
       options: {
-        parent: databaseParent,
+        navigation: {
+          name: null,
+          icon: 'Archive',
+        },
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
@@ -140,7 +144,10 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.Response,
       options: {
-        parent: databaseParent,
+        navigation: {
+          name: null,
+          icon: 'Document',
+        },
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
