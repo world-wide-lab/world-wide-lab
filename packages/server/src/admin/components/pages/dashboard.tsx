@@ -9,7 +9,6 @@ import {
   Illustration,
   IllustrationProps,
   Button,
-  Icon,
 } from '@adminjs/design-system'
 import { ApiClient } from 'adminjs'
 import { DashboardLineChart } from '../charts/DashboardLineChart'
@@ -48,7 +47,7 @@ export const DashboardHeader: React.FC = () => {
         <Text textAlign="center" color="white">
           <H2> Welcome to World-Wide-Lab! </H2>
           <Text opacity={0.8}>
-            The end-to-end solution for storing data in online-studies with special support for citizen science research.
+            The end-to-end solution for storing data in online-studies with special support for citizen science.
           </Text>
         </Text>
       </Box>
