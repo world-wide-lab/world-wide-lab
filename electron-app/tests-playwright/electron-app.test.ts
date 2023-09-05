@@ -1,26 +1,32 @@
-import { test, expect } from '@playwright/test';
-import { _electron as electron } from 'playwright';
+import { test, expect } from "@playwright/test";
+import { _electron as electron } from "playwright";
 
-import path from 'path'
+import path from "path";
 
-const rootDir = path.resolve(__dirname, "..")
-const executablePath = path.resolve(__dirname, "..", "node_modules", ".bin", "electron")
+const rootDir = path.resolve(__dirname, "..");
+const executablePath = path.resolve(
+  __dirname,
+  "..",
+  "node_modules",
+  ".bin",
+  "electron",
+);
 
-test('electron app', async () => {
+test("electron app", async () => {
   const electronApp = await electron.launch({
-    args: [ '.' ],
-    executablePath
-  })
+    args: ["."],
+    executablePath,
+  });
 
-  const page = await electronApp.firstWindow()
+  const page = await electronApp.firstWindow();
 
   // Check title
-  await expect(page).toHaveTitle("World-Wide-Lab")
+  await expect(page).toHaveTitle("World-Wide-Lab");
 
   // Check for sidebar items
   await expect(page.getByText("Studies")).not.toBeUndefined();
   await expect(page.getByText("Participants")).not.toBeUndefined();
 
   // Close app
-  await electronApp.close()
-})
+  await electronApp.close();
+});

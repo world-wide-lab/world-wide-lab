@@ -1,6 +1,6 @@
-import path from 'path'
-import swaggerJsdoc from 'swagger-jsdoc'
-import config from '../config'
+import path from "path";
+import swaggerJsdoc from "swagger-jsdoc";
+import config from "../config";
 
 const options = {
   definition: {
@@ -8,7 +8,8 @@ const options = {
     info: {
       title: "WorldWideLab Public API",
       version: config.version,
-      description: "This is the public facing and unauthenticated portion of the WorldWideLab API.",
+      description:
+        "This is the public facing and unauthenticated portion of the WorldWideLab API.",
       license: {
         name: "MIT",
         url: "https://spdx.org/licenses/MIT.html",
@@ -17,7 +18,7 @@ const options = {
         name: "XXX",
         url: "https://logrocket.com",
         email: "info@email.com",
-      }
+      },
     },
     servers: [
       {
@@ -27,16 +28,17 @@ const options = {
     tags: [
       {
         name: "main",
-        description: "The most important endpoints in the API."
+        description: "The most important endpoints in the API.",
       },
       {
         name: "public-info",
-        description: "Retrieve information that is marked as public to e.g. track and store randomization of participants."
+        description:
+          "Retrieve information that is marked as public to e.g. track and store randomization of participants.",
       },
       {
         name: "update",
-        description: "Update information about participants or runs."
-      }
+        description: "Update information about participants or runs.",
+      },
     ],
     components: {
       securitySchemes: {
@@ -44,9 +46,9 @@ const options = {
           type: "http",
           scheme: "bearer",
           bearerFormat: "WWL API KEY",
-        }
-      }
-    }
+        },
+      },
+    },
   },
   apis: [
     path.join(__dirname, "../api/*.ts"),

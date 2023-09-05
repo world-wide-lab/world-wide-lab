@@ -1,7 +1,13 @@
-import { initJsPsych, JsPsych, JsPsychPlugin, PluginInfo, ParameterType, TrialType } from "jspsych";
+import {
+  initJsPsych,
+  JsPsych,
+  JsPsychPlugin,
+  PluginInfo,
+  ParameterType,
+  TrialType,
+} from "jspsych";
 
 import { Client, Run, RunResponseOptions } from "@world-wide-lab/client";
-
 
 interface InitializeParameters {}
 
@@ -35,16 +41,16 @@ interface SetupOptions {
  * @see {@link https://www.jspsych.org/7.0/reference/jspsych/#initjspsych}
  */
 type JsPsychOptions = {
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 /**
  * A simple object with any data you would like to store.
  * Will be transformed to JSON.
  */
 type ObjectWithData = {
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 /**
  * **JsPsychWorldWideLab**
@@ -107,24 +113,27 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
        */
       finish: {
         type: ParameterType.BOOL,
-        default: true
-      }
+        default: true,
+      },
     },
   };
 
-  constructor(private jsPsych: JsPsych) { }
+  constructor(private jsPsych: JsPsych) {}
 
   trial(display_element: HTMLElement, trial: TrialType<PluginInfo>) {
     // Call async function in here
-    this.run(display_element, trial)
+    this.run(display_element, trial);
   }
 
-  private async run(display_element: HTMLElement, trial: TrialType<PluginInfo>) {
+  private async run(
+    display_element: HTMLElement,
+    trial: TrialType<PluginInfo>,
+  ) {
     // Setup client
     const setupPromise = jsPsychWorldWideLab.setup({
       url: trial.url,
       studyId: trial.studyId,
-    })
+    });
 
     // Use styling of jsPsychPipe plugin for consistency
     // Show circular progress bar
@@ -183,7 +192,10 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     const success = await jsPsychWorldWideLab._saveResponse({
       name: trial.data_name,
       // TODO: find a more elegant solution here to mark data as already in JSON format, avoiding the back-and forth conversion
-      payload: typeof trial.data_string == "string" ? JSON.parse(trial.data_string) : trial.data_string,
+      payload:
+        typeof trial.data_string == "string"
+          ? JSON.parse(trial.data_string)
+          : trial.data_string,
     });
 
     display_element.innerHTML = "";
@@ -213,7 +225,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
   public static async setup(options: SetupOptions): Promise<void> {
     if (this.ready) {
-      console.warn("JsPsychWorldWideLab.setup() is being called more than once, this is not recommended and can lead to surprising issues.")
+      console.warn(
+        "JsPsychWorldWideLab.setup() is being called more than once, this is not recommended and can lead to surprising issues.",
+      );
       // Reset ready to false in case set
       this.ready = false;
     }
@@ -222,30 +236,38 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     });
     this.studyId = options.studyId;
 
-    this.run = await this.client.createRun({ studyId: this.studyId, linkParticipant: options.linkParticipant });
+    this.run = await this.client.createRun({
+      studyId: this.studyId,
+      linkParticipant: options.linkParticipant,
+    });
     this.ready = true;
     this.callSetupCompletedListeners();
     this.sendQueuedResponses();
   }
 
   private static setupCompletedListeners: Array<Function> = [];
-  private static callSetupCompletedListeners () {
+  private static callSetupCompletedListeners() {
     while (this.setupCompletedListeners.length > 0) {
       const listener = this.setupCompletedListeners.shift();
       listener();
     }
   }
   public static async setupCompleted(): Promise<void> {
-    return new Promise((resolve => {
+    return new Promise((resolve) => {
       // Register the promise's resolve function as a listener
-      this.setupCompletedListeners.push(resolve)
+      this.setupCompletedListeners.push(resolve);
 
       // If already initialized, call listeners
-      if (this.ready) { this.callSetupCompletedListeners() }
-    }))
+      if (this.ready) {
+        this.callSetupCompletedListeners();
+      }
+    });
   }
 
-  public static initJsPsych(jsPsychOptions: JsPsychOptions, setupOptions: SetupOptions): JsPsych {
+  public static initJsPsych(
+    jsPsychOptions: JsPsychOptions,
+    setupOptions: SetupOptions,
+  ): JsPsych {
     // Setup the JsPsychWorldWideLab-integration
     this.setup(setupOptions);
 
@@ -256,17 +278,17 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
       // Call the original function (if it exists)
       return originalOnTrialFinish && originalOnTrialFinish(...arguments);
-    }
+    };
     const originalOnFinish = jsPsychOptions.on_finish;
     jsPsychOptions.on_finish = () => {
       this.onExperimentFinish();
 
       // Call the original function (if it exists)
       return originalOnFinish && originalOnFinish(...arguments);
-    }
+    };
 
     // Initialize JsPsych
-    return initJsPsych(jsPsychOptions)
+    return initJsPsych(jsPsychOptions);
   }
 
   private static responseQueue: RunResponseOptions[] = [];
@@ -294,19 +316,21 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   }
 
   private static checkReady() {
-    if (!this.ready) { console.error("Client is not yet initialized.") }
+    if (!this.ready) {
+      console.error("Client is not yet initialized.");
+    }
   }
   public static storeParticipantId() {
-    this.checkReady()
+    this.checkReady();
     this.run.storeParticipantId();
   }
   public static deleteStoredParticipantId() {
-    this.checkReady()
+    this.checkReady();
     this.client.deleteStoredParticipantId();
   }
   public static hasStoredParticpantId() {
-    this.checkReady()
-    return this.client.getStoredParticipantId() !== undefined
+    this.checkReady();
+    return this.client.getStoredParticipantId() !== undefined;
   }
 }
 

@@ -1,4 +1,4 @@
-process.env.PORT = '0';
+process.env.PORT = "0";
 
 process.env.ADMIN_UI = "false";
 process.env.DATABASE_URL = "sqlite::memory:";
