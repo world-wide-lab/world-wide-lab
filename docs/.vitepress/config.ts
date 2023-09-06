@@ -13,17 +13,32 @@ export default defineConfig({
 
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: 'About', link: '/guides/what-is-world-wide-lab' },
+      { text: 'Get Started', link: '/guides/getting-started' },
     ],
 
     sidebar: [
       {
-        text: 'Examples',
+        text: 'Introduction',
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
+          { text: 'What is World-Wide-Lab?', link: '/guides/what-is-world-wide-lab' },
+          { text: 'Getting Started', link: '/guides/getting-started' },
         ]
-      }
+      },
+      {
+        text: 'Collecting Data',
+        items: [
+          { text: 'Using the jsPsych Integration', link: '/guides/integration-jsPsych' },
+          { text: 'World-Wide-Web Client', link: '/guides/client' },
+        ]
+      },
+      {
+        text: 'Running World-Wide-Lab',
+        items: [
+          { text: 'Running Locally', link: '/guides/running-locally' },
+          { text: 'Deploying to the Cloud', link: '/guides/deployment' },
+        ]
+      },
     ],
 
     socialLinks: [
