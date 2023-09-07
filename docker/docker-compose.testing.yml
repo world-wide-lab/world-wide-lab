@@ -1,6 +1,5 @@
 version: "3.7"
 services:
-
   db:
     image: postgres:15
     ports:
@@ -25,7 +24,7 @@ services:
       ADMIN_AUTH_SESSION_SECRET: "asdfgh12345"
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
     volumes:
-       - ../packages/test-server/server-logs:/usr/src/app/logs
+      - ../packages/test-server/server-logs:/usr/src/app/logs
 
   test-server:
     build:
@@ -37,4 +36,4 @@ services:
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
       WWL_SERVER_URL: "http://wwl-server:8787"
     volumes:
-       - ../packages/test-server:/usr/src/app
+      - ../packages/test-server:/usr/src/app

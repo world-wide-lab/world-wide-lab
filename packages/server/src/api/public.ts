@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
-import validator from 'validator';
+import validator from "validator";
 
 const routerPublic = express.Router();
 
@@ -15,8 +15,8 @@ const routerPublic = express.Router();
  *       '200':
  *         description: API is running
  */
-routerPublic.get('/', async (req: Request, res: Response) => {
-  res.type('text').send('World-Wide-Lab API is running 🌐🧑‍🔬👩‍🔬👨‍🔬');
+routerPublic.get("/", async (req: Request, res: Response) => {
+  res.type("text").send("World-Wide-Lab API is running 🌐🧑‍🔬👩‍🔬👨‍🔬");
 });
 
 /**
@@ -32,13 +32,13 @@ routerPublic.get('/', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create participant
  */
-routerPublic.post('/participant', async (req: Request, res: Response) => {
+routerPublic.post("/participant", async (req: Request, res: Response) => {
   try {
     const participant = await sequelize.models.Participant.create();
     res.json(participant);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create participant' });
+    res.status(500).json({ error: "Failed to create participant" });
   }
 });
 
@@ -74,25 +74,30 @@ routerPublic.post('/participant', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to update participant
  */
-routerPublic.put('/participant/:participantId', async (req: Request, res: Response) => {
-  const { participantId } = req.params;
-  const newData = req.body;
-  try {
-    if (!validator.isUUID(participantId)) {
-      res.status(400).json({ error: 'participantId is not a valid UUID' });
-      return
+routerPublic.put(
+  "/participant/:participantId",
+  async (req: Request, res: Response) => {
+    const { participantId } = req.params;
+    const newData = req.body;
+    try {
+      if (!validator.isUUID(participantId)) {
+        res.status(400).json({ error: "participantId is not a valid UUID" });
+        return;
+      }
+      const updatedRows = await sequelize.models.Participant.update(newData, {
+        where: { participantId },
+      });
+      if (updatedRows[0] == 1) {
+        res.status(200).send({ success: true });
+      } else {
+        res.status(400).json({ error: "Unknown participantId" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update participant" });
     }
-    const updatedRows = await sequelize.models.Participant.update(newData, { where: { participantId } });
-    if (updatedRows[0] == 1) {
-      res.status(200).send({ success: true });
-    } else {
-      res.status(400).json({ error: 'Unknown participantId' });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update participant' });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -116,27 +121,30 @@ routerPublic.put('/participant/:participantId', async (req: Request, res: Respon
  *       '500':
  *         description: Failed to retrieve participant information.
  */
-routerPublic.get('/participant/:participantId', async (req: Request, res: Response) => {
-  const { participantId } = req.params;
-  try {
-    if (!validator.isUUID(participantId)) {
-      res.status(400).json({ error: 'participantId is not a valid UUID' });
-      return
+routerPublic.get(
+  "/participant/:participantId",
+  async (req: Request, res: Response) => {
+    const { participantId } = req.params;
+    try {
+      if (!validator.isUUID(participantId)) {
+        res.status(400).json({ error: "participantId is not a valid UUID" });
+        return;
+      }
+      const participant = await sequelize.models.Participant.findOne({
+        where: { participantId },
+        attributes: ["participantId", "publicInfo"],
+      });
+      if (participant) {
+        res.status(200).json(participant.toJSON());
+      } else {
+        res.status(400).json({ error: "Unknown participantId" });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update participant" });
     }
-    const participant = await sequelize.models.Participant.findOne({
-      where: { participantId },
-      attributes: ['participantId', 'publicInfo']
-    });
-    if (participant) {
-      res.status(200).json(participant.toJSON());
-    } else {
-      res.status(400).json({ error: 'Unknown participantId' });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update participant' });
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -162,14 +170,14 @@ routerPublic.get('/participant/:participantId', async (req: Request, res: Respon
  *       '500':
  *         description: Failed to create study
  */
-routerPublic.post('/study', async (req: Request, res: Response) => {
+routerPublic.post("/study", async (req: Request, res: Response) => {
   const { studyId } = req.body;
   try {
     const study = await sequelize.models.Study.create({ studyId });
     res.json(study);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create study' });
+    res.status(500).json({ error: "Failed to create study" });
   }
 });
 
@@ -201,21 +209,21 @@ routerPublic.post('/study', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create run
  */
-routerPublic.post('/run', async (req: Request, res: Response) => {
+routerPublic.post("/run", async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
     const runData: {
-      studyId: string,
-      participantId?: string
+      studyId: string;
+      participantId?: string;
     } = {
-      studyId
+      studyId,
     };
 
     // Check for participantId (optional)
     if (participantId !== undefined) {
       if (!validator.isUUID(participantId)) {
-        res.status(400).json({ error: 'participantId is not a valid UUID' });
-        return
+        res.status(400).json({ error: "participantId is not a valid UUID" });
+        return;
       }
       runData.participantId = participantId;
     }
@@ -224,11 +232,11 @@ routerPublic.post('/run', async (req: Request, res: Response) => {
       const run = await sequelize.models.Run.create(runData);
       res.json(run);
     } else {
-      res.status(400).json({ error: 'Missing participantId or studyId.' });
+      res.status(400).json({ error: "Missing participantId or studyId." });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create run' });
+    res.status(500).json({ error: "Failed to create run" });
   }
 });
 
@@ -256,22 +264,25 @@ routerPublic.post('/run', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to update run
  */
-routerPublic.post('/run/finish', async (req: Request, res: Response) => {
+routerPublic.post("/run/finish", async (req: Request, res: Response) => {
   const { runId } = req.body;
   try {
     if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: 'runId is not a valid UUID' });
-      return
+      res.status(400).json({ error: "runId is not a valid UUID" });
+      return;
     }
-    const updatedRows = await sequelize.models.Run.update({ finished: true }, { where: { runId } });
+    const updatedRows = await sequelize.models.Run.update(
+      { finished: true },
+      { where: { runId } },
+    );
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
     } else {
-      res.status(400).json({ error: 'Unknown runId' });
+      res.status(400).json({ error: "Unknown runId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to update run' });
+    res.status(500).json({ error: "Failed to update run" });
   }
 });
 
@@ -307,23 +318,25 @@ routerPublic.post('/run/finish', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to update run
  */
-routerPublic.put('/run/:runId', async (req: Request, res: Response) => {
+routerPublic.put("/run/:runId", async (req: Request, res: Response) => {
   const { runId } = req.params;
   const newData = req.body;
   try {
     if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: 'runId is not a valid UUID' });
-      return
+      res.status(400).json({ error: "runId is not a valid UUID" });
+      return;
     }
-    const updatedRows = await sequelize.models.Run.update(newData, { where: { runId } });
+    const updatedRows = await sequelize.models.Run.update(newData, {
+      where: { runId },
+    });
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
     } else {
-      res.status(400).json({ error: 'Unknown runId' });
+      res.status(400).json({ error: "Unknown runId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to update run' });
+    res.status(500).json({ error: "Failed to update run" });
   }
 });
 
@@ -349,25 +362,25 @@ routerPublic.put('/run/:runId', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to retrieve run information.
  */
-routerPublic.get('/run/:runId', async (req: Request, res: Response) => {
+routerPublic.get("/run/:runId", async (req: Request, res: Response) => {
   const { runId } = req.params;
   try {
     if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: 'runId is not a valid UUID' });
-      return
+      res.status(400).json({ error: "runId is not a valid UUID" });
+      return;
     }
     const run = await sequelize.models.Run.findOne({
       where: { runId },
-      attributes: ['runId', 'publicInfo']
+      attributes: ["runId", "publicInfo"],
     });
     if (run) {
       res.status(200).json(run.toJSON());
     } else {
-      res.status(400).json({ error: 'Unknown runId' });
+      res.status(400).json({ error: "Unknown runId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to update run' });
+    res.status(500).json({ error: "Failed to update run" });
   }
 });
 
@@ -403,28 +416,39 @@ routerPublic.get('/run/:runId', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create response
  */
-routerPublic.post('/response', async (req: Request, res: Response) => {
+routerPublic.post("/response", async (req: Request, res: Response) => {
   const { runId, name, payload } = req.body;
 
   // Validate payload, it can be NULL (undefined) or a JSON object
-  if (!(payload === null || payload === undefined || typeof payload === 'object')) {
-    res.status(400).json({ error: 'Payload has to be a JSON object, undefined or null.' });
-    return
+  if (
+    !(payload === null || payload === undefined || typeof payload === "object")
+  ) {
+    res
+      .status(400)
+      .json({ error: "Payload has to be a JSON object, undefined or null." });
+    return;
   }
   if (!validator.isUUID(runId)) {
-    res.status(400).json({ error: 'runId is not a valid UUID' });
-    return
+    res.status(400).json({ error: "runId is not a valid UUID" });
+    return;
   }
 
   try {
-    const response = await sequelize.models.Response.create({ runId, name, payload });
+    const response = await sequelize.models.Response.create({
+      runId,
+      name,
+      payload,
+    });
     res.json(response);
   } catch (error) {
-    if (error instanceof Error && error.name === 'SequelizeForeignKeyConstraintError') {
-      res.status(400).json({ error: 'Unknown runId' });
+    if (
+      error instanceof Error &&
+      error.name === "SequelizeForeignKeyConstraintError"
+    ) {
+      res.status(400).json({ error: "Unknown runId" });
     } else {
       console.error(error);
-      res.status(500).json({ error: 'Failed to create response' });
+      res.status(500).json({ error: "Failed to create response" });
     }
   }
 });
@@ -464,39 +488,44 @@ routerPublic.post('/response', async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to retrieve study count.
  */
-routerPublic.get('/study/:studyId/count/:countType', async (req: Request, res: Response) => {
-  const { studyId, countType } = req.params;
+routerPublic.get(
+  "/study/:studyId/count/:countType",
+  async (req: Request, res: Response) => {
+    const { studyId, countType } = req.params;
 
-  try {
-    // Filter by studyId by default
-    const where: {[key: string]: any} = { studyId };
-    if (countType === "all") {
-      // Do nothing, retrieve all
-    } else if (countType === "finished") {
-      where.finished = true
-    } else {
-      throw new Error(`Unknown countType: ${countType}`)
-    }
-
-    // TODO: Add caching or even a self-updating table or something to increase efficiency
-    const count = await sequelize.models.Run.count({
-      where,
-    })
-
-    // When the count is 0, check whether it may be due to the study not existing
-    if (count === 0) {
-      let study = await sequelize.models.Study.findOne({ where: { studyId } });
-      if (!study) {
-        res.status(400).json({ error: 'Unknown studyId' });
-        return
+    try {
+      // Filter by studyId by default
+      const where: { [key: string]: any } = { studyId };
+      if (countType === "all") {
+        // Do nothing, retrieve all
+      } else if (countType === "finished") {
+        where.finished = true;
+      } else {
+        throw new Error(`Unknown countType: ${countType}`);
       }
-    }
 
-    res.status(200).json({ count });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to retrieve study count' });
-  }
-});
+      // TODO: Add caching or even a self-updating table or something to increase efficiency
+      const count = await sequelize.models.Run.count({
+        where,
+      });
+
+      // When the count is 0, check whether it may be due to the study not existing
+      if (count === 0) {
+        let study = await sequelize.models.Study.findOne({
+          where: { studyId },
+        });
+        if (!study) {
+          res.status(400).json({ error: "Unknown studyId" });
+          return;
+        }
+      }
+
+      res.status(200).json({ count });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to retrieve study count" });
+    }
+  },
+);
 
 export { routerPublic };

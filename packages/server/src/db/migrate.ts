@@ -1,21 +1,18 @@
-import { Umzug, SequelizeStorage } from 'umzug';
-import pathLib from 'path';
+import { Umzug, SequelizeStorage } from "umzug";
+import pathLib from "path";
 
-import sequelize from '.';
-import { logger } from '../logger'
+import sequelize from ".";
+import { logger } from "../logger";
 
 const dialect = sequelize.getDialect();
 
 const umzug = new Umzug({
   // Support both common and dialect-specific migrations
   migrations: {
-    glob: [
-      `migrations/*.@(common|${dialect}).@(js|ts)`,
-      { cwd: __dirname }
-    ],
+    glob: [`migrations/*.@(common|${dialect}).@(js|ts)`, { cwd: __dirname }],
     resolve: ({ name, path, context }) => {
-      const migration = require(path as string)
-      const nameWithoutExtension = pathLib.parse(path as string).name
+      const migration = require(path as string);
+      const nameWithoutExtension = pathLib.parse(path as string).name;
 
       // adjust the parameters Umzug will
       // pass to migration methods when called
@@ -24,14 +21,14 @@ const umzug = new Umzug({
         name: nameWithoutExtension,
         up: async () => migration.up({ context }),
         down: async () => migration.down({ context }),
-      }
+      };
     },
   },
   context: sequelize.getQueryInterface(),
   storage: new SequelizeStorage({
     sequelize,
-    modelName: 'InternalMigrations',
-    tableName: 'wwl_internal_migrations',
+    modelName: "InternalMigrations",
+    tableName: "wwl_internal_migrations",
   }),
   // Map winston onto the umzug internal logger version
   logger: {
@@ -42,14 +39,15 @@ const umzug = new Umzug({
   },
 });
 
-async function up () {
-  const pending = await umzug.pending()
+async function up() {
+  const pending = await umzug.pending();
   if (pending.length > 0) {
-    const migrationNames: Array<string> = Object.values(pending)
-      .map(migration => migration.name)
-    logger.info("Applying pending migrations: ", migrationNames)
+    const migrationNames: Array<string> = Object.values(pending).map(
+      (migration) => migration.name,
+    );
+    logger.info("Applying pending migrations: ", migrationNames);
   } else {
-    logger.info("No pending migrations")
+    logger.info("No pending migrations");
   }
 
   // Checks migrations and run them if they are not already applied. To keep
@@ -63,13 +61,10 @@ if (require.main === module) {
   // node dist/db/migrate.js create --name migration-name
   // after npm run build, or the following before building
   // npx ts-node src/db/migrate.js create --name migration-name
-  umzug.runAsCLI()
+  umzug.runAsCLI();
 }
 
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
 export type Migration = typeof umzug._types.migration;
 
-export {
-  umzug,
-  up,
-}
+export { umzug, up };

@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import Sequelize from "sequelize";
 
 import sequelize from "../db";
-import { requireAuthMiddleware } from "./authMiddleware"
+import { requireAuthMiddleware } from "./authMiddleware";
 
 const routerProtectedWithoutAuthentication = express.Router();
 
@@ -49,42 +49,45 @@ const routerProtectedWithoutAuthentication = express.Router();
  *       '500':
  *         description: Failed to download study data
  */
-routerProtectedWithoutAuthentication.get('/study/:studyId/data/:dataType', async (req: Request, res: Response) => {
-  try {
-    const { studyId, dataType } = req.params;
+routerProtectedWithoutAuthentication.get(
+  "/study/:studyId/data/:dataType",
+  async (req: Request, res: Response) => {
+    try {
+      const { studyId, dataType } = req.params;
 
-    let study = await sequelize.models.Study.findOne({ where: { studyId } });
-    if (!study) {
-      res.status(400).json({ error: 'Unknown studyId' });
-      return
-    }
+      let study = await sequelize.models.Study.findOne({ where: { studyId } });
+      if (!study) {
+        res.status(400).json({ error: "Unknown studyId" });
+        return;
+      }
 
-    let data
-    if (dataType == "responses-raw") {
-      data = await sequelize.models.Response.findAll({
-        include: {
-          model: sequelize.models.Run,
+      let data;
+      if (dataType == "responses-raw") {
+        data = await sequelize.models.Response.findAll({
+          include: {
+            model: sequelize.models.Run,
+            where: { studyId },
+            attributes: ["participantId"],
+          },
+          raw: true,
+        });
+      } else if (dataType == "runs-raw") {
+        data = await sequelize.models.Run.findAll({
           where: { studyId },
-          attributes: ['participantId'],
-        },
-        raw: true,
-      });
-    } else if(dataType == "runs-raw") {
-      data = await sequelize.models.Run.findAll({
-        where: { studyId },
-        raw: true,
-      });
-    } else if (dataType == "participants-raw") {
-      data = await sequelize.models.Participant.findAll({
-        include: {
-          model: sequelize.models.Run,
-          where: { studyId },
-          attributes: ['runId'],
-        },
-        raw: true,
-      });
-    } else if (dataType == "responses-extracted-payload") {
-      const keysResult = await sequelize.query(`
+          raw: true,
+        });
+      } else if (dataType == "participants-raw") {
+        data = await sequelize.models.Participant.findAll({
+          include: {
+            model: sequelize.models.Run,
+            where: { studyId },
+            attributes: ["runId"],
+          },
+          raw: true,
+        });
+      } else if (dataType == "responses-extracted-payload") {
+        const keysResult = await sequelize.query(
+          `
         SELECT DISTINCT
           payload_json.key as key
         FROM
@@ -93,55 +96,65 @@ routerProtectedWithoutAuthentication.get('/study/:studyId/data/:dataType', async
           json_each(payload) payload_json
         WHERE wwl_runs."studyId" = :studyId
         ORDER BY key ASC;
-      `, {
-        type: Sequelize.QueryTypes.SELECT,
-        replacements: { studyId },
-      })
+      `,
+          {
+            type: Sequelize.QueryTypes.SELECT,
+            replacements: { studyId },
+          },
+        );
 
-      // Create a the list of keys in the payload in a safe format
-      const jsonKeys = keysResult
-        .map(row => 'key' in row ? row.key : undefined)
-        .filter(key => key !== undefined)
-      const jsonFieldsString = jsonKeys.map(jsonKey => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`).join(", ")
+        // Create a the list of keys in the payload in a safe format
+        const jsonKeys = keysResult
+          .map((row) => ("key" in row ? row.key : undefined))
+          .filter((key) => key !== undefined);
+        const jsonFieldsString = jsonKeys
+          .map(
+            (jsonKey) =>
+              `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`,
+          )
+          .join(", ");
 
-      // Collect list of table fields, so we can select them without the payload
-      const modelAttributes = sequelize.models.Response.getAttributes()
-      const tableFields = Object.keys(modelAttributes)
-      const fields = tableFields
-        .filter(field => field !== "payload")
-        .map(field => `wwl_responses."${field}"`)
-      const tableFieldsString = fields.join(", ")
+        // Collect list of table fields, so we can select them without the payload
+        const modelAttributes = sequelize.models.Response.getAttributes();
+        const tableFields = Object.keys(modelAttributes);
+        const fields = tableFields
+          .filter((field) => field !== "payload")
+          .map((field) => `wwl_responses."${field}"`);
+        const tableFieldsString = fields.join(", ");
 
-      // Combine the table and json fields
-      const fieldsString = jsonKeys.length > 0 ? `${tableFieldsString}, ${jsonFieldsString}` : `${tableFieldsString}`
+        // Combine the table and json fields
+        const fieldsString =
+          jsonKeys.length > 0
+            ? `${tableFieldsString}, ${jsonFieldsString}`
+            : `${tableFieldsString}`;
 
-      // Create the final query
-      data = await sequelize.query(`
+        // Create the final query
+        data = await sequelize.query(
+          `
         SELECT
           ${fieldsString}
         FROM wwl_responses
           INNER JOIN wwl_runs ON (wwl_runs."runId" = wwl_responses."runId")
         WHERE wwl_runs."studyId" = :studyId;
-      `, {
-        type: Sequelize.QueryTypes.SELECT,
-        replacements: { studyId },
-      })
-    } else {
-      throw new Error(`Unknown dataType: ${dataType}`)
+      `,
+          {
+            type: Sequelize.QueryTypes.SELECT,
+            replacements: { studyId },
+          },
+        );
+      } else {
+        throw new Error(`Unknown dataType: ${dataType}`);
+      }
+      res.status(200).json(data);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to retrieve study data" });
     }
-    res.status(200).json(data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to retrieve study data' });
-  }
-});
-
+  },
+);
 
 const routerProtected = express.Router();
 routerProtected.use(requireAuthMiddleware);
-routerProtected.use(routerProtectedWithoutAuthentication)
+routerProtected.use(routerProtectedWithoutAuthentication);
 
-export {
-  routerProtected,
-  routerProtectedWithoutAuthentication,
-};
+export { routerProtected, routerProtectedWithoutAuthentication };
