@@ -23,6 +23,7 @@ export default defineConfig({
         items: [
           { text: 'What is World-Wide-Lab?', link: '/guides/what-is-world-wide-lab' },
           { text: 'Getting Started', link: '/guides/getting-started' },
+          { text: 'Downloading Data', link: '/guides/downloading-data' },
         ]
       },
       {
