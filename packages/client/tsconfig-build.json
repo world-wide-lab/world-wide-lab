@@ -1,8 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": [
-    "tests/**/*.ts"
-  ],
+  "exclude": ["tests/**/*.ts"],
   "compilerOptions": {
     "allowImportingTsExtensions": false
   }

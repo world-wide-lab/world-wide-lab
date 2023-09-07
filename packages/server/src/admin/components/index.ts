@@ -1,12 +1,15 @@
-import { ComponentLoader } from 'adminjs'
+import { ComponentLoader } from "adminjs";
 
-const componentLoader = new ComponentLoader()
+const componentLoader = new ComponentLoader();
 
 const Components = {
-  Dashboard: componentLoader.add('Dashboard', './pages/dashboard'),
-  ApiDocsPage: componentLoader.add('ApiDocsPage', './pages/api-docs'),
-  StudyDownloadAction: componentLoader.add('StudyDownloadAction', './StudyDownloadAction'),
-  StudyShowAction: componentLoader.add('StudyShowAction', './StudyShowAction'),
-}
+  Dashboard: componentLoader.add("Dashboard", "./pages/dashboard"),
+  ApiDocsPage: componentLoader.add("ApiDocsPage", "./pages/api-docs"),
+  StudyDownloadAction: componentLoader.add(
+    "StudyDownloadAction",
+    "./StudyDownloadAction",
+  ),
+  StudyShowAction: componentLoader.add("StudyShowAction", "./StudyShowAction"),
+};
 
-export { componentLoader, Components }
+export { componentLoader, Components };

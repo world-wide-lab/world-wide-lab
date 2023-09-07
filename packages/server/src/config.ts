@@ -1,35 +1,40 @@
-import { config as dotenvConfig } from 'dotenv';
+import { config as dotenvConfig } from "dotenv";
 
 function getValueFromEnv(key: string): string | undefined {
-  const value = process.env[key]
+  const value = process.env[key];
   // This catches undefined, null and ""
   if (!value) {
-    return undefined
+    return undefined;
   } else {
-    return value
+    return value;
   }
 }
 
 function getStringFromEnv(key: string): string {
-  const value = getValueFromEnv(key)
+  const value = getValueFromEnv(key);
   if (value === undefined) {
     throw new Error(`${key} must not be empty!`);
   }
-  return value
+  return value;
 }
 
-function getBooleanFromEnv(key: string, defaultValue: boolean = false): boolean {
-  const value = getValueFromEnv(key)
+function getBooleanFromEnv(
+  key: string,
+  defaultValue: boolean = false,
+): boolean {
+  const value = getValueFromEnv(key);
   if (value === undefined) {
-    return defaultValue
+    return defaultValue;
   }
-  const stringValue = value.toLowerCase()
+  const stringValue = value.toLowerCase();
   if (stringValue === "true") {
-    return true
+    return true;
   } else if (stringValue === "false") {
-    return false
+    return false;
   } else {
-    throw new Error(`Invalid value for ${key}: ${value}. Only "true" and "false" are supported.`)
+    throw new Error(
+      `Invalid value for ${key}: ${value}. Only "true" and "false" are supported.`,
+    );
   }
 }
 
@@ -60,7 +65,7 @@ const config = {
       sessionSecret: getValueFromEnv("ADMIN_AUTH_SESSION_SECRET"),
       default_admin_credentials: {
         email: getValueFromEnv("ADMIN_AUTH_DEFAULT_EMAIL"),
-        password: getValueFromEnv("ADMIN_AUTH_DEFAULT_PASSWORD")
+        password: getValueFromEnv("ADMIN_AUTH_DEFAULT_PASSWORD"),
       },
     },
   },
@@ -76,8 +81,8 @@ const config = {
   database: {
     url: getStringFromEnv("DATABASE_URL"),
     generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
-  }
-}
+  },
+};
 
 // Validate configuration
 if (config.admin.enabled && config.admin.auth.enabled) {
@@ -86,8 +91,10 @@ if (config.admin.enabled && config.admin.auth.enabled) {
     !config.admin.auth.default_admin_credentials.email ||
     !config.admin.auth.default_admin_credentials.password
   ) {
-    throw new Error(`When authentication for Admin UI is enabled, credentials and session secret have to be set as well.`)
+    throw new Error(
+      `When authentication for Admin UI is enabled, credentials and session secret have to be set as well.`,
+    );
   }
 }
 
-export default config
+export default config;

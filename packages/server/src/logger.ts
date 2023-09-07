@@ -1,6 +1,6 @@
-import winston from 'winston';
-import path from 'path';
-import config from './config'
+import winston from "winston";
+import path from "path";
+import config from "./config";
 
 const customLevels = {
   error: 0,
@@ -10,7 +10,7 @@ const customLevels = {
   sql: 3.5,
   verbose: 4,
   debug: 5,
-  silly: 6
+  silly: 6,
 };
 
 // Maximum file size for file loggers
@@ -19,7 +19,7 @@ const maxsize = 2 * 1024 * 1024; // 5MB
 const maxFiles = 3;
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.json(),
   transports: [
     new winston.transports.Console({
@@ -28,13 +28,13 @@ const logger = winston.createLogger({
     }),
 
     new winston.transports.File({
-      filename: path.join(config.logging.dir, 'default.log'),
+      filename: path.join(config.logging.dir, "default.log"),
       maxsize,
       maxFiles,
     }),
     new winston.transports.File({
-      filename: path.join(config.logging.dir, 'verbose.log'),
-      level: 'verbose',
+      filename: path.join(config.logging.dir, "verbose.log"),
+      level: "verbose",
       maxsize,
       maxFiles,
     }),
@@ -47,9 +47,6 @@ const log_sql = function (message: string) {
   // Additional props are available, you can check these by modifying the props
   // above to function (...message: any[]) and logging that.
   logger.log("sql", message);
-}
-
-export {
-  logger,
-  log_sql,
 };
+
+export { logger, log_sql };

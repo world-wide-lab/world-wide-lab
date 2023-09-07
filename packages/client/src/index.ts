@@ -2,52 +2,52 @@ type ClientOptions = {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
-  url: string
-}
+  url: string;
+};
 
 export type ClientRunOptions = {
   /**
    * The id of the study to create a run for. Required.
    */
-  studyId: string,
+  studyId: string;
   /**
    * Link the run to an existing participant
    */
-  participant?: Participant,
+  participant?: Participant;
   /**
    * If true, a participant will be linked to the run.
    * If a participantId is stored, this will automatically be used to link
    * the run to an existing participant.
    */
-  linkParticipant?: boolean
-}
+  linkParticipant?: boolean;
+};
 
 export type ClientResponseOptions = {
   /**
    * Id of the run this response belongs to
    */
-  runId: string,
+  runId: string;
   /**
    * Name identifying this trial or response
    */
-  name: string | undefined,
+  name: string | undefined;
   /**
    * The actual data of this response
    */
-  payload: ObjectWithData,
-}
+  payload: ObjectWithData;
+};
 
-export type HTTPMethod = 'GET' | 'POST' | 'PUT'
+export type HTTPMethod = "GET" | "POST" | "PUT";
 
-const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID"
+const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID";
 
 type ObjectWithData = {
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 export class Client {
   constructor(public options: ClientOptions) {
-    console.log('Initializing Client', options);
+    console.log("Initializing Client", options);
   }
 
   /**
@@ -58,19 +58,24 @@ export class Client {
    * @param options Additional options to use
    * @returns The JSON body of the response from the server
    */
-  async call(method: HTTPMethod, endpoint: string, data?: Object, options?: Object) : Promise<any> {
-    const slash = endpoint.startsWith('/') ? '' : '/';
-    const url = new URL('v1'+ slash + endpoint, this.options.url).toString();
+  async call(
+    method: HTTPMethod,
+    endpoint: string,
+    data?: Object,
+    options?: Object,
+  ): Promise<any> {
+    const slash = endpoint.startsWith("/") ? "" : "/";
+    const url = new URL("v1" + slash + endpoint, this.options.url).toString();
     const body = data ? JSON.stringify(data) : undefined;
     const fetchOptions: RequestInit = {
       method,
       headers: {
-        'Content-Type': data ? 'application/json' : 'none',
+        "Content-Type": data ? "application/json" : "none",
       },
       body,
 
-      ...options
-    }
+      ...options,
+    };
 
     const response = await fetch(url, fetchOptions);
     return response.json();
@@ -81,8 +86,8 @@ export class Client {
    * or store their id. This function will not keep track of a participant's id.
    * @returns A new Participant instance
    */
-  async createParticipant () : Promise<Participant> {
-    const result = await this.call('POST', `/participant/`)
+  async createParticipant(): Promise<Participant> {
+    const result = await this.call("POST", `/participant/`);
     return new Participant(this, result.participantId);
   }
 
@@ -91,27 +96,31 @@ export class Client {
    * @param runOptions Options to create the run with
    * @returns A new Run instance
    */
-  async createRun (runOptions: ClientRunOptions) : Promise <Run> {
+  async createRun(runOptions: ClientRunOptions): Promise<Run> {
     const runData: {
-      studyId: string,
-      participantId?: string,
+      studyId: string;
+      participantId?: string;
     } = {
-      studyId: runOptions.studyId
-    }
+      studyId: runOptions.studyId,
+    };
 
     // Create a participant if requested
     let participant: Participant | undefined;
     if (runOptions.participant && runOptions.linkParticipant) {
-      console.warn("Both participant and linkParticipant are set. Ignoring linkParticipant.")
+      console.warn(
+        "Both participant and linkParticipant are set. Ignoring linkParticipant.",
+      );
     }
     if (runOptions.participant) {
       participant = runOptions.participant;
     } else if (runOptions.linkParticipant) {
       participant = await this.getParticipant();
     }
-    if (participant) { runData.participantId = participant.participantId }
+    if (participant) {
+      runData.participantId = participant.participantId;
+    }
 
-    const result = await this.call('POST', `/run/`, runData)
+    const result = await this.call("POST", `/run/`, runData);
     const run = new Run(this, result.runId);
 
     // Link participant
@@ -130,8 +139,8 @@ export class Client {
    * @param opts.payload The actual data of this response
    * @returns true if the response was created successfully
    */
-  async createResponse (opts: ClientResponseOptions) : Promise<boolean> {
-    const result = await this.call('POST', `/response/`, opts)
+  async createResponse(opts: ClientResponseOptions): Promise<boolean> {
+    const result = await this.call("POST", `/response/`, opts);
     return true;
   }
 
@@ -142,11 +151,13 @@ export class Client {
    */
   storeParticipantId(participantId: string): boolean {
     if (!window.localStorage) {
-      console.warn("localStorage API is not available. Participant-information will not be stored.")
-      return false
+      console.warn(
+        "localStorage API is not available. Participant-information will not be stored.",
+      );
+      return false;
     }
-    window.localStorage.setItem(PARTICIPANT_ID_KEY, participantId)
-    return true
+    window.localStorage.setItem(PARTICIPANT_ID_KEY, participantId);
+    return true;
   }
 
   /**
@@ -156,17 +167,19 @@ export class Client {
    */
   getStoredParticipantId(): string | undefined {
     if (!window.localStorage) {
-      console.warn("localStorage API is not available. Participant-information will not be stored.")
-      return undefined
+      console.warn(
+        "localStorage API is not available. Participant-information will not be stored.",
+      );
+      return undefined;
     }
-    return window.localStorage.getItem(PARTICIPANT_ID_KEY) || undefined
+    return window.localStorage.getItem(PARTICIPANT_ID_KEY) || undefined;
   }
 
   /**
    * Delete the stored participantId.
    */
   deleteStoredParticipantId(): void {
-    window.localStorage.removeItem(PARTICIPANT_ID_KEY)
+    window.localStorage.removeItem(PARTICIPANT_ID_KEY);
   }
 
   /**
@@ -175,7 +188,7 @@ export class Client {
    * store the corresponding id.
    * @returns A Participant instance
    */
-  async getParticipant () : Promise<Participant> {
+  async getParticipant(): Promise<Participant> {
     const id = this.getStoredParticipantId();
     if (id !== undefined) {
       return new Participant(this, id);
@@ -187,11 +200,14 @@ export class Client {
 
 // Base class that all data model classes inherit from
 class ClientModel {
-  constructor (public clientInstance: Client) { }
+  constructor(public clientInstance: Client) {}
 }
 
 export class Participant extends ClientModel {
-  constructor (clientInstance: Client, public participantId: string) {
+  constructor(
+    clientInstance: Client,
+    public participantId: string,
+  ) {
     super(clientInstance);
   }
 
@@ -202,8 +218,15 @@ export class Participant extends ClientModel {
    *   privateInfo can only be downlaoded later on by the researcher.
    * @returns true if the update was successful
    */
-  async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
-    const result = await this.clientInstance.call('PUT', `/participant/${this.participantId}`, data);
+  async setMetadata(data: {
+    privateInfo?: ObjectWithData;
+    publicInfo?: ObjectWithData;
+  }): Promise<boolean> {
+    const result = await this.clientInstance.call(
+      "PUT",
+      `/participant/${this.participantId}`,
+      data,
+    );
     return result.success;
   }
 
@@ -211,8 +234,11 @@ export class Participant extends ClientModel {
    * Retrieve public meta-data for a participant
    * @returns The participant's publicInfo meta data
    */
-  getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
-    return this.clientInstance.call('GET', `/participant/${this.participantId}`);
+  getPublicInfo(): Promise<{ publicInfo: ObjectWithData }> {
+    return this.clientInstance.call(
+      "GET",
+      `/participant/${this.participantId}`,
+    );
   }
 
   /**
@@ -220,25 +246,28 @@ export class Participant extends ClientModel {
    * client.getParticipant().
    * @returns true if the participantId was stored successfully
    */
-  storeParticipantId (): boolean {
+  storeParticipantId(): boolean {
     return this.clientInstance.storeParticipantId(this.participantId);
   }
 }
 
-export type RunResponseOptions = Omit<ClientResponseOptions, 'runId'>;
+export type RunResponseOptions = Omit<ClientResponseOptions, "runId">;
 
 export class Run extends ClientModel {
   public participant?: Participant;
 
-  constructor (clientInstance: Client, public runId: string) {
+  constructor(
+    clientInstance: Client,
+    public runId: string,
+  ) {
     super(clientInstance);
   }
 
   /**
    * Create a new Response.
    */
-  response (opts: RunResponseOptions) : Promise<boolean> {
-    const createResponseOptions = { runId: this.runId, ...opts}
+  response(opts: RunResponseOptions): Promise<boolean> {
+    const createResponseOptions = { runId: this.runId, ...opts };
     return this.clientInstance.createResponse(createResponseOptions);
   }
 
@@ -246,8 +275,10 @@ export class Run extends ClientModel {
    * Finish the run. This will mark the run as finished.
    * @returns true if the run was finished successfully
    */
-  async finish () : Promise<boolean> {
-    const result = await this.clientInstance.call('POST', `/run/finish`, { runId: this.runId });
+  async finish(): Promise<boolean> {
+    const result = await this.clientInstance.call("POST", `/run/finish`, {
+      runId: this.runId,
+    });
     return result.success;
   }
 
@@ -257,8 +288,15 @@ export class Run extends ClientModel {
    *   The publicInfo can be retrieved later on without authentication, the
    *   privateInfo can only be downlaoded later on by the researcher.
    */
-  async setMetadata (data: { privateInfo?: ObjectWithData, publicInfo?: ObjectWithData }) : Promise<boolean> {
-    const result = await this.clientInstance.call('PUT', `/run/${this.runId}`, data);
+  async setMetadata(data: {
+    privateInfo?: ObjectWithData;
+    publicInfo?: ObjectWithData;
+  }): Promise<boolean> {
+    const result = await this.clientInstance.call(
+      "PUT",
+      `/run/${this.runId}`,
+      data,
+    );
     return result.success;
   }
 
@@ -266,19 +304,21 @@ export class Run extends ClientModel {
    * Retrieve public meta-data for a run
    * @returns The run's publicInfo meta data
    */
-  getPublicInfo () : Promise<{ publicInfo: ObjectWithData }> {
-    return this.clientInstance.call('GET', `/run/${this.runId}`);
+  getPublicInfo(): Promise<{ publicInfo: ObjectWithData }> {
+    return this.clientInstance.call("GET", `/run/${this.runId}`);
   }
 
   /**
    * Store the participantId of the participant that is doing this run.
    * @returns true if the participantId was stored successfully
    */
-  storeParticipantId (): boolean {
+  storeParticipantId(): boolean {
     if (this.participant) {
       return this.participant.storeParticipantId();
     } else {
-      console.error("Cannot store participantId: No participant set / created. Do you maybe want to set linkParticipant to true?")
+      console.error(
+        "Cannot store participantId: No participant set / created. Do you maybe want to set linkParticipant to true?",
+      );
       return false;
     }
   }

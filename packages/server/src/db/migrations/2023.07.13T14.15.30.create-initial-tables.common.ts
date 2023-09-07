@@ -1,6 +1,6 @@
-import type { Migration } from '../migrate';
+import type { Migration } from "../migrate";
 
-import { DataTypes } from 'sequelize';
+import { DataTypes } from "sequelize";
 
 const columnComments = {
   studyId: `The unique identifier for each study. This id is used to link runs with studies. Must be unique across all studies.`,
@@ -12,10 +12,10 @@ const columnComments = {
   updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
   extraInfo: `Additional information for this record, stored as a JSON object.`,
   publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
-}
+};
 
 export const up: Migration = async ({ context }) => {
-  await context.createTable('wwl_studies', {
+  await context.createTable("wwl_studies", {
     studyId: {
       primaryKey: true,
       type: DataTypes.STRING,
@@ -35,7 +35,7 @@ export const up: Migration = async ({ context }) => {
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
+      onUpdate: "CASCADE",
       comment: columnComments.updatedAt,
     },
     extraInfo: {
@@ -50,7 +50,7 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  await context.createTable('wwl_participants', {
+  await context.createTable("wwl_participants", {
     participantId: {
       type: DataTypes.UUID,
       primaryKey: true,
@@ -66,7 +66,7 @@ export const up: Migration = async ({ context }) => {
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
+      onUpdate: "CASCADE",
       comment: columnComments.updatedAt,
     },
     extraInfo: {
@@ -81,7 +81,7 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  await context.createTable('wwl_runs', {
+  await context.createTable("wwl_runs", {
     runId: {
       type: DataTypes.UUID,
       primaryKey: true,
@@ -97,7 +97,7 @@ export const up: Migration = async ({ context }) => {
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
+      onUpdate: "CASCADE",
       comment: columnComments.updatedAt,
     },
     extraInfo: {
@@ -119,18 +119,18 @@ export const up: Migration = async ({ context }) => {
       type: DataTypes.UUID,
       allowNull: false,
       comment: columnComments.participantId,
-      references: { model: 'wwl_participants', key: 'participantId' }
+      references: { model: "wwl_participants", key: "participantId" },
     },
     studyId: {
       type: DataTypes.STRING,
       allowNull: false,
       comment: columnComments.studyId,
-      references: { model: 'wwl_studies', key: 'studyId' }
+      references: { model: "wwl_studies", key: "studyId" },
     },
   });
 
-  await context.createTable('wwl_responses', {
-    responseId : {
+  await context.createTable("wwl_responses", {
+    responseId: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
@@ -145,7 +145,7 @@ export const up: Migration = async ({ context }) => {
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      onUpdate: 'CASCADE',
+      onUpdate: "CASCADE",
       comment: columnComments.updatedAt,
     },
     name: {
@@ -160,13 +160,13 @@ export const up: Migration = async ({ context }) => {
       type: DataTypes.UUID,
       allowNull: false,
       comment: columnComments.runId,
-      references: { model: 'wwl_runs', key: 'runId' }
+      references: { model: "wwl_runs", key: "runId" },
     },
   });
 };
 export const down: Migration = async ({ context }) => {
-  await context.dropTable('wwl_studies');
-  await context.dropTable('wwl_participants');
-  await context.dropTable('wwl_runs');
-  await context.dropTable('wwl_responses');
+  await context.dropTable("wwl_studies");
+  await context.dropTable("wwl_participants");
+  await context.dropTable("wwl_runs");
+  await context.dropTable("wwl_responses");
 };

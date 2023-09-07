@@ -1,42 +1,44 @@
-import AdminJS, { AdminPages, AdminPage } from 'adminjs'
-import * as AdminJSSequelize from '@adminjs/sequelize'
-import sequelize from '../db'
-import { columnComments } from '../db/models'
-import { initializeRouter } from './router_auth'
-import { componentLoader, Components } from './components'
-import config from '../config'
-import { newStudyHandler, downloadStudyDataHandler } from './handlers/study'
-import { dashboardHandler } from './handlers/dashboard'
+import AdminJS, { AdminPages, AdminPage } from "adminjs";
+import * as AdminJSSequelize from "@adminjs/sequelize";
+import sequelize from "../db";
+import { columnComments } from "../db/models";
+import { initializeRouter } from "./router_auth";
+import { componentLoader, Components } from "./components";
+import config from "../config";
+import { newStudyHandler, downloadStudyDataHandler } from "./handlers/study";
+import { dashboardHandler } from "./handlers/dashboard";
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,
   Database: AdminJSSequelize.Database,
-})
+});
 
-const pages: AdminPages = {}
+const pages: AdminPages = {};
 if (config.apiDocs.enabled) {
-  pages['Public API'] = {
+  pages["Public API"] = {
     component: Components.ApiDocsPage,
-    icon: 'Book',
+    icon: "Book",
     handler: async (request, response, context) => {
       return {
         apiKey: config.api.apiKey,
       };
     },
-  } as AdminPage
+  } as AdminPage;
 }
 
 const admin = new AdminJS({
-  rootPath: '/admin',
+  rootPath: "/admin",
 
   version: {
     admin: false,
     app: config.version,
   },
   branding: {
-    companyName: 'World-Wide-Lab',
-    logo: config.electronApp ? '/static/logo-app.svg' : '/static/logo-server.svg',
-    favicon: '/static/favicon.png',
+    companyName: "World-Wide-Lab",
+    logo: config.electronApp
+      ? "/static/logo-app.svg"
+      : "/static/logo-server.svg",
+    favicon: "/static/favicon.png",
     withMadeWithLove: false,
   },
   componentLoader,
@@ -51,7 +53,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: 'Rocket',
+          icon: "Rocket",
         },
         properties: {
           studyId: {
@@ -76,27 +78,27 @@ const admin = new AdminJS({
         },
         actions: {
           new: {
-            handler: newStudyHandler
+            handler: newStudyHandler,
           },
           show: {
             component: Components.StudyShowAction,
           },
           downloadData: {
-            actionType: 'record',
-            label: 'Download Data',
-            icon: 'Download',
+            actionType: "record",
+            label: "Download Data",
+            icon: "Download",
             handler: downloadStudyDataHandler,
-            component: Components.StudyDownloadAction
-          }
-        }
-      }
+            component: Components.StudyDownloadAction,
+          },
+        },
+      },
     },
     {
       resource: sequelize.models.Participant,
       options: {
         navigation: {
           name: null,
-          icon: 'Group',
+          icon: "Group",
         },
         properties: {
           createdAt: {
@@ -113,15 +115,15 @@ const admin = new AdminJS({
           publicInfo: {
             description: columnComments.publicInfo,
           },
-        }
-      }
+        },
+      },
     },
     {
       resource: sequelize.models.Run,
       options: {
         navigation: {
           name: null,
-          icon: 'Archive',
+          icon: "Archive",
         },
         properties: {
           createdAt: {
@@ -138,15 +140,15 @@ const admin = new AdminJS({
           publicInfo: {
             description: columnComments.publicInfo,
           },
-        }
-      }
+        },
+      },
     },
     {
       resource: sequelize.models.Response,
       options: {
         navigation: {
           name: null,
-          icon: 'Document',
+          icon: "Document",
         },
         properties: {
           createdAt: {
@@ -157,37 +159,35 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
-        }
-      }
+        },
+      },
     },
   ],
   pages,
 
   locale: {
-    language: 'en',
+    language: "en",
     translations: {
       labels: {
-        wwl_studies: 'Studies',
-        wwl_participants: 'Participants',
-        wwl_runs: 'Runs',
-        wwl_responses: 'Responses',
+        wwl_studies: "Studies",
+        wwl_participants: "Participants",
+        wwl_runs: "Runs",
+        wwl_responses: "Responses",
       },
       messages: {
-        loginWelcome: 'to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.',
-      }
-    }
+        loginWelcome:
+          "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
+      },
+    },
   },
-})
+});
 
-const adminRouter = initializeRouter(admin)
+const adminRouter = initializeRouter(admin);
 
 // Bundle admin js files in development mode
 // Having this active will cause jest to stay open after tests are done
-if (process.env.NODE_ENV === 'development') {
-  admin.watch()
+if (process.env.NODE_ENV === "development") {
+  admin.watch();
 }
 
-export {
-  admin,
-  adminRouter,
-}
+export { admin, adminRouter };

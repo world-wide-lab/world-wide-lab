@@ -1,14 +1,14 @@
-import path from 'path'
-import express, {Request, Response} from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
+import path from "path";
+import express, { Request, Response } from "express";
+import helmet from "helmet";
+import cors from "cors";
 
-import api from './api';
-import { routerProtectedWithoutAuthentication } from './api/protected';
-import apiDocs from './api-docs';
-import { admin, adminRouter } from './admin'
-import config from './config'
-import { logger } from './logger'
+import api from "./api";
+import { routerProtectedWithoutAuthentication } from "./api/protected";
+import apiDocs from "./api-docs";
+import { admin, adminRouter } from "./admin";
+import config from "./config";
+import { logger } from "./logger";
 
 const app = express();
 
@@ -18,7 +18,7 @@ app.use(express.json());
 
 // Log all HTTP requests
 if (config.logging.http) {
-  logger.info(`Logging HTTP requests`)
+  logger.info(`Logging HTTP requests`);
 
   app.use((req, res, next) => {
     logger.http({
@@ -33,26 +33,26 @@ if (config.logging.http) {
   });
 }
 
-app.use('/static', express.static(path.join(__dirname, '..', 'static')))
+app.use("/static", express.static(path.join(__dirname, "..", "static")));
 
 app.get("/", async (req: Request, res: Response) => {
   res.redirect("/v1/");
 });
 
 // Mount the API router under v1
-app.use('/v1', api);
+app.use("/v1", api);
 
 // Mount the api-docs
 if (config.apiDocs.enabled) {
-  app.use('/api-docs', apiDocs);
+  app.use("/api-docs", apiDocs);
 }
 
 // Use adminJS
 if (config.admin.enabled) {
   // Make protected API routes available in Admin UI
-  adminRouter.use("/wwl/", routerProtectedWithoutAuthentication)
+  adminRouter.use("/wwl/", routerProtectedWithoutAuthentication);
 
-  app.use(admin.options.rootPath, adminRouter)
+  app.use(admin.options.rootPath, adminRouter);
 }
 
 export default app;

@@ -4,19 +4,19 @@ type AppProps = { data: any };
 
 export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
   if (!data) {
-    return (
-      <div>Loading...</div>
-    )
+    return <div>Loading...</div>;
   }
 
-  const labels: string[] = []
-  const n_total: number[] = []
-  const n_finished: number[] = []
-  data.forEach((row: { createdAtDate: string, n_total: number, n_finished: number }) => {
-    labels.push(row.createdAtDate)
-    n_total.push(row.n_total)
-    n_finished.push(row.n_finished)
-  });
+  const labels: string[] = [];
+  const n_total: number[] = [];
+  const n_finished: number[] = [];
+  data.forEach(
+    (row: { createdAtDate: string; n_total: number; n_finished: number }) => {
+      labels.push(row.createdAtDate);
+      n_total.push(row.n_total);
+      n_finished.push(row.n_finished);
+    },
+  );
 
   return (
     <ReactFrappeChart
@@ -25,7 +25,7 @@ export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
       axisOptions={{
         xAxisMode: "tick",
         yAxisMode: "tick",
-        xIsSeries: 1
+        xIsSeries: 1,
       }}
       lineOptions={{
         regionFill: 1,
@@ -43,8 +43,8 @@ export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
             name: "Finished Runs",
             values: n_finished,
           },
-      ],
+        ],
       }}
     />
-  )
-}
+  );
+};
