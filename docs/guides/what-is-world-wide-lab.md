@@ -2,6 +2,10 @@
 
 World-Wide-Lab is a platform to collect online data at scale, with a special focus on running online citizen science experiments.
 
-![](/img/diagrams/front-vs-back-end.png)
+## The World Wide Lab Data Model
 
-![](/img/diagrams/data-model.png)
+![A diagram showing the data-model, consisting of responses which belong to runs.](/img/diagrams/data-model.png)
+
+## Front-End & Back-End
+
+![](/img/diagrams/front-vs-back-end.png)

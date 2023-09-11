@@ -2,7 +2,7 @@
 
 ## Desktop Application
 
-The easiest way to get started with World-Wide-Lab is to use the Desktop Application which automatically includes everything you will need to run your own local experiments. The Desktop App is available for Windows, Mac, and Linux and can be downloaded [here ⬇️](https://github.com/world-wide-lab/world-wide-lab/releases/latest).
+The easiest way to get started with World-Wide-Lab is to use the Desktop Application which automatically includes everything you will need to run your own local experiments. The Desktop App is available for Windows, Mac, and Linux and can be [⬇️ downloaded here](https://github.com/world-wide-lab/world-wide-lab/releases/latest).
 
 ::: tip
 Even if you plan to use the World-Wide-Lab Server, we recommend to try out the Desktop Application first to get to know the platform, before setting up an online server.
