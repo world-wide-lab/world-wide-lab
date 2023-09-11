@@ -98,10 +98,7 @@ features:
   }
 </style>
 
-<atropos-component class="my-atropos"
-  active-offset="40"
-  shadow-scale="0"
->
+<atropos-component class="my-atropos" active-offset="40" shadow-scale="0">
   <div class="screenshot-container">
     <img src="/img/landing-page/dashboard-no-window.png" />
   </div>

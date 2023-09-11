@@ -18,7 +18,7 @@ When you start up World-Wide-Lab for the first time, it will automatically gener
 
 All projects or experiments on World-Wide-Lab are organized into `Studies`.
 
-The first step when setting up a new data collection is therefore to create a new study. To do so, go to *Studies* in the left navigation pane and click on the button **Created new** on the studies page.
+The first step when setting up a new data collection is therefore to create a new study. To do so, go to _Studies_ in the left navigation pane and click on the button **Created new** on the studies page.
 
 Provide a new `StudyId` to idenfity your study in the future and click on **Save** to create it. Each `Study Id` must be unique and should ideally be clearly linked to your goal of the study, so you can remember it when downloading data later on.
 
@@ -32,12 +32,12 @@ If you want to provide additional information about your study, you can also add
 
 After creating the study, you will need to set up your experiment to send data to the study. How you will do this depends on how you created your experiment, since World-Wide-Lab supports different ways of collecting data.
 
-On the `Studies` page, you should select the Study you just created to open its *Show* page. There, you can see additional details about the Study and buttons to see or download its data. Below, you will find a section on `Integrating the Study`. This section has code that you can paste into the code of your experiment to set up data collection.
+On the `Studies` page, you should select the Study you just created to open its _Show_ page. There, you can see additional details about the Study and buttons to see or download its data. Below, you will find a section on `Integrating the Study`. This section has code that you can paste into the code of your experiment to set up data collection.
 
 World-Wide-Lab supports ready-made integrations for popular experimental libraries e.g. jsPsych as well as a general purpose client library to support flexible use cases. Please refer to the detailed guides on the different integrations for more detailed information.
 
 - [jsPsych](/guides/integration-jsPsych)
-- [General Purpose Client]((/guides/client))
+- [General Purpose Client](<(/guides/client)>)
 
 With this in place, you are ready to start collecting data. 🎉
 
