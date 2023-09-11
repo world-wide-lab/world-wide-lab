@@ -40,7 +40,9 @@ features:
 
 <script>
   import AtroposComponent from 'atropos/element';
-  customElements.define('atropos-component', AtroposComponent);
+  if(customElements.get('atropos-component') === undefined) {
+    customElements.define('atropos-component', AtroposComponent);
+  }
 </script>
 
 <style>
