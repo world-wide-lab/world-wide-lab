@@ -10,7 +10,7 @@ Even if you plan to use the World-Wide-Lab Server, we recommend to try out the D
 
 When starting World-Wide-Lab for the first time, you will be greeted with the welcome screen looking something like this.
 
-![A screenshot of the dashboard pane in World-Wide-Lab](/img/screenshots/dashboard.png)
+![A screenshot of the dashboard pane in World-Wide-Lab](/img/screenshots/generated/admin.png){.screenshot}
 
 When you start up World-Wide-Lab for the first time, it will automatically generate an example study with some example data for you.
 
@@ -18,9 +18,13 @@ When you start up World-Wide-Lab for the first time, it will automatically gener
 
 All projects or experiments on World-Wide-Lab are organized into `Studies`.
 
-The first step when setting up a new data collection is therefore to create a new study. To do so, go to _Studies_ in the left navigation pane and click on the button **Create new** on the studies page.
+The first step when setting up a new data collection is therefore to create a new study. To do so, go to _Studies_ in the left navigation pane (you may have to click the hamburger menu in the top left corner for the navigation to open) and click on the button **Create new** on the studies page.
+
+![A screenshot of the studies view in World-Wide-Lab](/img/screenshots/generated/admin_resources_wwl_studies.png){.screenshot}
 
 Provide a new `StudyId` to idenfity your study in the future and click on **Save** to create it. Each `Study Id` must be unique and should ideally have a clear link to your study, so you can remember it when downloading data later on. As an example, at [themusiclab.org](https://themusiclab.org) we often use abbreviations of the titles of our games as study ids e.g. `td` for the [Tone Deafness Test](https://www.themusiclab.org/quizzes/td/).
+
+![A screenshot of the create new study view in World-Wide-Lab](/img/screenshots/generated/admin_resources_wwl_studies_actions_new.png){.screenshot}
 
 With this, you just created your first study, well done! 🚀
 
@@ -35,6 +39,8 @@ Please note that everything under `Public Info` is indeed public and can be read
 After creating the study, you will need to set up your experiment to send data to the study. How you will do this depends on how you created your experiment, since World-Wide-Lab supports different ways of collecting data.
 
 On the `Studies` page, you should select the Study you just created to open its _Show_ page. There, you can see additional details about the Study and buttons to see or download its data. Below, you will find a section on `Integrating the Study`. This section has code that you can paste into the code of your experiment to set up data collection.
+
+![A screenshot of the create detailed view for a single study in World-Wide-Lab](/img/screenshots/generated/admin_resources_wwl_studies_records_my-awesome-study-id_show.png){.screenshot}
 
 World-Wide-Lab supports ready-made integrations for popular experimental libraries e.g. jsPsych as well as a general purpose client library to support flexible use cases. Please refer to the detailed guides on the different integrations for more detailed information.
 

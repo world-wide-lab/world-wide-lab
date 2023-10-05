@@ -1,10 +1,12 @@
 # Downloading Data
 
-To download data for a Study on World-Wide-Lab go to the list of Studies on the left sidebar. There, hover your mouse over the button with the three dots `...` to see additional actions and click the option `Download Data`.
+To download data for a Study on World-Wide-Lab go to the list of Studies on the left sidebar. There, hover your mouse over the button with the three dots `...` to see additional actions and click the option **Download Data**.
 
-Alternatively, you can also click a study in the list of studies to open it's details page where there's another button titled `Download Data from this Study`.
+Alternatively, you can also click a study in the list of studies to open it's details page where there's another button titled **Download Data from this Study**.
 
 Both of these options bring you to the `Download Data` view.
+
+![A screenshot of the download data view in World-Wide-Lab](/img/screenshots/generated/admin_resources_wwl_studies_records_my-awesome-study-id_downloadData.png){.screenshot}
 
 ## Data Types
 
@@ -24,4 +26,5 @@ If you are unsure about the differences between `Responses`, `Sessions` and `Par
 The following data formats are supported:
 
 - **JSON**: Javascript Object Notation
-- **CSV**: Comma Separated Values (Recommended for further analyses)
+- **CSV**: Comma Separated Values
+  - Recommended for further analyses in statistical software such as R, Python, SPSS or JASP
