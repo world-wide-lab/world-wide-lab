@@ -18,14 +18,16 @@ When you start up World-Wide-Lab for the first time, it will automatically gener
 
 All projects or experiments on World-Wide-Lab are organized into `Studies`.
 
-The first step when setting up a new data collection is therefore to create a new study. To do so, go to _Studies_ in the left navigation pane and click on the button **Created new** on the studies page.
+The first step when setting up a new data collection is therefore to create a new study. To do so, go to _Studies_ in the left navigation pane and click on the button **Create new** on the studies page.
 
-Provide a new `StudyId` to idenfity your study in the future and click on **Save** to create it. Each `Study Id` must be unique and should ideally be clearly linked to your goal of the study, so you can remember it when downloading data later on.
+Provide a new `StudyId` to idenfity your study in the future and click on **Save** to create it. Each `Study Id` must be unique and should ideally have a clear link to your study, so you can remember it when downloading data later on. As an example, at [themusiclab.org](https://themusiclab.org) we often use abbreviations of the titles of our games as study ids e.g. `td` for the [Tone Deafness Test](https://www.themusiclab.org/quizzes/td/).
 
-With this, you just created your first study. 🚀
+With this, you just created your first study, well done! 🚀
 
-::: info
-If you want to provide additional information about your study, you can also add it under `Public Info` or `Private Info`. Please note that everything under `Public Info` can be read by anyone without authentication, so please only use information there that you are comfortable sharing.
+::: tip
+If you want to provide additional information about your study, you can also add it under `Public Info` or `Private Info`.
+
+Please note that everything under `Public Info` is indeed public and can be read by anyone without authentication, so please only use information there that you are comfortable sharing.
 :::
 
 ## Collecting Data
@@ -43,6 +45,6 @@ With this in place, you are ready to start collecting data. 🎉
 
 We always recommend to test the quality of data collection before starting a large-scale data collection. To do so, just complete your experiment locally, [download its data](/guides/download-data) and see whether the data matches your expectations.
 
-::: info
+::: tip
 Since World-Wide-Lab is first and foremost a data-collection platform, experiments running on there need to be created using a different library. we recommend to use one of the libraries with integrations to create experiments such as [jsPsych](https://www.jspsych.org/).
 :::

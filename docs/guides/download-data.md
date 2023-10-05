@@ -14,11 +14,11 @@ The following data types are supported:
 
 - **Responses (extracted)**: These are all responses belonging to a study with the keys of the response-payload extracted into different columns. This is the recommended format for further analyses as it makes working with data significantly easier.
 - **Responses (unprocessed)**: These are all responses belonging to a study in their raw format. This data format is very similar to how other tools store experimental data, especially from web experiment libraries.
-- **Runs (unprocessed)**: This is a list of all runs belonging to study, without their respective responses. This data format is useful if you want to examine private or public info stored in a run.
+- **Sessions (unprocessed)**: This is a list of all runs belonging to study, without their respective responses. This data format is useful if you want to examine private or public info stored in a run.
 - **Participants (unprocessed)**: This is a list of all participants belonging to study, without their respective responses or runs. This data format is useful if you want to examine private or public info stored in a participant or if you have set up participant-links.
 
 ::: tip
-If you are unsure about the differences between `Responses`, `Runs` and `Participants` we recommend reading the [What is World-Wide-Lab guide](/guides/what-is-world-wide-lab.md)
+If you are unsure about the differences between `Responses`, `Sessions` and `Participants` we recommend reading the [What is World-Wide-Lab guide](/guides/what-is-world-wide-lab.md)
 :::
 
 The following data formats are supported:
