@@ -117,7 +117,7 @@ routerPublic.put(
  *       '200':
  *         description: Public participant information as JSON.
  *       '400':
- *         description: Run does not exist.
+ *         description: Session does not exist.
  *       '500':
  *         description: Failed to retrieve participant information.
  */
@@ -183,9 +183,9 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
 
 /**
  * @openapi
- * /run:
+ * /session:
  *   post:
- *     summary: Start a new run
+ *     summary: Start a new session
  *     tags:
  *       - main
  *     requestBody:
@@ -203,16 +203,16 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  *               - studyId
  *     responses:
  *       '200':
- *         description: Run created successfully
+ *         description: Session created successfully
  *       '400':
  *         description: Malformed request
  *       '500':
- *         description: Failed to create run
+ *         description: Failed to create session
  */
-routerPublic.post("/run", async (req: Request, res: Response) => {
+routerPublic.post("/session", async (req: Request, res: Response) => {
   const { participantId, studyId } = req.body;
   try {
-    const runData: {
+    const sessionData: {
       studyId: string;
       participantId?: string;
     } = {
@@ -225,26 +225,26 @@ routerPublic.post("/run", async (req: Request, res: Response) => {
         res.status(400).json({ error: "participantId is not a valid UUID" });
         return;
       }
-      runData.participantId = participantId;
+      sessionData.participantId = participantId;
     }
 
     if (studyId !== undefined) {
-      const run = await sequelize.models.Run.create(runData);
-      res.json(run);
+      const session = await sequelize.models.Session.create(sessionData);
+      res.json(session);
     } else {
       res.status(400).json({ error: "Missing participantId or studyId." });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to create run" });
+    res.status(500).json({ error: "Failed to create session" });
   }
 });
 
 /**
  * @openapi
- * /run/finish:
+ * /session/finish:
  *   post:
- *     summary: Mark a run as finished
+ *     summary: Mark a session as finished
  *     tags:
  *       - main
  *     requestBody:
@@ -254,54 +254,54 @@ routerPublic.post("/run", async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               runId:
+ *               sessionId:
  *                 type: string
  *             required:
- *               - runId
+ *               - sessionId
  *     responses:
  *       '200':
- *         description: Run marked as finished successfully
+ *         description: Session marked as finished successfully
  *       '500':
- *         description: Failed to update run
+ *         description: Failed to update session
  */
-routerPublic.post("/run/finish", async (req: Request, res: Response) => {
-  const { runId } = req.body;
+routerPublic.post("/session/finish", async (req: Request, res: Response) => {
+  const { sessionId } = req.body;
   try {
-    if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: "runId is not a valid UUID" });
+    if (!validator.isUUID(sessionId)) {
+      res.status(400).json({ error: "sessionId is not a valid UUID" });
       return;
     }
-    const updatedRows = await sequelize.models.Run.update(
+    const updatedRows = await sequelize.models.Session.update(
       { finished: true },
-      { where: { runId } },
+      { where: { sessionId } },
     );
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
     } else {
-      res.status(400).json({ error: "Unknown runId" });
+      res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to update run" });
+    res.status(500).json({ error: "Failed to update session" });
   }
 });
 
 /**
  * @openapi
- * /run/{runId}:
+ * /session/{sessionId}:
  *   put:
- *     summary: Update a run
+ *     summary: Update a session
  *     tags:
  *       - update
  *     parameters:
  *       - in: path
- *         name: runId
+ *         name: sessionId
  *         schema:
  *           type: string
  *         required: true
- *         description: ID of the run to update
+ *         description: ID of the session to update
  *     requestBody:
- *       description: New data for the run
+ *       description: New data for the session
  *       required: true
  *       content:
  *         application/json:
@@ -314,73 +314,73 @@ routerPublic.post("/run/finish", async (req: Request, res: Response) => {
  *                 type: object
  *     responses:
  *       '200':
- *         description: Run updated successfully
+ *         description: Session updated successfully
  *       '500':
- *         description: Failed to update run
+ *         description: Failed to update session
  */
-routerPublic.put("/run/:runId", async (req: Request, res: Response) => {
-  const { runId } = req.params;
+routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
   const newData = req.body;
   try {
-    if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: "runId is not a valid UUID" });
+    if (!validator.isUUID(sessionId)) {
+      res.status(400).json({ error: "sessionId is not a valid UUID" });
       return;
     }
-    const updatedRows = await sequelize.models.Run.update(newData, {
-      where: { runId },
+    const updatedRows = await sequelize.models.Session.update(newData, {
+      where: { sessionId },
     });
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
     } else {
-      res.status(400).json({ error: "Unknown runId" });
+      res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to update run" });
+    res.status(500).json({ error: "Failed to update session" });
   }
 });
 
 /**
  * @openapi
- * /run/{runId}:
+ * /session/{sessionId}:
  *   get:
- *     summary: Retrieve public information for a run
+ *     summary: Retrieve public information for a session
  *     tags:
  *       - public-info
  *     parameters:
  *       - in: path
- *         name: runId
+ *         name: sessionId
  *         schema:
  *           type: string
  *         required: true
- *         description: ID of the run to retrieve public information for.
+ *         description: ID of the session to retrieve public information for.
  *     responses:
  *       '200':
- *         description: Public run information as JSON.
+ *         description: Public session information as JSON.
  *       '400':
- *         description: Run does not exist.
+ *         description: Session does not exist.
  *       '500':
- *         description: Failed to retrieve run information.
+ *         description: Failed to retrieve session information.
  */
-routerPublic.get("/run/:runId", async (req: Request, res: Response) => {
-  const { runId } = req.params;
+routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
   try {
-    if (!validator.isUUID(runId)) {
-      res.status(400).json({ error: "runId is not a valid UUID" });
+    if (!validator.isUUID(sessionId)) {
+      res.status(400).json({ error: "sessionId is not a valid UUID" });
       return;
     }
-    const run = await sequelize.models.Run.findOne({
-      where: { runId },
-      attributes: ["runId", "publicInfo"],
+    const session = await sequelize.models.Session.findOne({
+      where: { sessionId },
+      attributes: ["sessionId", "publicInfo"],
     });
-    if (run) {
-      res.status(200).json(run.toJSON());
+    if (session) {
+      res.status(200).json(session.toJSON());
     } else {
-      res.status(400).json({ error: "Unknown runId" });
+      res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to update run" });
+    res.status(500).json({ error: "Failed to update session" });
   }
 });
 
@@ -398,26 +398,26 @@ routerPublic.get("/run/:runId", async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               runId:
+ *               sessionId:
  *                 type: string
  *               name:
  *                 type: string
  *               payload:
  *                 type: object
  *             required:
- *               - runId
+ *               - sessionId
  *               - name
  *               - payload
  *     responses:
  *       '200':
  *         description: Response created successfully
  *       '400':
- *         description: Invalid request body, either misformatted or the runId does not exist
+ *         description: Invalid request body, either misformatted or the sessionId does not exist
  *       '500':
  *         description: Failed to create response
  */
 routerPublic.post("/response", async (req: Request, res: Response) => {
-  const { runId, name, payload } = req.body;
+  const { sessionId, name, payload } = req.body;
 
   // Validate payload, it can be NULL (undefined) or a JSON object
   if (
@@ -428,14 +428,14 @@ routerPublic.post("/response", async (req: Request, res: Response) => {
       .json({ error: "Payload has to be a JSON object, undefined or null." });
     return;
   }
-  if (!validator.isUUID(runId)) {
-    res.status(400).json({ error: "runId is not a valid UUID" });
+  if (!validator.isUUID(sessionId)) {
+    res.status(400).json({ error: "sessionId is not a valid UUID" });
     return;
   }
 
   try {
     const response = await sequelize.models.Response.create({
-      runId,
+      sessionId,
       name,
       payload,
     });
@@ -445,7 +445,7 @@ routerPublic.post("/response", async (req: Request, res: Response) => {
       error instanceof Error &&
       error.name === "SequelizeForeignKeyConstraintError"
     ) {
-      res.status(400).json({ error: "Unknown runId" });
+      res.status(400).json({ error: "Unknown sessionId" });
     } else {
       console.error(error);
       res.status(500).json({ error: "Failed to create response" });
@@ -457,9 +457,9 @@ routerPublic.post("/response", async (req: Request, res: Response) => {
  * @openapi
  * /study/{studyId}/count/{countFilter}:
  *   get:
- *     summary: Retrieve the number of runs for a study
+ *     summary: Retrieve the number of sessions for a study
  *     description: >
- *       This endpoint is used to count the number of runs for a study.
+ *       This endpoint is used to count the number of sessions for a study.
  *     tags:
  *       - main
  *     parameters:
@@ -505,7 +505,7 @@ routerPublic.get(
       }
 
       // TODO: Add caching or even a self-updating table or something to increase efficiency
-      const count = await sequelize.models.Run.count({
+      const count = await sequelize.models.Session.count({
         where,
       });
 

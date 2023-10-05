@@ -20,19 +20,19 @@ exports[`API Routes GET /participant/:participantId should retrieve public infor
 }
 `;
 
-exports[`API Routes GET /run/:runId should fail when the run does not exist 1`] = `
+exports[`API Routes GET /session/:sessionId should fail when the session does not exist 1`] = `
 {
-  "error": "Unknown runId",
+  "error": "Unknown sessionId",
 }
 `;
 
-exports[`API Routes GET /run/:runId should fail when the runId is invalid 1`] = `
+exports[`API Routes GET /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
-  "error": "runId is not a valid UUID",
+  "error": "sessionId is not a valid UUID",
 }
 `;
 
-exports[`API Routes GET /run/:runId should retrieve public information about a run 1`] = `
+exports[`API Routes GET /session/:sessionId should retrieve public information about a session 1`] = `
 {
   "publicInfo": {
     "dolor": "sit",
@@ -70,15 +70,15 @@ exports[`API Routes GET /study/:studyId/data/:dataType should require the correc
 }
 `;
 
-exports[`API Routes POST /response should fail to submit a response when the run does not exist 1`] = `
+exports[`API Routes POST /response should fail to submit a response when the session does not exist 1`] = `
 {
-  "error": "Unknown runId",
+  "error": "Unknown sessionId",
 }
 `;
 
-exports[`API Routes POST /response should fail to submit a response when the runId is invalid 1`] = `
+exports[`API Routes POST /response should fail to submit a response when the sessionId is invalid 1`] = `
 {
-  "error": "runId is not a valid UUID",
+  "error": "sessionId is not a valid UUID",
 }
 `;
 
@@ -88,19 +88,19 @@ exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = 
 }
 `;
 
-exports[`API Routes POST /run/finish should fail when the run does not exist 1`] = `
+exports[`API Routes POST /session/finish should fail when the session does not exist 1`] = `
 {
-  "error": "Unknown runId",
+  "error": "Unknown sessionId",
 }
 `;
 
-exports[`API Routes POST /run/finish should fail when the runId is invalid 1`] = `
+exports[`API Routes POST /session/finish should fail when the sessionId is invalid 1`] = `
 {
-  "error": "runId is not a valid UUID",
+  "error": "sessionId is not a valid UUID",
 }
 `;
 
-exports[`API Routes POST /run/finish should mark a run as finished 1`] = `
+exports[`API Routes POST /session/finish should mark a session as finished 1`] = `
 {
   "success": true,
 }
@@ -124,19 +124,19 @@ exports[`API Routes PUT /participant/:participantId should update an existing pa
 }
 `;
 
-exports[`API Routes PUT /run/:runId should fail when the run does not exist 1`] = `
+exports[`API Routes PUT /session/:sessionId should fail when the session does not exist 1`] = `
 {
-  "error": "Unknown runId",
+  "error": "Unknown sessionId",
 }
 `;
 
-exports[`API Routes PUT /run/:runId should fail when the runId is invalid 1`] = `
+exports[`API Routes PUT /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
-  "error": "runId is not a valid UUID",
+  "error": "sessionId is not a valid UUID",
 }
 `;
 
-exports[`API Routes PUT /run/:runId should update a run 1`] = `
+exports[`API Routes PUT /session/:sessionId should update a session 1`] = `
 {
   "success": true,
 }

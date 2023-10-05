@@ -36,11 +36,11 @@ export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
         labels: labels,
         datasets: [
           {
-            name: "Total Runs",
+            name: "Total Sessions",
             values: n_total,
           },
           {
-            name: "Finished Runs",
+            name: "Finished Sessions",
             values: n_finished,
           },
         ],

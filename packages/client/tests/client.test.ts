@@ -1,7 +1,7 @@
 // Set up fake environment variables
 import "./setup_env";
 
-import { Client as DevClient, Participant, Run } from "../src";
+import { Client as DevClient, Participant, Session } from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import { init as initDev, Server } from "@world-wide-lab/server/src/init.ts";
@@ -36,28 +36,31 @@ describe("Client", () => {
     expect(participant.participantId).toBeDefined();
   });
 
-  it("should start a new run (without a linked participant)", async () => {
-    const run = await client.createRun({ studyId: "example" });
+  it("should start a new session (without a linked participant)", async () => {
+    const session = await client.createSession({ studyId: "example" });
 
-    expect(run instanceof Run).toBe(true);
-    expect(run.runId).toBeDefined();
+    expect(session instanceof Session).toBe(true);
+    expect(session.sessionId).toBeDefined();
   });
 
-  it("should start a new run (with a linked participant)", async () => {
+  it("should start a new session (with a linked participant)", async () => {
     const participant = await client.createParticipant();
-    const run = await client.createRun({ studyId: "example", participant });
+    const session = await client.createSession({
+      studyId: "example",
+      participant,
+    });
 
-    expect(run instanceof Run).toBe(true);
-    expect(run.runId).toBeDefined();
-    expect(run.participant instanceof Participant).toBe(true);
-    expect(run.participant?.participantId).toBeDefined();
+    expect(session instanceof Session).toBe(true);
+    expect(session.sessionId).toBeDefined();
+    expect(session.participant instanceof Participant).toBe(true);
+    expect(session.participant?.participantId).toBeDefined();
   });
 
   it("should store responses", async () => {
-    const run = await client.createRun({ studyId: "example" });
+    const session = await client.createSession({ studyId: "example" });
 
     expect(
-      await run.response({
+      await session.response({
         name: "example_name",
         payload: { ex_key: "ex_value" },
       }),
@@ -81,27 +84,27 @@ describe("Client", () => {
     expect(publicParticipantInfo.publicInfo.condition).toBe("A");
   });
 
-  it("should store and retrieve run data", async () => {
-    const run = await client.createRun({ studyId: "example" });
+  it("should store and retrieve session data", async () => {
+    const session = await client.createSession({ studyId: "example" });
 
-    const runUpdateResult = await run.setMetadata({
+    const sessionUpdateResult = await session.setMetadata({
       privateInfo: {
-        name: "Run No Uno",
+        name: "Session No Uno",
       },
       publicInfo: {
         condition: "A",
       },
     });
-    expect(runUpdateResult).toBe(true);
+    expect(sessionUpdateResult).toBe(true);
 
-    const publicRunInfo = await run.getPublicInfo();
-    expect(publicRunInfo.publicInfo.condition).toBe("A");
+    const publicSessionInfo = await session.getPublicInfo();
+    expect(publicSessionInfo.publicInfo.condition).toBe("A");
   });
 
-  it("should finish a run", async () => {
-    const run = await client.createRun({ studyId: "example" });
+  it("should finish a session", async () => {
+    const session = await client.createSession({ studyId: "example" });
 
-    const runFinishResult = await run.finish();
-    expect(runFinishResult).toBe(true);
+    const sessionFinishResult = await session.finish();
+    expect(sessionFinishResult).toBe(true);
   });
 });

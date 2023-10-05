@@ -3,9 +3,9 @@ import type { Migration } from "../migrate";
 import { DataTypes } from "sequelize";
 
 const columnComments = {
-  studyId: `The unique identifier for each study. This id is used to link runs with studies. Must be unique across all studies.`,
-  participantId: `The unique identifier for each participant. This id is used to link runs with participants. Generated automatically.`,
-  runId: `The unique identifier for each run. This id is used to identify responses. Generated automatically.`,
+  studyId: `The unique identifier for each study. This id is used to link sessions with studies. Must be unique across all studies.`,
+  participantId: `The unique identifier for each participant. This id is used to link sessions with participants. Generated automatically.`,
+  sessionId: `The unique identifier for each session. This id is used to identify responses. Generated automatically.`,
   responseId: `The unique identifier for each response. Generated automatically.`,
 
   createdAt: `The timestamp this record has been created. Generated automatically.`,
@@ -81,13 +81,13 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
-  await context.createTable("wwl_runs", {
-    runId: {
+  await context.createTable("wwl_sessions", {
+    sessionId: {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
       allowNull: false,
-      comment: columnComments.runId,
+      comment: columnComments.sessionId,
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -113,7 +113,7 @@ export const up: Migration = async ({ context }) => {
     finished: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
+      comment: `Has this session has been finished? Note, that this field only gets updated when the /session/finish API endpoint is called.`,
     },
     participantId: {
       type: DataTypes.UUID,
@@ -156,17 +156,17 @@ export const up: Migration = async ({ context }) => {
       type: DataTypes.JSON,
       allowNull: true,
     },
-    runId: {
+    sessionId: {
       type: DataTypes.UUID,
       allowNull: false,
-      comment: columnComments.runId,
-      references: { model: "wwl_runs", key: "runId" },
+      comment: columnComments.sessionId,
+      references: { model: "wwl_sessions", key: "sessionId" },
     },
   });
 };
 export const down: Migration = async ({ context }) => {
   await context.dropTable("wwl_studies");
   await context.dropTable("wwl_participants");
-  await context.dropTable("wwl_runs");
+  await context.dropTable("wwl_sessions");
   await context.dropTable("wwl_responses");
 };

@@ -136,7 +136,7 @@ export const Dashboard: React.FC = () => {
 
         setIsElectron(response.data.electronApp);
         setStudyCountData(response.data.studyCount.toString());
-        setChartData(response.data.fullRunCounts);
+        setChartData(response.data.fullSessionCounts);
       })
       .catch((error) => {
         // Handle errors here
@@ -161,7 +161,7 @@ export const Dashboard: React.FC = () => {
         <Box width={[1, 1 / 2, 1 / 2, 2 / 3]} p="lg">
           <Card>
             <Box>
-              <CardLabel>Started / Finished Runs this Week</CardLabel>
+              <CardLabel>Started / Finished Sessions this Week</CardLabel>
             </Box>
             <DashboardLineChart data={chartData}></DashboardLineChart>
           </Card>

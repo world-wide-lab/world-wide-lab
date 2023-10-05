@@ -13,12 +13,12 @@ const MOCK_RESPONSES = {
       participantId: "my-participant-id",
     },
   },
-  "v1/run/": {
+  "v1/session/": {
     POST: {
-      runId: "my-run-id",
+      sessionId: "my-session-id",
     },
   },
-  "v1/run/finish": {
+  "v1/session/finish": {
     POST: {
       success: true,
     },
@@ -62,7 +62,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       url,
       studyId: "my-study",
     });
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
       }),
@@ -101,7 +101,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
 
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
         name: "trial-favorite-key",
         payload: {
           rt: 1,
@@ -116,9 +116,9 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/finish`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -134,7 +134,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       },
     );
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
       }),
@@ -166,7 +166,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
 
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
         payload: {
           rt: rt,
           stimulus: "Please press your favorite key on the keyboard.",
@@ -181,9 +181,9 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       method: "POST",
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/finish`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -225,7 +225,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       .values()[0].time_elapsed;
     const rt = jsPsych.data.getDataByTimelineNode("0.0-0.0").values()[0].rt;
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "plugin-study",
       }),
@@ -234,7 +234,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     });
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
         payload: [
           {
             rt: rt,
@@ -251,9 +251,9 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       method: "POST",
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/finish`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -279,7 +279,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       method: "POST",
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
         participantId: "my-participant-id",
@@ -312,7 +312,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
 
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
         payload: {
           rt: rt,
           stimulus: "Please press your favorite key on the keyboard.",
@@ -327,9 +327,9 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       method: "POST",
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/finish`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
-        runId: "my-run-id",
+        sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -357,7 +357,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       headers: { "Content-Type": "none" },
       method: "POST",
     });
-    expect(fetch).toHaveBeenCalledWith(`${url}v1/run/`, {
+    expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
         participantId: "my-participant-id",

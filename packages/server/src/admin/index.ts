@@ -119,7 +119,7 @@ const admin = new AdminJS({
       },
     },
     {
-      resource: sequelize.models.Run,
+      resource: sequelize.models.Session,
       options: {
         navigation: {
           name: null,
@@ -171,7 +171,7 @@ const admin = new AdminJS({
       labels: {
         wwl_studies: "Studies",
         wwl_participants: "Participants",
-        wwl_runs: "Runs",
+        wwl_sessions: "Sessions",
         wwl_responses: "Responses",
       },
       messages: {

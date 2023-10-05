@@ -22,7 +22,7 @@ const MyNewAction = (props: ActionProps) => {
   const dataTypeOptions = [
     { value: "responses-extracted-payload", label: "Responses (extracted)" },
     { value: "responses-raw", label: "Responses (unprocessed)" },
-    { value: "runs-raw", label: "Runs (unprocessed)" },
+    { value: "sessions-raw", label: "Sessions (unprocessed)" },
     { value: "participants-raw", label: "Participants (unprocessed)" },
   ];
   const [dataType, setDataType] = useState(dataTypeOptions[0]);

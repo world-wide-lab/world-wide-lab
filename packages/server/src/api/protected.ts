@@ -32,7 +32,7 @@ const routerProtectedWithoutAuthentication = express.Router();
  *           type: string
  *           enum: [
  *             responses-raw,
- *             runs-raw,
+ *             sessions-raw,
  *             participants-raw,
  *             responses-extracted-payload
  *          ]
@@ -65,23 +65,23 @@ routerProtectedWithoutAuthentication.get(
       if (dataType == "responses-raw") {
         data = await sequelize.models.Response.findAll({
           include: {
-            model: sequelize.models.Run,
+            model: sequelize.models.Session,
             where: { studyId },
             attributes: ["participantId"],
           },
           raw: true,
         });
-      } else if (dataType == "runs-raw") {
-        data = await sequelize.models.Run.findAll({
+      } else if (dataType == "sessions-raw") {
+        data = await sequelize.models.Session.findAll({
           where: { studyId },
           raw: true,
         });
       } else if (dataType == "participants-raw") {
         data = await sequelize.models.Participant.findAll({
           include: {
-            model: sequelize.models.Run,
+            model: sequelize.models.Session,
             where: { studyId },
-            attributes: ["runId"],
+            attributes: ["sessionId"],
           },
           raw: true,
         });
@@ -92,9 +92,9 @@ routerProtectedWithoutAuthentication.get(
           payload_json.key as key
         FROM
           wwl_responses
-            INNER JOIN wwl_runs ON (wwl_runs."runId" = wwl_responses."runId"),
+            INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId"),
           json_each(payload) payload_json
-        WHERE wwl_runs."studyId" = :studyId
+        WHERE wwl_sessions."studyId" = :studyId
         ORDER BY key ASC;
       `,
           {
@@ -134,8 +134,8 @@ routerProtectedWithoutAuthentication.get(
         SELECT
           ${fieldsString}
         FROM wwl_responses
-          INNER JOIN wwl_runs ON (wwl_runs."runId" = wwl_responses."runId")
-        WHERE wwl_runs."studyId" = :studyId;
+          INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId")
+        WHERE wwl_sessions."studyId" = :studyId;
       `,
           {
             type: Sequelize.QueryTypes.SELECT,

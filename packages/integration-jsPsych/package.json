@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/integration-jspsych",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "",
   "type": "module",
   "main": "dist/index.cjs",
@@ -46,6 +46,6 @@
     "ts-jest": "^29.1.1"
   },
   "dependencies": {
-    "@world-wide-lab/client": "^0.0.3"
+    "@world-wide-lab/client": "^0.1.0"
   }
 }

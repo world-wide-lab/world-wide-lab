@@ -14,7 +14,7 @@ describe("Database Migrations", () => {
     expect(pending.length).toBeGreaterThan(0);
   });
 
-  it("should run migrations without issues", async () => {
+  it("should session migrations without issues", async () => {
     await up();
   });
 
@@ -46,7 +46,7 @@ describe("Database Migrations", () => {
   it("should have tables for all models", async () => {
     expect(await sequelize.models.Study.count()).toBe(0);
     expect(await sequelize.models.Participant.count()).toBe(0);
-    expect(await sequelize.models.Run.count()).toBe(0);
+    expect(await sequelize.models.Session.count()).toBe(0);
     expect(await sequelize.models.Response.count()).toBe(0);
   });
 

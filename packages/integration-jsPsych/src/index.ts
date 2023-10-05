@@ -7,7 +7,11 @@ import {
   TrialType,
 } from "jspsych";
 
-import { Client, Run, RunResponseOptions } from "@world-wide-lab/client";
+import {
+  Client,
+  Session,
+  SessionResponseOptions,
+} from "@world-wide-lab/client";
 
 interface InitializeParameters {}
 
@@ -27,9 +31,9 @@ interface SetupOptions {
    */
   studyId: string;
   /**
-   * Whether to link each run with a participant.
+   * Whether to link each session with a participant.
    *
-   * Note: If you want store identify participants between runs, you should
+   * Note: If you want store identify participants between sessions, you should
    * use jsPsychWorldWideLab.storeParticipantId().
    */
   linkParticipant?: boolean;
@@ -109,7 +113,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
         default: null,
       },
       /**
-       * Whether to mark the run as finished.
+       * Whether to mark the session as finished.
        */
       finish: {
         type: ParameterType.BOOL,
@@ -202,11 +206,11 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
     // Return at least some trial data
     var trial_data = {
-      runId: jsPsychWorldWideLab.run.runId,
+      sessionId: jsPsychWorldWideLab.session.sessionId,
       success,
     };
 
-    // Mark run as finished
+    // Mark session as finished
     if (trial.finish) {
       await jsPsychWorldWideLab.onExperimentFinish();
     }
@@ -220,7 +224,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
   public static client: Client;
   public static studyId: string;
-  public static run: Run;
+  public static session: Session;
   public static ready: boolean = false;
 
   public static async setup(options: SetupOptions): Promise<void> {
@@ -236,7 +240,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     });
     this.studyId = options.studyId;
 
-    this.run = await this.client.createRun({
+    this.session = await this.client.createSession({
       studyId: this.studyId,
       linkParticipant: options.linkParticipant,
     });
@@ -291,9 +295,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return initJsPsych(jsPsychOptions);
   }
 
-  private static responseQueue: RunResponseOptions[] = [];
+  private static responseQueue: SessionResponseOptions[] = [];
   public static async save(trialName: string, data: ObjectWithData) {
-    const response: RunResponseOptions = { name: trialName, payload: data };
+    const response: SessionResponseOptions = { name: trialName, payload: data };
     if (this.ready) {
       await this._saveResponse(response);
     } else {
@@ -307,12 +311,12 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       await this._saveResponse(entry);
     }
   }
-  private static async _saveResponse(response: RunResponseOptions) {
-    await this.run.response(response);
+  private static async _saveResponse(response: SessionResponseOptions) {
+    await this.session.response(response);
   }
 
   public static async onExperimentFinish() {
-    await this.run.finish();
+    await this.session.finish();
   }
 
   private static checkReady() {
@@ -322,7 +326,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   }
   public static storeParticipantId() {
     this.checkReady();
-    this.run.storeParticipantId();
+    this.session.storeParticipantId();
   }
   public static deleteStoredParticipantId() {
     this.checkReady();
