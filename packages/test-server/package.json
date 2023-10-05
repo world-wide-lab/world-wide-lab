@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/test-server",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Package for running tests against the World-Wide-Lab server",
   "scripts": {
     "test": "jest"

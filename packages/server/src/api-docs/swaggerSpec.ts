@@ -37,7 +37,7 @@ const options = {
       },
       {
         name: "update",
-        description: "Update information about participants or runs.",
+        description: "Update information about participants or sessions.",
       },
     ],
     components: {

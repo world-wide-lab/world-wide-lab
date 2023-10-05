@@ -93,23 +93,23 @@ const client = new Client({
   url: ${escapedUrl}
 });
 
-// Start a new run
-const run = await client.createRun({
+// Start a new session
+const session = await client.createSession({
   studyId: ${escapedStudyId}
 });
 
 // Send responses to the API
-run.response({
+session.response({
   name: 'my-trial',
   payload: {
     some: 'data'
   }
 })
 
-// ... collect many more responses via run.response()
+// ... collect many more responses via session.response()
 
-// Mark the run as finished at the end of your experiment
-run.finish();
+// Mark the session as finished at the end of your experiment
+session.finish();
 `,
   };
 
@@ -148,11 +148,11 @@ run.finish();
       <Box>
         <Button
           as="a"
-          href={`http://localhost:8787/admin/resources/wwl_runs?filters.studyId=${studyId}&page=1`}
+          href={`http://localhost:8787/admin/resources/wwl_sessions?filters.studyId=${studyId}&page=1`}
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="View"></Icon> View Runs in this Study
+          <Icon icon="View"></Icon> View Sessions in this Study
         </Button>
         &nbsp; &nbsp;
         <Button

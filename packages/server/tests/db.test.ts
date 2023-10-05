@@ -20,8 +20,8 @@ describe("Database Models", () => {
       const nParticipants = await sequelize.models.Participant.count();
       expect(nParticipants).toBe(4);
 
-      const nRuns = await sequelize.models.Run.count();
-      expect(nRuns).toBe(8);
+      const nSessions = await sequelize.models.Session.count();
+      expect(nSessions).toBe(8);
 
       const nResponses = await sequelize.models.Response.count();
       expect(nResponses).toBe(20);

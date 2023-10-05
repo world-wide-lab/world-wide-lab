@@ -1,9 +1,9 @@
 import { Sequelize, DataTypes } from "sequelize";
 
 const columnComments = {
-  studyId: `The unique identifier for each study. This id is used to link runs with studies. Must be unique across all studies.`,
-  participantId: `The unique identifier for each participant. This id is used to link runs with participants. Generated automatically.`,
-  runId: `The unique identifier for each run. This id is used to identify responses. Generated automatically.`,
+  studyId: `The unique identifier for each study. This id is used to link sessions with studies. Must be unique across all studies.`,
+  participantId: `The unique identifier for each participant. This id is used to link sessions with participants. Generated automatically.`,
+  sessionId: `The unique identifier for each session. This id is used to identify responses. Generated automatically.`,
   responseId: `The unique identifier for each response. Generated automatically.`,
 
   createdAt: `The timestamp this record has been created. Generated automatically.`,
@@ -90,14 +90,14 @@ function defineModels(sequelize: Sequelize) {
     },
   );
 
-  const Run = sequelize.define(
-    "Run",
+  const Session = sequelize.define(
+    "Session",
     {
-      runId: {
+      sessionId: {
         type: DataTypes.UUID,
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4,
-        comment: columnComments.runId,
+        comment: columnComments.sessionId,
       },
       createdAt: {
         type: DataTypes.DATE,
@@ -123,7 +123,7 @@ function defineModels(sequelize: Sequelize) {
       finished: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
-        comment: `Has this run has been finished? Note, that this field only gets updated when the /run/finish API endpoint is called.`,
+        comment: `Has this session has been finished? Note, that this field only gets updated when the /session/finish API endpoint is called.`,
       },
       participantId: {
         type: DataTypes.UUID,
@@ -137,7 +137,7 @@ function defineModels(sequelize: Sequelize) {
       },
     },
     {
-      tableName: "wwl_runs",
+      tableName: "wwl_sessions",
     },
   );
 
@@ -170,10 +170,10 @@ function defineModels(sequelize: Sequelize) {
         type: DataTypes.JSON,
         allowNull: true,
       },
-      runId: {
+      sessionId: {
         type: DataTypes.UUID,
         allowNull: false,
-        comment: columnComments.runId,
+        comment: columnComments.sessionId,
       },
     },
     {
@@ -182,14 +182,14 @@ function defineModels(sequelize: Sequelize) {
   );
 
   // Associations
-  Participant.hasMany(Run, { foreignKey: "participantId" });
-  Run.belongsTo(Participant, { foreignKey: "participantId" });
+  Participant.hasMany(Session, { foreignKey: "participantId" });
+  Session.belongsTo(Participant, { foreignKey: "participantId" });
 
-  Study.hasMany(Run, { sourceKey: "studyId", foreignKey: "studyId" });
-  Run.belongsTo(Study, { targetKey: "studyId", foreignKey: "studyId" });
+  Study.hasMany(Session, { sourceKey: "studyId", foreignKey: "studyId" });
+  Session.belongsTo(Study, { targetKey: "studyId", foreignKey: "studyId" });
 
-  Run.hasMany(Response, { foreignKey: "runId" });
-  Response.belongsTo(Run, { foreignKey: "runId" });
+  Session.hasMany(Response, { foreignKey: "sessionId" });
+  Response.belongsTo(Session, { foreignKey: "sessionId" });
 
   const InternalAdminSession = sequelize.define(
     "InternalAdminSession",
