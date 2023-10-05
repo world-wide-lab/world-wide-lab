@@ -45,7 +45,10 @@ describe("Client", () => {
 
   it("should start a new session (with a linked participant)", async () => {
     const participant = await client.createParticipant();
-    const session = await client.createSession({ studyId: "example", participant });
+    const session = await client.createSession({
+      studyId: "example",
+      participant,
+    });
 
     expect(session instanceof Session).toBe(true);
     expect(session.sessionId).toBeDefined();

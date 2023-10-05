@@ -7,7 +7,11 @@ import {
   TrialType,
 } from "jspsych";
 
-import { Client, Session, SessionResponseOptions } from "@world-wide-lab/client";
+import {
+  Client,
+  Session,
+  SessionResponseOptions,
+} from "@world-wide-lab/client";
 
 interface InitializeParameters {}
 

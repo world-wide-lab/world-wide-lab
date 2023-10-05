@@ -135,7 +135,9 @@ describe("API Routes", () => {
     });
 
     it("missing studyId should lead to an error", async () => {
-      const response = await endpoint.post("/v1/session").send({ participantId });
+      const response = await endpoint
+        .post("/v1/session")
+        .send({ participantId });
 
       expect(response.status).toBe(400);
     });
