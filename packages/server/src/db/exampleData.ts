@@ -23,32 +23,32 @@ async function generateExampleData(sequelize: Sequelize) {
 
   async function generateParticipantData(data: {
     privateInfo: Object;
-    runs: Array<number>;
+    sessions: Array<number>;
     createdAt?: Date;
-    finished_after_runs?: number;
+    finished_after_sessions?: number;
   }) {
-    const { privateInfo, runs, createdAt, finished_after_runs } = data;
+    const { privateInfo, sessions, createdAt, finished_after_sessions } = data;
     const participant = await sequelize.models.Participant.create({
       privateInfo,
       createdAt,
     });
-    for (let runIndex = 0; runIndex < runs.length; runIndex++) {
-      const n_responses = runs[runIndex];
-      const run = await sequelize.models.Run.create({
+    for (let sessionIndex = 0; sessionIndex < sessions.length; sessionIndex++) {
+      const n_responses = sessions[sessionIndex];
+      const session = await sequelize.models.Session.create({
         // @ts-ignore
         participantId: participant.participantId,
         studyId,
         createdAt,
         finished:
-          finished_after_runs === undefined
+          finished_after_sessions === undefined
             ? false
-            : n_responses >= finished_after_runs,
+            : n_responses >= finished_after_sessions,
       });
       const responses = [];
       for (let index = 1; index <= n_responses; index++) {
         responses.push({
           // @ts-ignore
-          runId: run.runId,
+          sessionId: session.sessionId,
           name: `trial-${index}`,
           payload: {
             response: `Response #${index}`,
@@ -69,32 +69,32 @@ async function generateExampleData(sequelize: Sequelize) {
     privateInfo: {
       description: "Example User #1",
     },
-    runs: [3],
-    finished_after_runs: 3,
+    sessions: [3],
+    finished_after_sessions: 3,
     createdAt: daysAgo(4),
   });
   await generateParticipantData({
     privateInfo: {
       description: "Example User #2",
     },
-    runs: [3],
-    finished_after_runs: 3,
+    sessions: [3],
+    finished_after_sessions: 3,
     createdAt: daysAgo(3),
   });
   await generateParticipantData({
     privateInfo: {
       description: "Example User #3",
     },
-    runs: [3, 3, 1, 3],
-    finished_after_runs: 3,
+    sessions: [3, 3, 1, 3],
+    finished_after_sessions: 3,
     createdAt: daysAgo(2),
   });
   await generateParticipantData({
     privateInfo: {
       description: "Example User #4",
     },
-    runs: [3, 1],
-    finished_after_runs: 3,
+    sessions: [3, 1],
+    finished_after_sessions: 3,
     createdAt: daysAgo(1),
   });
 }

@@ -23,7 +23,7 @@ describe("API Routes", () => {
   // });
 
   let participantId: string;
-  let runId: string;
+  let sessionId: string;
   let studyId: string = STUDY_ID;
 
   describe("POST /participant", () => {
@@ -120,71 +120,71 @@ describe("API Routes", () => {
     });
   });
 
-  describe("POST /run", () => {
-    it("should start a new run", async () => {
+  describe("POST /session", () => {
+    it("should start a new session", async () => {
       const response = await endpoint
-        .post("/v1/run")
+        .post("/v1/session")
         .send({ participantId, studyId });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("participantId", participantId);
       expect(response.body).toHaveProperty("studyId", studyId);
 
-      // Set the shared runId
-      runId = response.body.runId;
+      // Set the shared sessionId
+      sessionId = response.body.sessionId;
     });
 
     it("missing studyId should lead to an error", async () => {
-      const response = await endpoint.post("/v1/run").send({ participantId });
+      const response = await endpoint.post("/v1/session").send({ participantId });
 
       expect(response.status).toBe(400);
     });
     it("missing participantId should be ok", async () => {
-      const response = await endpoint.post("/v1/run").send({ studyId });
+      const response = await endpoint.post("/v1/session").send({ studyId });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("studyId", studyId);
-      expect(response.body).toHaveProperty("runId");
+      expect(response.body).toHaveProperty("sessionId");
     });
   });
 
-  describe("POST /run/finish", () => {
-    it("should mark a run as finished", async () => {
+  describe("POST /session/finish", () => {
+    it("should mark a session as finished", async () => {
       const response = await endpoint
-        .post("/v1/run/finish")
-        .send({ runId: runId });
+        .post("/v1/session/finish")
+        .send({ sessionId: sessionId });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
 
-      const run = await sequelize.models.Run.findOne({
-        where: { runId },
+      const session = await sequelize.models.Session.findOne({
+        where: { sessionId },
       });
-      expect(run).toHaveProperty("finished", true);
+      expect(session).toHaveProperty("finished", true);
     });
 
-    it("should fail when the run does not exist", async () => {
+    it("should fail when the session does not exist", async () => {
       const response = await endpoint
-        .post("/v1/run/finish")
-        .send({ runId: NON_EXISTENT_UUID });
+        .post("/v1/session/finish")
+        .send({ sessionId: NON_EXISTENT_UUID });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
 
-    it("should fail when the runId is invalid", async () => {
+    it("should fail when the sessionId is invalid", async () => {
       const response = await endpoint
-        .post("/v1/run/finish")
-        .send({ runId: "non-existent" });
+        .post("/v1/session/finish")
+        .send({ sessionId: "non-existent" });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
   });
 
-  describe("PUT /run/:runId", () => {
-    it("should update a run", async () => {
-      const response = await endpoint.put("/v1/run/" + runId).send({
+  describe("PUT /session/:sessionId", () => {
+    it("should update a session", async () => {
+      const response = await endpoint.put("/v1/session/" + sessionId).send({
         privateInfo: { lorem: "ipsum" },
         publicInfo: { dolor: "sit" },
       });
@@ -192,25 +192,25 @@ describe("API Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body).toMatchSnapshot();
 
-      const run = await sequelize.models.Run.findOne({
-        where: { runId },
+      const session = await sequelize.models.Session.findOne({
+        where: { sessionId },
       });
-      expect(run).toHaveProperty("privateInfo", { lorem: "ipsum" });
-      expect(run).toHaveProperty("publicInfo", { dolor: "sit" });
+      expect(session).toHaveProperty("privateInfo", { lorem: "ipsum" });
+      expect(session).toHaveProperty("publicInfo", { dolor: "sit" });
     });
 
-    it("should fail when the run does not exist", async () => {
+    it("should fail when the session does not exist", async () => {
       const response = await endpoint
-        .put("/v1/run/" + NON_EXISTENT_UUID)
+        .put("/v1/session/" + NON_EXISTENT_UUID)
         .send({ privateInfo: { lorem: "ipsum" } });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
 
-    it("should fail when the runId is invalid", async () => {
+    it("should fail when the sessionId is invalid", async () => {
       const response = await endpoint
-        .put("/v1/run/" + "non-existent-run-id")
+        .put("/v1/session/" + "non-existent-session-id")
         .send({ privateInfo: { lorem: "ipsum" } });
 
       expect(response.status).toBe(400);
@@ -218,28 +218,28 @@ describe("API Routes", () => {
     });
   });
 
-  describe("GET /run/:runId", () => {
-    it("should retrieve public information about a run", async () => {
-      const response = await endpoint.get("/v1/run/" + runId).send();
+  describe("GET /session/:sessionId", () => {
+    it("should retrieve public information about a session", async () => {
+      const response = await endpoint.get("/v1/session/" + sessionId).send();
 
       expect(response.status).toBe(200);
-      expect(response.body.runId).toBe(runId);
-      delete response.body.runId;
+      expect(response.body.sessionId).toBe(sessionId);
+      delete response.body.sessionId;
       expect(response.body).toMatchSnapshot();
     });
 
-    it("should fail when the run does not exist", async () => {
+    it("should fail when the session does not exist", async () => {
       const response = await endpoint
-        .get("/v1/run/" + NON_EXISTENT_UUID)
+        .get("/v1/session/" + NON_EXISTENT_UUID)
         .send();
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
 
-    it("should fail when the runId is invalid", async () => {
+    it("should fail when the sessionId is invalid", async () => {
       const response = await endpoint
-        .get("/v1/run/" + "non-existent-run-id")
+        .get("/v1/session/" + "non-existent-session-id")
         .send();
 
       expect(response.status).toBe(400);
@@ -250,7 +250,7 @@ describe("API Routes", () => {
   describe("POST /response", () => {
     it("should submit a response", async () => {
       const response = await endpoint.post("/v1/response").send({
-        runId,
+        sessionId,
         name: "test_trail",
         payload: {
           key_1: "value 1",
@@ -262,20 +262,20 @@ describe("API Routes", () => {
       expect(response.body).toHaveProperty("responseId");
       const { responseId } = response.body;
 
-      const runResponse = await sequelize.models.Response.findOne({
+      const sessionResponse = await sequelize.models.Response.findOne({
         where: { responseId },
       });
-      expect(runResponse).toHaveProperty("runId", runId);
-      expect(runResponse).toHaveProperty("name", "test_trail");
-      expect(runResponse).toHaveProperty("payload", {
+      expect(sessionResponse).toHaveProperty("sessionId", sessionId);
+      expect(sessionResponse).toHaveProperty("name", "test_trail");
+      expect(sessionResponse).toHaveProperty("payload", {
         key_1: "value 1",
         key_2: "value 2",
       });
     });
 
-    it("should fail to submit a response when the run does not exist", async () => {
+    it("should fail to submit a response when the session does not exist", async () => {
       const response = await endpoint.post("/v1/response").send({
-        runId: NON_EXISTENT_UUID,
+        sessionId: NON_EXISTENT_UUID,
         name: "test_trail",
         payload: {
           key_1: "value 1",
@@ -287,9 +287,9 @@ describe("API Routes", () => {
       expect(response.body).toMatchSnapshot();
     });
 
-    it("should fail to submit a response when the runId is invalid", async () => {
+    it("should fail to submit a response when the sessionId is invalid", async () => {
       const response = await endpoint.post("/v1/response").send({
-        runId: "non-existent-run-id",
+        sessionId: "non-existent-session-id",
         name: "test_trail",
         payload: {
           key_1: "value 1",
@@ -303,7 +303,7 @@ describe("API Routes", () => {
 
     it("should fail to submit non-JSON payload", async () => {
       const response = await endpoint.post("/v1/response").send({
-        runId,
+        sessionId,
         name: "test_trail",
         payload: "this-is-not-json",
       });
@@ -321,21 +321,21 @@ describe("API Routes", () => {
           key_2: "value 2",
         },
       };
-      // Two more responses for first run
-      await endpoint.post("/v1/response").send({ runId, ...exampleData });
-      await endpoint.post("/v1/response").send({ runId, ...exampleData });
-      // And one additional responses in a new run
-      const newRunResponse = await endpoint
-        .post("/v1/run")
+      // Two more responses for first session
+      await endpoint.post("/v1/response").send({ sessionId, ...exampleData });
+      await endpoint.post("/v1/response").send({ sessionId, ...exampleData });
+      // And one additional responses in a new session
+      const newSessionResponse = await endpoint
+        .post("/v1/session")
         .send({ participantId, studyId });
       await endpoint
         .post("/v1/response")
-        .send({ runId: newRunResponse.body.runId, ...exampleData });
+        .send({ sessionId: newSessionResponse.body.sessionId, ...exampleData });
     });
   });
 
   describe("GET /study/:studyId/count/:countType", () => {
-    it("should return the correct count (for all runs)", async () => {
+    it("should return the correct count (for all sessions)", async () => {
       const response = await endpoint
         .get(`/v1/study/${studyId}/count/all`)
         .send();
@@ -344,7 +344,7 @@ describe("API Routes", () => {
       expect(response.body.count).toBe(3);
     });
 
-    it("should return the correct count (for only finished runs)", async () => {
+    it("should return the correct count (for only finished sessions)", async () => {
       const response = await endpoint
         .get(`/v1/study/${studyId}/count/finished`)
         .send();
@@ -391,15 +391,15 @@ describe("API Routes", () => {
           "updatedAt",
           "name",
           "payload",
-          "runId",
-          "Run.participantId",
+          "sessionId",
+          "Session.participantId",
         ]
       `);
     });
 
-    it("should download a raw list of runs", async () => {
+    it("should download a raw list of sessions", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/runs-raw`)
+        .get(`/v1/study/${studyId}/data/sessions-raw`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -407,7 +407,7 @@ describe("API Routes", () => {
       expect(response.body.length).toBe(3);
       expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
         [
-          "runId",
+          "sessionId",
           "createdAt",
           "updatedAt",
           "privateInfo",
@@ -434,7 +434,7 @@ describe("API Routes", () => {
           "updatedAt",
           "privateInfo",
           "publicInfo",
-          "Runs.runId",
+          "Sessions.sessionId",
         ]
       `);
     });
@@ -453,7 +453,7 @@ describe("API Routes", () => {
           "createdAt",
           "updatedAt",
           "name",
-          "runId",
+          "sessionId",
           "key_1",
           "key_2",
         ]
@@ -478,14 +478,14 @@ describe("API Routes", () => {
 
     it("should handle studies without payload as well", async () => {
       const studyIdNoPayload = "no-payload-study";
-      // Create new empty study and add one run with one response
+      // Create new empty study and add one session with one response
       await endpoint.post("/v1/study").send({ studyId: studyIdNoPayload });
-      const runResponse = await endpoint
-        .post("/v1/run")
+      const sessionResponse = await endpoint
+        .post("/v1/session")
         .send({ participantId, studyId: studyIdNoPayload });
       await endpoint
         .post("/v1/response")
-        .send({ runId: runResponse.body.runId });
+        .send({ sessionId: sessionResponse.body.sessionId });
 
       const response = await endpoint
         .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload`)
@@ -500,7 +500,7 @@ describe("API Routes", () => {
           "createdAt",
           "updatedAt",
           "name",
-          "runId",
+          "sessionId",
         ]
       `);
     });

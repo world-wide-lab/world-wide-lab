@@ -5,28 +5,28 @@ type ClientOptions = {
   url: string;
 };
 
-export type ClientRunOptions = {
+export type ClientSessionOptions = {
   /**
-   * The id of the study to create a run for. Required.
+   * The id of the study to create a session for. Required.
    */
   studyId: string;
   /**
-   * Link the run to an existing participant
+   * Link the session to an existing participant
    */
   participant?: Participant;
   /**
-   * If true, a participant will be linked to the run.
+   * If true, a participant will be linked to the session.
    * If a participantId is stored, this will automatically be used to link
-   * the run to an existing participant.
+   * the session to an existing participant.
    */
   linkParticipant?: boolean;
 };
 
 export type ClientResponseOptions = {
   /**
-   * Id of the run this response belongs to
+   * Id of the session this response belongs to
    */
-  runId: string;
+  sessionId: string;
   /**
    * Name identifying this trial or response
    */
@@ -92,49 +92,49 @@ export class Client {
   }
 
   /**
-   * Start a new Run. If a participant's id is stored, it will be used. see getParticipant().
-   * @param runOptions Options to create the run with
-   * @returns A new Run instance
+   * Start a new Session. If a participant's id is stored, it will be used. see getParticipant().
+   * @param sessionOptions Options to create the session with
+   * @returns A new Session instance
    */
-  async createRun(runOptions: ClientRunOptions): Promise<Run> {
-    const runData: {
+  async createSession(sessionOptions: ClientSessionOptions): Promise<Session> {
+    const sessionData: {
       studyId: string;
       participantId?: string;
     } = {
-      studyId: runOptions.studyId,
+      studyId: sessionOptions.studyId,
     };
 
     // Create a participant if requested
     let participant: Participant | undefined;
-    if (runOptions.participant && runOptions.linkParticipant) {
+    if (sessionOptions.participant && sessionOptions.linkParticipant) {
       console.warn(
         "Both participant and linkParticipant are set. Ignoring linkParticipant.",
       );
     }
-    if (runOptions.participant) {
-      participant = runOptions.participant;
-    } else if (runOptions.linkParticipant) {
+    if (sessionOptions.participant) {
+      participant = sessionOptions.participant;
+    } else if (sessionOptions.linkParticipant) {
       participant = await this.getParticipant();
     }
     if (participant) {
-      runData.participantId = participant.participantId;
+      sessionData.participantId = participant.participantId;
     }
 
-    const result = await this.call("POST", `/run/`, runData);
-    const run = new Run(this, result.runId);
+    const result = await this.call("POST", `/session/`, sessionData);
+    const session = new Session(this, result.sessionId);
 
     // Link participant
     if (participant) {
-      run.participant = participant;
+      session.participant = participant;
     }
 
-    return run;
+    return session;
   }
 
   /**
-   * Create a new Response. See also Run.response()
+   * Create a new Response. See also Session.response()
    * @param opts Options to create the response with
-   * @param opts.runId Id of the run this response belongs to
+   * @param opts.sessionId Id of the session this response belongs to
    * @param opts.name Name identifying this trial or response
    * @param opts.payload The actual data of this response
    * @returns true if the response was created successfully
@@ -251,14 +251,14 @@ export class Participant extends ClientModel {
   }
 }
 
-export type RunResponseOptions = Omit<ClientResponseOptions, "runId">;
+export type SessionResponseOptions = Omit<ClientResponseOptions, "sessionId">;
 
-export class Run extends ClientModel {
+export class Session extends ClientModel {
   public participant?: Participant;
 
   constructor(
     clientInstance: Client,
-    public runId: string,
+    public sessionId: string,
   ) {
     super(clientInstance);
   }
@@ -266,24 +266,24 @@ export class Run extends ClientModel {
   /**
    * Create a new Response.
    */
-  response(opts: RunResponseOptions): Promise<boolean> {
-    const createResponseOptions = { runId: this.runId, ...opts };
+  response(opts: SessionResponseOptions): Promise<boolean> {
+    const createResponseOptions = { sessionId: this.sessionId, ...opts };
     return this.clientInstance.createResponse(createResponseOptions);
   }
 
   /**
-   * Finish the run. This will mark the run as finished.
-   * @returns true if the run was finished successfully
+   * Finish the session. This will mark the session as finished.
+   * @returns true if the session was finished successfully
    */
   async finish(): Promise<boolean> {
-    const result = await this.clientInstance.call("POST", `/run/finish`, {
-      runId: this.runId,
+    const result = await this.clientInstance.call("POST", `/session/finish`, {
+      sessionId: this.sessionId,
     });
     return result.success;
   }
 
   /**
-   * Update the run's meta-data.
+   * Update the session's meta-data.
    * @param data The data to update. Can contain privateInfo and/or publicInfo.
    *   The publicInfo can be retrieved later on without authentication, the
    *   privateInfo can only be downlaoded later on by the researcher.
@@ -294,22 +294,22 @@ export class Run extends ClientModel {
   }): Promise<boolean> {
     const result = await this.clientInstance.call(
       "PUT",
-      `/run/${this.runId}`,
+      `/session/${this.sessionId}`,
       data,
     );
     return result.success;
   }
 
   /**
-   * Retrieve public meta-data for a run
-   * @returns The run's publicInfo meta data
+   * Retrieve public meta-data for a session
+   * @returns The session's publicInfo meta data
    */
   getPublicInfo(): Promise<{ publicInfo: ObjectWithData }> {
-    return this.clientInstance.call("GET", `/run/${this.runId}`);
+    return this.clientInstance.call("GET", `/session/${this.sessionId}`);
   }
 
   /**
-   * Store the participantId of the participant that is doing this run.
+   * Store the participantId of the participant that is doing this session.
    * @returns true if the participantId was stored successfully
    */
   storeParticipantId(): boolean {

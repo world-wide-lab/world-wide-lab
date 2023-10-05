@@ -114,13 +114,13 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "INTEGER",
       "unique": false,
     },
-    "runId": {
+    "sessionId": {
       "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": false,
       "references": {
-        "key": "runId",
-        "model": "wwl_runs",
+        "key": "sessionId",
+        "model": "wwl_sessions",
       },
       "type": "UUID",
       "unique": false,
@@ -173,7 +173,7 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "JSON",
       "unique": false,
     },
-    "runId": {
+    "sessionId": {
       "allowNull": false,
       "defaultValue": undefined,
       "primaryKey": true,
@@ -245,7 +245,7 @@ exports[`Database Migrations should always create the same tables 1`] = `
   "wwl_internal_migrations",
   "wwl_participants",
   "wwl_responses",
-  "wwl_runs",
+  "wwl_sessions",
   "wwl_studies",
 ]
 `;
