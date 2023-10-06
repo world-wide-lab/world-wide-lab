@@ -2,7 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 
-import 'dotenv/config';
+import "dotenv/config";
 
 const config = new pulumi.Config();
 const containerPort = 80; // Default WWL port
@@ -38,17 +38,21 @@ const db = new aws.rds.Instance("wwl-database", {
   // finalSnapshotIdentifier: "wwl-db-final-snapshot",
 });
 
-const dbConnectionString = pulumi.all(
-  [db.endpoint, db.dbName]
-).apply(
-  ([endpoint, dbName]) => `postgresql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${endpoint}/${dbName}`
-);
-if (typeof dbConnectionString === 'string') {
-  console.log(`REMOVEME: DB Connection String: ${dbConnectionString}`)
+const dbConnectionString = pulumi
+  .all([db.endpoint, db.dbName])
+  .apply(
+    ([endpoint, dbName]) =>
+      `postgresql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${endpoint}/${dbName}`,
+  );
+if (typeof dbConnectionString === "string") {
+  console.log(`REMOVEME: DB Connection String: ${dbConnectionString}`);
 }
 
 // An ALB to serve the container endpoint to the internet
-const loadbalancer = new awsx.lb.ApplicationLoadBalancer("wwl-loadbalancer", {});
+const loadbalancer = new awsx.lb.ApplicationLoadBalancer(
+  "wwl-loadbalancer",
+  {},
+);
 
 // An ECS cluster to deploy into
 const cluster = new aws.ecs.Cluster("wwl-cluster", {});
@@ -59,24 +63,35 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
   assignPublicIp: true,
   taskDefinitionArgs: {
     container: {
-      name: 'wwl-server',
-      image: 'ghcr.io/world-wide-lab/server:latest',
+      name: "wwl-server",
+      image: "ghcr.io/world-wide-lab/server:latest",
       cpu: cpu,
       memory: memory,
       essential: true,
-      portMappings: [{
-        hostPort: containerPort,
-        containerPort: containerPort,
-        targetGroup: loadbalancer.defaultTargetGroup,
-      }],
+      portMappings: [
+        {
+          hostPort: containerPort,
+          containerPort: containerPort,
+          targetGroup: loadbalancer.defaultTargetGroup,
+        },
+      ],
       environment: [
         { name: "PORT", value: `${containerPort}` },
         { name: "DATABASE_URL", value: dbConnectionString },
         { name: "ADMIN_UI", value: "true" },
         { name: "USE_AUTHENTICATION", value: "true" },
-        { name: "ADMIN_AUTH_DEFAULT_EMAIL", value: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL },
-        { name: "ADMIN_AUTH_DEFAULT_PASSWORD", value: process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD },
-        { name: "ADMIN_AUTH_SESSION_SECRET", value: process.env.WWL_ADMIN_AUTH_SESSION_SECRET },
+        {
+          name: "ADMIN_AUTH_DEFAULT_EMAIL",
+          value: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
+        },
+        {
+          name: "ADMIN_AUTH_DEFAULT_PASSWORD",
+          value: process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
+        },
+        {
+          name: "ADMIN_AUTH_SESSION_SECRET",
+          value: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
+        },
         { name: "DEFAULT_API_KEY", value: process.env.WWL_DEFAULT_API_KEY },
       ],
     },
@@ -85,10 +100,8 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
 
 // The URL at which the container's HTTP endpoint will be available
 const url = pulumi.interpolate`http://${loadbalancer.loadBalancer.dnsName}`;
-if (typeof url === 'string') {
-  console.log(`Running at: ${url}`)
+if (typeof url === "string") {
+  console.log(`Running at: ${url}`);
 }
 
-export {
-  url
-};
+export { url };
