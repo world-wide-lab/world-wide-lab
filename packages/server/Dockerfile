@@ -24,4 +24,4 @@ ENV PORT=8787
 EXPOSE 8787
 
 # Start application
-CMD ["npm", "start"]
+CMD ["npm", "start-only"]
