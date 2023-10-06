@@ -1,0 +1,15 @@
+name: World-Wide-Lab
+description: Deployment of the World-Wode-Lab Server and accompanying database
+runtime: nodejs
+template:
+  description: A TypeScript program to deploy a containerized service on AWS
+  config:
+    aws:region:
+      description: The AWS region to deploy into
+      default: us-east-1
+    cpu:
+      description: The amount of CPU to allocate for the container
+      default: 512
+    memory:
+      description: The amount of memory to allocate for the container
+      default: 128
