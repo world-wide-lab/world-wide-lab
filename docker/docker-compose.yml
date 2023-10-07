@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: example_db_password
 
   wwl-server:
-    image: ghcr.io/world-wide-lab/server
+    image: ghcr.io/world-wide-lab/server:latest
     restart: unless-stopped
     ports:
       - 8787:8787
