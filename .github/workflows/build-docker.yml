@@ -70,3 +70,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # Test docker image
+      - name: Test Docker image
+        run: docker-compose -f docker/docker-compose.testing.yml run test-server
