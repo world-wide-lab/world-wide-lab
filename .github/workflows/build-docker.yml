@@ -55,6 +55,8 @@ jobs:
             # Support for branch or PR names (currently not enabled)
             type=ref,event=branch
             type=ref,event=pr
+            # Always set the dev tag
+            type=raw,value=dev
 
       # Install dependencies and build the server itself
       - name: Install dependencies
