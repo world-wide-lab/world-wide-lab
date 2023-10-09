@@ -42,7 +42,7 @@ const dbConnectionString = pulumi
   .all([db.endpoint, db.dbName])
   .apply(
     ([endpoint, dbName]) =>
-      `postgresql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${endpoint}/${dbName}`,
+      `postgresql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${endpoint}/${dbName}?sslmode=require&sslrootcert=/usr/src/app/certs/aws-rds-global-bundle.pem`,
   );
 if (typeof dbConnectionString === "string") {
   console.log(`REMOVEME: DB Connection String: ${dbConnectionString}`);
@@ -76,6 +76,9 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
         },
       ],
       environment: [
+        { name: "NODE_ENV", value: "production" },
+        // { name: "PGSSLMODE", value: "require" }, // could also be done via conncetion string
+        // NODE_TLS_REJECT_UNAUTHORIZED=0 to ignore invalid cert (better to pass CA cert)
         { name: "PORT", value: `${containerPort}` },
         { name: "DATABASE_URL", value: dbConnectionString },
         { name: "ADMIN_UI", value: "true" },
@@ -94,6 +97,15 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
         },
         { name: "DEFAULT_API_KEY", value: process.env.WWL_DEFAULT_API_KEY },
       ],
+      logConfiguration: {
+        logDriver: "awslogs",
+        options: {
+          "awslogs-group": "/ecs/wwl-server",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true",
+        },
+      },
     },
   },
 });
