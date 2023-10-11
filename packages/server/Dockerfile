@@ -18,6 +18,7 @@ RUN npm install --omit=dev
 # Copy application files
 COPY dist ./dist
 COPY static ./static
+COPY certs ./certs
 
 # Expose the app's port
 ENV PORT=8787
