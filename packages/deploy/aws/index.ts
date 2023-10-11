@@ -34,8 +34,9 @@ const db = new aws.rds.Instance("wwl-database", {
   allocatedStorage: 20,
   maxAllocatedStorage: 100,
   //  Either one of these two is required
-  skipFinalSnapshot: true,
-  // finalSnapshotIdentifier: "wwl-db-final-snapshot",
+  // skipFinalSnapshot: true,
+  finalSnapshotIdentifier: "wwl-db-final-snapshot",
+  deletionProtection: true,
 });
 
 const dbConnectionString = pulumi
