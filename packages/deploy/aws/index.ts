@@ -77,8 +77,6 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
       ],
       environment: [
         { name: "NODE_ENV", value: "production" },
-        // { name: "PGSSLMODE", value: "require" }, // could also be done via conncetion string
-        // NODE_TLS_REJECT_UNAUTHORIZED=0 to ignore invalid cert (better to pass CA cert)
         { name: "PORT", value: `${containerPort}` },
         { name: "DATABASE_URL", value: dbConnectionString },
         { name: "ADMIN_UI", value: "true" },
