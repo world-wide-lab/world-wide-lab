@@ -159,6 +159,13 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
           },
+          payload: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.ShowJsonProp,
+            },
+          },
         },
       },
     },
