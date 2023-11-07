@@ -18,8 +18,8 @@ const ShowJsonProp = (props: any) => {
   // Iterate over all params in the record and get all the start with "<name>."
   const prefix = `${property.name}.`;
   Object.entries(record.params).forEach(([key, value]) => {
-    if (key.includes(prefix)) {
-      object[key] = value;
+    if (key.startsWith(prefix)) {
+      object[key.replace(prefix, "")] = value;
     }
   });
 

@@ -165,6 +165,8 @@ const admin = new AdminJS({
               show: Components.ShowJsonProp,
               edit: Components.ShowJsonProp,
             },
+            description:
+              "The actual data stored in the response as a JSON object. Read-only.",
           },
         },
       },
