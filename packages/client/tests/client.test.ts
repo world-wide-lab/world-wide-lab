@@ -62,11 +62,9 @@ describe("Client", () => {
     const studyId = "studyId-check-response-storage";
 
     // Create a new study
-    const createStudyResponseJson = await client.call(
-      "POST",
-      `/study/`,
-      { studyId },
-    );
+    const createStudyResponseJson = await client.call("POST", `/study/`, {
+      studyId,
+    });
     expect(createStudyResponseJson.studyId).toBe(studyId);
     expect(Object.keys(createStudyResponseJson)).toMatchSnapshot();
 
@@ -94,19 +92,19 @@ describe("Client", () => {
         // Manually set headers to add authorization one
         headers: {
           ContentType: "application/json",
-          Authorization: `Bearer ${API_KEY}`
-        }
-      }
+          Authorization: `Bearer ${API_KEY}`,
+        },
+      },
     );
 
     expect(responseJson.length).toBe(2);
 
-    const variyngKeys = ["responseId", "sessionId", "updatedAt", "createdAt"]
+    const variyngKeys = ["responseId", "sessionId", "updatedAt", "createdAt"];
     responseJson.forEach((response: any) => {
       variyngKeys.forEach((key) => {
         response[key] = "overwritten-as-it-varies";
-      })
-    })
+      });
+    });
     expect(responseJson).toMatchSnapshot();
     expect(Object.keys(responseJson)).toMatchSnapshot();
   });
