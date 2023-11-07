@@ -10,42 +10,19 @@ import {
   Icon,
 } from "@adminjs/design-system";
 
-import hljs from "highlight.js/lib/core";
-import javascript from "highlight.js/lib/languages/javascript";
-
-hljs.registerLanguage("javascript", javascript);
-
 import {
   ActionHeader,
   ActionProps,
   LayoutElementRenderer,
   BasePropertyComponent,
 } from "adminjs";
-import styled from "styled-components";
 
-const Code = styled.code`
-  font-size: 1rem;
-  line-height: 1.25;
-  font-family: monospace;
-
-  padding: 1rem !important;
-  border-radius: 10px;
-`;
-
-function highlightText(searchText: string) {
-  const tags = document.getElementsByClassName("hljs-string");
-  let foundTag: Element | null = null;
-  for (var i = 0; i < tags.length; i++) {
-    if (tags[i].textContent == searchText) {
-      foundTag = tags[i];
-      break;
-    }
-  }
-
-  if (foundTag) {
-    foundTag.classList.add("highlight");
-  }
-}
+import {
+  Code,
+  CodeHighlightingStyles,
+  highlightText,
+  refreshHighlighting,
+} from "./partials/codeHighlighting";
 
 const StudyShowAction: React.FC<ActionProps> = (props) => {
   const { resource, record, action } = props;
@@ -114,7 +91,7 @@ session.finish();
   };
 
   useEffect(() => {
-    hljs.highlightAll();
+    refreshHighlighting();
 
     highlightText(escapedUrl);
     highlightText(escapedStudyId);
@@ -183,12 +160,7 @@ session.finish();
       </Box>
 
       <Box>
-        <style>{`
-          .highlight {
-            background-color: rgba(255,255,255, 0.15);
-          }
-        `}</style>
-        <link rel="stylesheet" href="/static/highlight-js/nord.css" />
+        <CodeHighlightingStyles></CodeHighlightingStyles>
         <pre>
           <Code>
             {format &&

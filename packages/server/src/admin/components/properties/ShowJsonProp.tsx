@@ -1,5 +1,11 @@
-import * as React from "react";
+import { useEffect } from "react";
 import { Box, Label } from "@adminjs/design-system";
+
+import {
+  Code,
+  CodeHighlightingStyles,
+  refreshHighlighting,
+} from "../partials/codeHighlighting";
 
 interface GenericObject {
   [key: string]: any;
@@ -19,16 +25,18 @@ const ShowJsonProp = (props: any) => {
 
   // Pretty print the object
   const formattedObject = JSON.stringify(object, undefined, 2);
+
+  useEffect(() => {
+    refreshHighlighting();
+  }, [formattedObject]);
+
   return (
     <Box mb="xl">
       <Label>{property.label}</Label>
-      <textarea
-        readOnly
-        name={property.name}
-        cols={30}
-        rows={10}
-        value={formattedObject}
-      ></textarea>
+      <CodeHighlightingStyles></CodeHighlightingStyles>
+      <pre>
+        <Code>{formattedObject}</Code>
+      </pre>
     </Box>
   );
 };
