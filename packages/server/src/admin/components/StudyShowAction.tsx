@@ -125,7 +125,7 @@ session.finish();
       <Box>
         <Button
           as="a"
-          href={`http://localhost:8787/admin/resources/wwl_sessions?filters.studyId=${studyId}&page=1`}
+          href={`/admin/resources/wwl_sessions?filters.studyId=${studyId}&page=1`}
           variant="contained"
           style={{ cursor: "pointer" }}
         >
