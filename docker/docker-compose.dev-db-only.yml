@@ -1,0 +1,15 @@
+version: "2"
+services:
+  # Can be started via "docker-compose -f docker-compose.dev-db-only.yml up"
+  # Available at "postgres://postgres@localhost:5432/wwl"
+  wwldb:
+    image: "postgres:14"
+    mem_limit: 128m
+    environment:
+      - POSTGRES_DB=wwl
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
