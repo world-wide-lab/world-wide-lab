@@ -464,6 +464,18 @@ describe("API Routes", () => {
       expect(response.body[3].key_2).toBe("value 2");
     });
 
+    it("should download an extracted list of responses (in CSV format)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/data/responses-extracted-payload/csv`)
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      const lines = response.text.split(/\r\n|\r|\n/);
+      expect(lines.length).toBe(4 + 1);
+      expect(lines[0]).toMatchSnapshot();
+    });
+
     it("should handle empty studies as well", async () => {
       const studyIdEmpty = "empty-study";
       // Create new empty study
@@ -476,6 +488,20 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(0);
+    });
+
+    it("should handle empty studies as well (in CSV format)", async () => {
+      const studyIdEmpty = "empty-study-2";
+      // Create new empty study
+      await endpoint.post("/v1/study").send({ studyId: studyIdEmpty });
+
+      const response = await endpoint
+        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload/csv`)
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.text).toBe("");
     });
 
     it("should handle studies without payload as well", async () => {

@@ -52,6 +52,8 @@ exports[`API Routes GET /study/:studyId/count/:countType should fail when the st
 }
 `;
 
+exports[`API Routes GET /study/:studyId/data/:dataType/json should download an extracted list of responses (in CSV format) 1`] = `"responseId,createdAt,updatedAt,name,sessionId,key_1,key_2"`;
+
 exports[`API Routes GET /study/:studyId/data/:dataType/json should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",
