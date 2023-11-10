@@ -4,6 +4,7 @@ exports[`Client should store responses 1`] = `
 [
   "createdAt",
   "updatedAt",
+  "deletionProtection",
   "studyId",
 ]
 `;

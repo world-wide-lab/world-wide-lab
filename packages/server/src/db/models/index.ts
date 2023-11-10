@@ -10,6 +10,7 @@ const columnComments = {
   updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
   privateInfo: `Additional information for this record, stored as a JSON object.`,
   publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
+  deletionProtection: `Should the study be protected from deletion? If this is set to true, the study cannot be deleted from the admin interface until this is turned off again. This is useful to prevent accidental deletion of studies that have already been published.`,
 };
 
 function defineModels(sequelize: Sequelize) {
@@ -47,6 +48,12 @@ function defineModels(sequelize: Sequelize) {
         type: DataTypes.JSON,
         allowNull: true,
         comment: columnComments.publicInfo,
+      },
+      deletionProtection: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        comment: columnComments.deletionProtection,
       },
     },
     {

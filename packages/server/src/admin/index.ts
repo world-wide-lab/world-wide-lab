@@ -5,7 +5,11 @@ import { columnComments } from "../db/models";
 import { initializeRouter } from "./router_auth";
 import { componentLoader, Components } from "./components";
 import config from "../config";
-import { newStudyHandler, downloadStudyDataHandler } from "./handlers/study";
+import {
+  newStudyHandler,
+  downloadStudyDataHandler,
+  deleteStudyHandler,
+} from "./handlers/study";
 import { dashboardHandler } from "./handlers/dashboard";
 
 AdminJS.registerAdapter({
@@ -79,6 +83,9 @@ const admin = new AdminJS({
         actions: {
           new: {
             handler: newStudyHandler,
+          },
+          delete: {
+            handler: deleteStudyHandler,
           },
           show: {
             component: Components.StudyShowAction,

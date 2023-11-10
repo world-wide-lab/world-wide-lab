@@ -4,8 +4,11 @@ import {
   ActionRequest,
   ActionResponse,
   ActionContext,
+  NotFoundError,
+  ValidationError,
 } from "adminjs";
 import sequelize from "../../db";
+import { QueryTypes } from "sequelize";
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts
@@ -65,6 +68,90 @@ async function newStudyHandler(
   throw new Error("new action can be invoked only via `post` http method");
 }
 
+async function deleteStudyHandler(
+  request: ActionRequest,
+  response: ActionResponse,
+  context: ActionContext,
+) {
+  const { record, resource, currentAdmin, h, translateMessage } = context;
+  if (!request.params.recordId || !record) {
+    throw new NotFoundError(
+      ['You have to pass "recordId" to Delete Action'].join("\n"),
+      "Action#handler",
+    );
+  }
+  // Stop the whole process if deletionProtection is enabled
+  if (record.params.deletionProtection) {
+    return {
+      record: record.toJSON(currentAdmin),
+      notice: {
+        message: `Please disable deletion protection before trying to delete a study. Be warned, that deleting a study will also delete ALL ITS DATA.`,
+        type: "error",
+      },
+    };
+  }
+
+  try {
+    // Actually delete all the data
+    const studyId = record.id();
+
+    // (1) Delete all responses associated with this study
+    await sequelize.query(
+      `
+        DELETE FROM
+          wwl_responses
+        WHERE sessionId IN (
+          SELECT sessionId
+          FROM wwl_sessions
+          WHERE studyId = :studyId
+        );`,
+      {
+        type: QueryTypes.DELETE,
+        replacements: {
+          studyId,
+        },
+      },
+    );
+
+    // (2) Delete all sessions belonging to the study
+    await sequelize.models.Session.destroy({
+      where: {
+        studyId,
+      },
+    });
+
+    // (3) Delete the study itself
+    await resource.delete(request.params.recordId, context);
+
+    // Done with actual deleting of stuff!
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      const baseMessage =
+        error.baseError?.message ||
+        translateMessage("thereWereValidationErrors", resource.id());
+      return {
+        record: record.toJSON(currentAdmin),
+        notice: {
+          message: baseMessage,
+          type: "error",
+        },
+      };
+    }
+    throw error;
+  }
+
+  return {
+    record: record.toJSON(currentAdmin),
+    redirectUrl: h.resourceUrl({
+      resourceId: resource._decorated?.id() || resource.id(),
+    }),
+    notice: {
+      message: translateMessage("successfullyDeleted", resource.id()),
+      type: "success",
+    },
+  };
+}
+
 async function downloadStudyDataHandler(
   request: ActionRequest,
   response: ActionResponse,
@@ -80,4 +167,4 @@ async function downloadStudyDataHandler(
   };
 }
 
-export { newStudyHandler, downloadStudyDataHandler };
+export { newStudyHandler, deleteStudyHandler, downloadStudyDataHandler };

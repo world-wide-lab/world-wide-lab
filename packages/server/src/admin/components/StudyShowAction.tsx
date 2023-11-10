@@ -8,6 +8,7 @@ import {
   Label,
   Text,
   Icon,
+  MessageBox,
 } from "@adminjs/design-system";
 
 import {
@@ -100,6 +101,25 @@ session.finish();
   return (
     <DrawerContent>
       <H3>Study Data</H3>
+
+      {record?.params?.deletionProtection === false && (
+        <Box style={{ margin: "1rem 0" }}>
+          <MessageBox
+            message="Warning: Study is not protected"
+            mt="default"
+            variant="danger"
+          >
+            <p>
+              This study is currently not protected from being deleted. If it is
+              deleted, so is all data related to it.
+            </p>
+            <p>
+              This includes all Sessions and Responses linked to the study.
+              Enable deletionProtection to protect this study.
+            </p>
+          </MessageBox>
+        </Box>
+      )}
 
       {action?.showInDrawer ? <ActionHeader {...props} /> : null}
       {action.layout
