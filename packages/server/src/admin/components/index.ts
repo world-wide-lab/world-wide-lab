@@ -10,6 +10,10 @@ const Components = {
     "./StudyDownloadAction",
   ),
   StudyShowAction: componentLoader.add("StudyShowAction", "./StudyShowAction"),
+  ShowJsonProp: componentLoader.add(
+    "ShowJsonProp",
+    "./properties/ShowJsonProp",
+  ),
 };
 
 export { componentLoader, Components };

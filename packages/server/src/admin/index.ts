@@ -5,7 +5,11 @@ import { columnComments } from "../db/models";
 import { initializeRouter } from "./router_auth";
 import { componentLoader, Components } from "./components";
 import config from "../config";
-import { newStudyHandler, downloadStudyDataHandler } from "./handlers/study";
+import {
+  newStudyHandler,
+  downloadStudyDataHandler,
+  deleteStudyHandler,
+} from "./handlers/study";
 import { dashboardHandler } from "./handlers/dashboard";
 
 AdminJS.registerAdapter({
@@ -79,6 +83,9 @@ const admin = new AdminJS({
         actions: {
           new: {
             handler: newStudyHandler,
+          },
+          delete: {
+            handler: deleteStudyHandler,
           },
           show: {
             component: Components.StudyShowAction,
@@ -158,6 +165,15 @@ const admin = new AdminJS({
           updatedAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.updatedAt,
+          },
+          payload: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.ShowJsonProp,
+            },
+            description:
+              "The actual data stored in the response as a JSON object. Read-only.",
           },
         },
       },

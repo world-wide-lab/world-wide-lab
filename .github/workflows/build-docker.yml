@@ -55,6 +55,8 @@ jobs:
             # Support for branch or PR names (currently not enabled)
             type=ref,event=branch
             type=ref,event=pr
+            # Always set the dev tag
+            type=raw,value=dev
 
       # Install dependencies and build the server itself
       - name: Install dependencies
@@ -70,3 +72,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # Test docker image
+      - name: Test Docker image
+        run: docker-compose -f docker/docker-compose.testing.yml run test-server

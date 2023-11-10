@@ -6,6 +6,8 @@ import generateExampleData from "./db/exampleData";
 import { up } from "./db/migrate";
 import type Server from "http";
 
+import { ensureStudiesExist } from "./db/ensureStudiesExist";
+
 // Export Server type for convenience
 export type Server = Server.Server;
 
@@ -34,6 +36,11 @@ async function init(): Promise<Server.Server> {
 
   if (config.database.generateExampleData) {
     await generateExampleData(sequelize);
+  }
+
+  // Make sure that certain studies are available (based on env vars)
+  if (config.studiesToCreate && config.studiesToCreate.length > 0) {
+    await ensureStudiesExist(sequelize, config.studiesToCreate);
   }
 
   // Start the server

@@ -8,6 +8,8 @@ import { init as initDev, Server } from "@world-wide-lab/server/src/init.ts";
 
 const Client = process.env.CLIENT === "build" ? import("../dist") : DevClient;
 
+const API_KEY = process.env.DEFAULT_API_KEY;
+
 describe("Client", () => {
   let server: Server;
   let client: DevClient;
@@ -57,7 +59,16 @@ describe("Client", () => {
   });
 
   it("should store responses", async () => {
-    const session = await client.createSession({ studyId: "example" });
+    const studyId = "studyId-check-response-storage";
+
+    // Create a new study
+    const createStudyResponseJson = await client.call("POST", `/study/`, {
+      studyId,
+    });
+    expect(createStudyResponseJson.studyId).toBe(studyId);
+    expect(Object.keys(createStudyResponseJson)).toMatchSnapshot();
+
+    const session = await client.createSession({ studyId });
 
     expect(
       await session.response({
@@ -65,6 +76,37 @@ describe("Client", () => {
         payload: { ex_key: "ex_value" },
       }),
     ).toBe(true);
+    expect(
+      await session.response({
+        name: undefined,
+        payload: { key_n1: "no-name", numerical: 1 },
+      }),
+    ).toBe(true);
+
+    // Download export from database
+    const responseJson = await client.call(
+      "GET",
+      `/study/${studyId}/data/responses-raw/json`,
+      undefined,
+      {
+        // Manually set headers to add authorization one
+        headers: {
+          ContentType: "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+      },
+    );
+
+    expect(responseJson.length).toBe(2);
+
+    const variyngKeys = ["responseId", "sessionId", "updatedAt", "createdAt"];
+    responseJson.forEach((response: any) => {
+      variyngKeys.forEach((key) => {
+        response[key] = "overwritten-as-it-varies";
+      });
+    });
+    expect(responseJson).toMatchSnapshot();
+    expect(Object.keys(responseJson)).toMatchSnapshot();
   });
 
   it("should store and retrieve participant data", async () => {

@@ -377,10 +377,10 @@ describe("API Routes", () => {
     });
   });
 
-  describe("GET /study/:studyId/data/:dataType", () => {
+  describe("GET /study/:studyId/data/:dataType/json", () => {
     it("should download a raw list of responses", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/responses-raw`)
+        .get(`/v1/study/${studyId}/data/responses-raw/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -401,7 +401,7 @@ describe("API Routes", () => {
 
     it("should download a raw list of sessions", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/sessions-raw`)
+        .get(`/v1/study/${studyId}/data/sessions-raw/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -423,7 +423,7 @@ describe("API Routes", () => {
 
     it("should download a raw list of participant", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .get(`/v1/study/${studyId}/data/participants-raw/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -443,7 +443,7 @@ describe("API Routes", () => {
 
     it("should download an extracted list of responses", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/responses-extracted-payload`)
+        .get(`/v1/study/${studyId}/data/responses-extracted-payload/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -464,18 +464,44 @@ describe("API Routes", () => {
       expect(response.body[3].key_2).toBe("value 2");
     });
 
+    it("should download an extracted list of responses (in CSV format)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/data/responses-extracted-payload/csv`)
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      const lines = response.text.split(/\r\n|\r|\n/);
+      expect(lines.length).toBe(4 + 1);
+      expect(lines[0]).toMatchSnapshot();
+    });
+
     it("should handle empty studies as well", async () => {
       const studyIdEmpty = "empty-study";
       // Create new empty study
       await endpoint.post("/v1/study").send({ studyId: studyIdEmpty });
 
       const response = await endpoint
-        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload`)
+        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(0);
+    });
+
+    it("should handle empty studies as well (in CSV format)", async () => {
+      const studyIdEmpty = "empty-study-2";
+      // Create new empty study
+      await endpoint.post("/v1/study").send({ studyId: studyIdEmpty });
+
+      const response = await endpoint
+        .get(`/v1/study/${studyIdEmpty}/data/responses-extracted-payload/csv`)
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.text).toBe("");
     });
 
     it("should handle studies without payload as well", async () => {
@@ -490,7 +516,9 @@ describe("API Routes", () => {
         .send({ sessionId: sessionResponse.body.sessionId });
 
       const response = await endpoint
-        .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload`)
+        .get(
+          `/v1/study/${studyIdNoPayload}/data/responses-extracted-payload/json`,
+        )
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -509,7 +537,7 @@ describe("API Routes", () => {
 
     it("should require authentication", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .get(`/v1/study/${studyId}/data/participants-raw/json`)
         .send();
 
       expect(response.status).toBe(401);
@@ -518,7 +546,7 @@ describe("API Routes", () => {
 
     it("should require the correct API KEY", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/data/participants-raw`)
+        .get(`/v1/study/${studyId}/data/participants-raw/json`)
         .set("Authorization", `Bearer wrong-key`)
         .send();
 
@@ -528,7 +556,7 @@ describe("API Routes", () => {
 
     it("should fail when the study does not exist", async () => {
       const response = await endpoint
-        .get(`/v1/study/non-existent-study/data/participants-raw`)
+        .get(`/v1/study/non-existent-study/data/participants-raw/json`)
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
