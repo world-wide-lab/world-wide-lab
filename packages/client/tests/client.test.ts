@@ -86,7 +86,7 @@ describe("Client", () => {
     // Download export from database
     const responseJson = await client.call(
       "GET",
-      `/study/${studyId}/data/responses-raw`,
+      `/study/${studyId}/data/responses-raw/json`,
       undefined,
       {
         // Manually set headers to add authorization one

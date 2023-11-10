@@ -52,19 +52,19 @@ exports[`API Routes GET /study/:studyId/count/:countType should fail when the st
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType should fail when the study does not exist 1`] = `
+exports[`API Routes GET /study/:studyId/data/:dataType/json should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType should require authentication 1`] = `
+exports[`API Routes GET /study/:studyId/data/:dataType/json should require authentication 1`] = `
 {
   "error": "Authentication via API Key required",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType should require the correct API KEY 1`] = `
+exports[`API Routes GET /study/:studyId/data/:dataType/json should require the correct API KEY 1`] = `
 {
   "error": "The provided API Key is invalid.",
 }
