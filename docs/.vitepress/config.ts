@@ -44,6 +44,7 @@ export default defineConfig({
         text: "Running World-Wide-Lab",
         items: [
           { text: "Running Locally", link: "/guides/running-locally" },
+          { text: "Configuring the Server", link: "/guides/configuration" },
           { text: "Deploying to the Cloud", link: "/guides/deployment" },
         ],
       },
