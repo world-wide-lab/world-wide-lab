@@ -7,9 +7,7 @@ const STUDY_ID_PREFIX = `test_${Date.now()}`;
 const STUDY_ID = `${STUDY_ID_PREFIX}_default`;
 const API_KEY = process.env.DEFAULT_API_KEY;
 if (API_KEY === undefined) {
-  throw new Error(
-    "DEFAULT_API_KEY must not be empty",
-  );
+  throw new Error("DEFAULT_API_KEY must not be empty");
 }
 
 const NON_EXISTENT_UUID = "00000000-0000-0000-0000-000000000000";
@@ -17,7 +15,7 @@ const NON_EXISTENT_UUID = "00000000-0000-0000-0000-000000000000";
 // Set up endpoint
 let endpoint: request.SuperTest<request.Test>;
 if (process.env.WWL_SERVER_URL === undefined) {
-  console.log("WWL_SERVER_URL is undefined, starting a new server.")
+  console.log("WWL_SERVER_URL is undefined, starting a new server.");
 
   let server: Server;
   beforeAll(async () => {
@@ -507,7 +505,9 @@ describe("API Routes", () => {
         .send({ sessionId: sessionResponse.body.sessionId });
 
       const response = await endpoint
-        .get(`/v1/study/${studyIdNoPayload}/data/responses-extracted-payload/json`)
+        .get(
+          `/v1/study/${studyIdNoPayload}/data/responses-extracted-payload/json`,
+        )
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 

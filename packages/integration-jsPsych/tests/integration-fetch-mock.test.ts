@@ -55,7 +55,7 @@ function resetJsPsychWorldWideLab() {
   jsPsychWorldWideLab.ready = false;
   jsPsychWorldWideLab.client = undefined;
   jsPsychWorldWideLab.session = undefined;
-  jsPsychWorldWideLab.studyId = 'reset-in-beforeEach';
+  jsPsychWorldWideLab.studyId = "reset-in-beforeEach";
 }
 
 describe("jsPsychWorldWideLab with mocked fetch", () => {
