@@ -7,7 +7,7 @@ hero:
   text: "Citizen Science for Everyone"
   tagline: World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.
   image:
-    src: /img/favicon.png
+    src: /img/favicon_hd.png
     alt: logo
   actions:
     - theme: brand
@@ -102,7 +102,7 @@ features:
   <div class="screenshot-container">
     <img src="/img/landing-page/dashboard-no-window.png" />
   </div>
-  <img class="floating-logo" src="/img/favicon.png" data-atropos-offset="5"/>
+  <img class="floating-logo" src="/img/favicon_hd.png" data-atropos-offset="5"/>
   <div class="floating-name" data-atropos-offset="5">World-Wide-Lab</div>
   <div class="floating-support" data-atropos-offset="7">
     With integrated support for
