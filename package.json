@@ -18,6 +18,7 @@
     "projects": [
       "<rootDir>/packages/server",
       "<rootDir>/packages/client",
+      "<rootDir>/packages/test-server",
       "<rootDir>/packages/integration-jsPsych"
     ]
   }
