@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "World-Wide-Lab"
   text: "Citizen Science for Everyone"
-  tagline: World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.
+  tagline: Free and open-source application to collect, store and administer data from online experiments and studies.
   image:
     src: /img/favicon_hd.png
     alt: logo
