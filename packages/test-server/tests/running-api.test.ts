@@ -1,7 +1,6 @@
 import request from "supertest";
 
 import "./setup_env";
-import { init as initServer, Server } from "@world-wide-lab/server/src/init.ts";
 
 const STUDY_ID_PREFIX = `test_${Date.now()}`;
 const STUDY_ID = `${STUDY_ID_PREFIX}_default`;
@@ -17,16 +16,18 @@ let endpoint: request.SuperTest<request.Test>;
 if (process.env.WWL_SERVER_URL === undefined) {
   console.log("WWL_SERVER_URL is undefined, starting a new server.");
 
-  let server: Server;
+  // Variable is of type Server, but it's a dynamic import
+  let server: any;
   beforeAll(async () => {
-    server = await initServer();
+    const { init } = await import("@world-wide-lab/server/src/init.ts");
+    server = await init();
 
     // @ts-ignore - We know that the server will only be returned after listen() is finished
     endpoint = request(`http://localhost:${server.address().port}`);
   }, 10000);
   afterAll(async () => {
     await new Promise((resolve, reject) => {
-      server.close((error) => {
+      server.close((error: any) => {
         if (error) {
           reject(error);
         } else {
@@ -36,6 +37,7 @@ if (process.env.WWL_SERVER_URL === undefined) {
     });
   }, 10000);
 } else {
+  console.log(`Running with an existing server: ${process.env.WWL_SERVER_URL}`);
   // Use a running endpoint
   endpoint = request(process.env.WWL_SERVER_URL);
 }
@@ -460,13 +462,17 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      const lines = response.text.split(/\r\n|\r|\n/);
+      const lines = response.text
+        // Separate lines
+        .split(/\r\n|\r|\n/)
+        // Only keep non-empty lines
+        .filter((l) => l !== "");
       expect(lines.length).toBe(4 + 1);
       expect(lines[0]).toMatchSnapshot();
     });
 
     it("should handle empty studies as well", async () => {
-      const studyIdEmpty = "empty-study";
+      const studyIdEmpty = `${STUDY_ID_PREFIX}_empty-study`;
       // Create new empty study
       await endpoint.post("/v1/study").send({ studyId: studyIdEmpty });
 
@@ -480,7 +486,7 @@ describe("API Routes", () => {
     });
 
     it("should handle empty studies as well (in CSV format)", async () => {
-      const studyIdEmpty = "empty-study-2";
+      const studyIdEmpty = `${STUDY_ID_PREFIX}_empty-study-2`;
       // Create new empty study
       await endpoint.post("/v1/study").send({ studyId: studyIdEmpty });
 
@@ -490,11 +496,16 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.text).toBe("");
+      expect(
+        // Empty string when using default export
+        response.text === "" ||
+          // Only column names when exporting directly from PostgreSQL
+          response.text === "responseId,createdAt,updatedAt,name,sessionId\n",
+      ).toBeTruthy();
     });
 
     it("should handle studies without payload as well", async () => {
-      const studyIdNoPayload = "no-payload-study";
+      const studyIdNoPayload = `${STUDY_ID_PREFIX}_no-payload-study`;
       // Create new empty study and add one session with one response
       await endpoint.post("/v1/study").send({ studyId: studyIdNoPayload });
       const sessionResponse = await endpoint
