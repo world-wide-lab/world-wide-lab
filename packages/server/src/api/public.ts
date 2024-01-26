@@ -16,7 +16,7 @@ const routerPublic = express.Router();
  *         description: API is running
  */
 routerPublic.get("/", async (req: Request, res: Response) => {
-  res.type("text").send("World-Wide-Lab API is running 🌐🧑‍🔬👩‍🔬👨‍🔬");
+  res.type("text").send("World-Wide-Lab API: ✅");
 });
 
 /**

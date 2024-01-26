@@ -110,7 +110,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
        */
       data_string: {
         type: ParameterType.STRING,
-        default: null,
+        default: undefined,
       },
       /**
        * Whether to mark the session as finished.

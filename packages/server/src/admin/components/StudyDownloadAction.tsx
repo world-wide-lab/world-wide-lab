@@ -28,8 +28,8 @@ const MyNewAction = (props: ActionProps) => {
   const [dataType, setDataType] = useState(dataTypeOptions[0]);
 
   const formatOptions = [
-    { value: "json", label: "JSON" },
     { value: "csv", label: "CSV" },
+    { value: "json", label: "JSON" },
   ];
   const [format, setFormat] = useState(formatOptions[0]);
 
@@ -38,7 +38,7 @@ const MyNewAction = (props: ActionProps) => {
     [dataType, format],
   );
   const url = useMemo(
-    () => `/admin/wwl/study/${studyId}/data/${dataType.value}`,
+    () => `/admin/wwl/study/${studyId}/data/${dataType.value}/${format.value}`,
     [dataType, format],
   );
 
@@ -59,7 +59,6 @@ const MyNewAction = (props: ActionProps) => {
             <Box width="100%">
               <Label>File Format</Label>
               <Select
-                isDisabled={true}
                 value={format}
                 onChange={(selected) => setFormat(selected)}
                 options={formatOptions}

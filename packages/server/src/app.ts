@@ -36,7 +36,21 @@ if (config.logging.http) {
 app.use("/static", express.static(path.join(__dirname, "..", "static")));
 
 app.get("/", async (req: Request, res: Response) => {
-  res.redirect("/v1/");
+  res.send(`
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <title>World-Wide-Lab</title>
+    </head>
+    <body>
+      World-Wide-Lab is running 🌐🧑‍🔬👩‍🔬👨‍🔬 <br />
+      <ul>
+        <li>The latest API can be found under <a href="/v1/">/v1/</a></li>
+      </ul>
+    </body>
+  </html>
+  `);
 });
 
 // Mount the API router under v1

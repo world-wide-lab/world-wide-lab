@@ -38,6 +38,18 @@ function getBooleanFromEnv(
   }
 }
 
+function getArrayFromEnv(key: string): string[] {
+  const strValue = getValueFromEnv(key);
+  if (strValue === undefined) return [];
+  return strValue.split(",").map((s) => s.trim());
+}
+
+function getIntFromEnv(key: string): number | undefined {
+  const strValue = getValueFromEnv(key);
+  if (strValue === undefined) return undefined;
+  return parseInt(strValue);
+}
+
 // Load .env file
 dotenvConfig({
   path: getValueFromEnv("WWL_ENV_FILE") || ".env",
@@ -81,7 +93,10 @@ const config = {
   database: {
     url: getStringFromEnv("DATABASE_URL"),
     generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
+    chunkSize: getIntFromEnv("DATABASE_CHUNK_SIZE") || 10000,
   },
+
+  studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
 };
 
 // Validate configuration

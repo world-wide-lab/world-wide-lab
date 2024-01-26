@@ -1,0 +1,40 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Client should store responses 1`] = `
+[
+  "createdAt",
+  "updatedAt",
+  "deletionProtection",
+  "studyId",
+]
+`;
+
+exports[`Client should store responses 2`] = `
+[
+  {
+    "Session.participantId": null,
+    "createdAt": "overwritten-as-it-varies",
+    "name": "example_name",
+    "payload": "{"ex_key":"ex_value"}",
+    "responseId": "overwritten-as-it-varies",
+    "sessionId": "overwritten-as-it-varies",
+    "updatedAt": "overwritten-as-it-varies",
+  },
+  {
+    "Session.participantId": null,
+    "createdAt": "overwritten-as-it-varies",
+    "name": null,
+    "payload": "{"key_n1":"no-name","numerical":1}",
+    "responseId": "overwritten-as-it-varies",
+    "sessionId": "overwritten-as-it-varies",
+    "updatedAt": "overwritten-as-it-varies",
+  },
+]
+`;
+
+exports[`Client should store responses 3`] = `
+[
+  "0",
+  "1",
+]
+`;

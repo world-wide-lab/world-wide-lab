@@ -50,9 +50,18 @@ global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
   }
 }) as jest.MockedFunction<typeof fetch>;
 
+function resetJsPsychWorldWideLab() {
+  // Reset the jsPsychWorldWideLab-Plugin state
+  jsPsychWorldWideLab.ready = false;
+  jsPsychWorldWideLab.client = undefined;
+  jsPsychWorldWideLab.session = undefined;
+  jsPsychWorldWideLab.studyId = "reset-in-beforeEach";
+}
+
 describe("jsPsychWorldWideLab with mocked fetch", () => {
-  // Reset modules between each test (to clear the static variables in the plugin)
   beforeEach(() => {
+    resetJsPsychWorldWideLab();
+
     // @ts-ignore (typescript doesn't recognize the mock function)
     fetch.mockClear();
   });
@@ -211,6 +220,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
           type: jsPsychWorldWideLab,
           url,
           studyId: "plugin-study",
+          data_name: "trial-favorite-key",
           data_string: () => jsPsych.data.get().json(),
         },
       ],
@@ -235,6 +245,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
+        name: "trial-favorite-key",
         payload: [
           {
             rt: rt,
@@ -338,6 +349,8 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     // Store the current participant ID
     jsPsychWorldWideLab.storeParticipantId();
 
+    // Reset state
+    resetJsPsychWorldWideLab();
     // @ts-ignore (typescript doesn't recognize the mock function)
     fetch.mockClear();
 

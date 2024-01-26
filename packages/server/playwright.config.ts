@@ -11,6 +11,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests-playwright",
+  // Only run tests in files that have spec or test in their name, by default.
+  testMatch: process.env.ALLOW_NON_TESTS
+    ? "*"
+    : "**/?(*.)+(spec|test).[tj]s?(x)",
   /* Run tests in files in parallel */
   fullyParallel: true,
   // Run your local dev server before starting the tests
