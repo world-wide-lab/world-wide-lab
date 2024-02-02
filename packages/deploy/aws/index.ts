@@ -112,27 +112,35 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
 });
 
 // Define an Application Auto Scaling Target. This specifies the ECS service we want to scale.
-const scalingTarget = new aws.appautoscaling.Target("app-scaling-target", {
-  maxCapacity,
-  minCapacity,
-  resourceId: pulumi.interpolate`service/${cluster.name}/${service.service.name}`, // Format is "service/clusterName/serviceName"
-  scalableDimension: "ecs:service:DesiredCount",
-  serviceNamespace: "ecs",
-}, { dependsOn: [service] });
+const scalingTarget = new aws.appautoscaling.Target(
+  "app-scaling-target",
+  {
+    maxCapacity,
+    minCapacity,
+    resourceId: pulumi.interpolate`service/${cluster.name}/${service.service.name}`, // Format is "service/clusterName/serviceName"
+    scalableDimension: "ecs:service:DesiredCount",
+    serviceNamespace: "ecs",
+  },
+  { dependsOn: [service] },
+);
 
 // Define Application Auto Scaling Policy. This specifies how the Target should be scaled.
-const scalingPolicy = new aws.appautoscaling.Policy("app-scaling-policy", {
-  policyType: "TargetTrackingScaling",
-  resourceId: scalingTarget.resourceId,
-  scalableDimension: scalingTarget.scalableDimension,
-  serviceNamespace: scalingTarget.serviceNamespace,
-  targetTrackingScalingPolicyConfiguration: {
+const scalingPolicy = new aws.appautoscaling.Policy(
+  "app-scaling-policy",
+  {
+    policyType: "TargetTrackingScaling",
+    resourceId: scalingTarget.resourceId,
+    scalableDimension: scalingTarget.scalableDimension,
+    serviceNamespace: scalingTarget.serviceNamespace,
+    targetTrackingScalingPolicyConfiguration: {
       targetValue: 80.0,
       predefinedMetricSpecification: {
-          predefinedMetricType: "ECSServiceAverageCPUUtilization",
+        predefinedMetricType: "ECSServiceAverageCPUUtilization",
       },
+    },
   },
-}, { dependsOn: [scalingTarget] });
+  { dependsOn: [scalingTarget] },
+);
 
 // The URL at which the container's HTTP endpoint will be available
 const url = pulumi.interpolate`http://${loadbalancer.loadBalancer.dnsName}`;
