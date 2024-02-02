@@ -13,3 +13,9 @@ template:
     memory:
       description: The amount of memory to allocate for the container
       default: 256
+    minCapacity:
+      description: The minimum number of instances to scale to if traffic is low.
+      default: 1
+    maxCapacity:
+      description: The maximum number of instances to scale to if traffic is high.
+      default: 4
