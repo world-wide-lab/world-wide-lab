@@ -6,8 +6,8 @@ import "dotenv/config";
 
 const config = new pulumi.Config();
 const containerPort = 80; // Default WWL port
-const cpu = config.getNumber("cpu") || 512;
-const memory = config.getNumber("memory") || 256;
+const cpu = config.getNumber("cpu") || 256;
+const memory = config.getNumber("memory") || 512;
 
 const requiredEnvVars = [
   "DB_USERNAME",
