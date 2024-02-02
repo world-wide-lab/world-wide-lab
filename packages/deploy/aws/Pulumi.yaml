@@ -9,7 +9,7 @@ template:
       default: us-east-1
     cpu:
       description: The amount of CPU to allocate for the container
-      default: 512
+      default: 256
     memory:
       description: The amount of memory to allocate for the container
       default: 256
