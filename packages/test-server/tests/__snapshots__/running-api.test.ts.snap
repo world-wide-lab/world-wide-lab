@@ -8,7 +8,7 @@ exports[`API Routes GET /participant/:participantId should fail when the partici
 
 exports[`API Routes GET /participant/:participantId should fail when the participant is invalid 1`] = `
 {
-  "error": "participantId is not a valid UUID",
+  "error": "participantId must be a valid UUID",
 }
 `;
 
@@ -28,7 +28,7 @@ exports[`API Routes GET /session/:sessionId should fail when the session does no
 
 exports[`API Routes GET /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
-  "error": "sessionId is not a valid UUID",
+  "error": "sessionId must be a valid UUID",
 }
 `;
 
@@ -138,13 +138,13 @@ exports[`API Routes POST /response should fail to submit a response when the ses
 
 exports[`API Routes POST /response should fail to submit a response when the sessionId is invalid 1`] = `
 {
-  "error": "sessionId is not a valid UUID",
+  "error": "sessionId must be a valid UUID",
 }
 `;
 
 exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = `
 {
-  "error": "Payload has to be a JSON object, undefined or null.",
+  "error": "payload must be a \`object\` type, but the final value was: \`"this-is-not-json"\`.",
 }
 `;
 
@@ -156,7 +156,7 @@ exports[`API Routes POST /session/finish should fail when the session does not e
 
 exports[`API Routes POST /session/finish should fail when the sessionId is invalid 1`] = `
 {
-  "error": "sessionId is not a valid UUID",
+  "error": "sessionId must be a valid UUID",
 }
 `;
 
@@ -174,7 +174,7 @@ exports[`API Routes PUT /participant/:participantId should fail when the partici
 
 exports[`API Routes PUT /participant/:participantId should fail when the participant is invalid 1`] = `
 {
-  "error": "participantId is not a valid UUID",
+  "error": "participantId must be a valid UUID",
 }
 `;
 
@@ -192,7 +192,7 @@ exports[`API Routes PUT /session/:sessionId should fail when the session does no
 
 exports[`API Routes PUT /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
-  "error": "sessionId is not a valid UUID",
+  "error": "sessionId must be a valid UUID",
 }
 `;
 

@@ -5,7 +5,19 @@ type ClientOptions = {
   url: string;
 };
 
-export type ClientSessionOptions = {
+type ExtraInfoOptions = {
+  privateInfo?: ObjectWithData;
+  publicInfo?: ObjectWithData;
+};
+
+type ClientParticipantUpdateOptions = ExtraInfoOptions;
+type ClientSessionUpdateOptions = ExtraInfoOptions;
+
+export type ClientParticipantOptions =
+  | ClientParticipantUpdateOptions
+  | undefined;
+
+export type ClientSessionOptions = ClientSessionUpdateOptions & {
   /**
    * The id of the study to create a session for. Required.
    */
@@ -86,8 +98,10 @@ export class Client {
    * or store their id. This function will not keep track of a participant's id.
    * @returns A new Participant instance
    */
-  async createParticipant(): Promise<Participant> {
-    const result = await this.call("POST", `/participant/`);
+  async createParticipant(
+    participantParams: ClientParticipantOptions = undefined,
+  ): Promise<Participant> {
+    const result = await this.call("POST", `/participant/`, participantParams);
     return new Participant(this, result.participantId);
   }
 
@@ -97,7 +111,7 @@ export class Client {
    * @returns A new Session instance
    */
   async createSession(sessionOptions: ClientSessionOptions): Promise<Session> {
-    const sessionData: {
+    const sessionData: ExtraInfoOptions & {
       studyId: string;
       participantId?: string;
     } = {
@@ -118,6 +132,13 @@ export class Client {
     }
     if (participant) {
       sessionData.participantId = participant.participantId;
+    }
+
+    if (sessionOptions.privateInfo) {
+      sessionData.privateInfo = sessionOptions.privateInfo;
+    }
+    if (sessionOptions.publicInfo) {
+      sessionData.publicInfo = sessionOptions.publicInfo;
     }
 
     const result = await this.call("POST", `/session/`, sessionData);
@@ -218,10 +239,7 @@ export class Participant extends ClientModel {
    *   privateInfo can only be downlaoded later on by the researcher.
    * @returns true if the update was successful
    */
-  async setMetadata(data: {
-    privateInfo?: ObjectWithData;
-    publicInfo?: ObjectWithData;
-  }): Promise<boolean> {
+  async update(data: ClientParticipantUpdateOptions): Promise<boolean> {
     const result = await this.clientInstance.call(
       "PUT",
       `/participant/${this.participantId}`,
@@ -288,10 +306,7 @@ export class Session extends ClientModel {
    *   The publicInfo can be retrieved later on without authentication, the
    *   privateInfo can only be downlaoded later on by the researcher.
    */
-  async setMetadata(data: {
-    privateInfo?: ObjectWithData;
-    publicInfo?: ObjectWithData;
-  }): Promise<boolean> {
+  async update(data: ClientSessionUpdateOptions): Promise<boolean> {
     const result = await this.clientInstance.call(
       "PUT",
       `/session/${this.sessionId}`,

@@ -140,12 +140,26 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       {
         url,
         studyId: "my-study",
+        sessionOptions: {
+          privateInfo: {
+            confidential: "shh",
+          },
+          publicInfo: {
+            freelyAvailable: "hello",
+          },
+        },
       },
     );
 
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
+        privateInfo: {
+          confidential: "shh",
+        },
+        publicInfo: {
+          freelyAvailable: "hello",
+        },
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
