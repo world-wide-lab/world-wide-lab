@@ -120,13 +120,11 @@ describe("API Routes", () => {
     });
 
     it("should create a new study with extra info", async () => {
-      const response = await endpoint
-        .post("/v1/study")
-        .send({
-          studyId: STUDY_ID + "_extra",
-          privateInfo: { integer: 10 },
-          publicInfo: { string: "lorem" },
-        });
+      const response = await endpoint.post("/v1/study").send({
+        studyId: STUDY_ID + "_extra",
+        privateInfo: { integer: 10 },
+        publicInfo: { string: "lorem" },
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("studyId");
@@ -157,14 +155,12 @@ describe("API Routes", () => {
     });
 
     it("should start a new session with extra info", async () => {
-      const response = await endpoint
-        .post("/v1/session")
-        .send({
-          participantId,
-          studyId,
-          privateInfo: { integer: 10 },
-          publicInfo: { string: "lorem" },
-        });
+      const response = await endpoint.post("/v1/session").send({
+        participantId,
+        studyId,
+        privateInfo: { integer: 10 },
+        publicInfo: { string: "lorem" },
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("participantId", participantId);

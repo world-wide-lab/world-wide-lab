@@ -112,7 +112,7 @@ describe("Client", () => {
   it("should store and retrieve participant data", async () => {
     const participant = await client.createParticipant();
 
-    const participantUpdateResult = await participant.setMetadata({
+    const participantUpdateResult = await participant.update({
       privateInfo: {
         name: "John Doe",
       },
@@ -126,10 +126,24 @@ describe("Client", () => {
     expect(publicParticipantInfo.publicInfo.condition).toBe("A");
   });
 
+  it("should store participant data upon creation", async () => {
+    const participant = await client.createParticipant({
+      privateInfo: {
+        name: "John Doe",
+      },
+      publicInfo: {
+        condition: "B",
+      },
+    });
+
+    const publicParticipantInfo = await participant.getPublicInfo();
+    expect(publicParticipantInfo.publicInfo.condition).toBe("B");
+  });
+
   it("should store and retrieve session data", async () => {
     const session = await client.createSession({ studyId: "example" });
 
-    const sessionUpdateResult = await session.setMetadata({
+    const sessionUpdateResult = await session.update({
       privateInfo: {
         name: "Session No Uno",
       },
@@ -141,6 +155,22 @@ describe("Client", () => {
 
     const publicSessionInfo = await session.getPublicInfo();
     expect(publicSessionInfo.publicInfo.condition).toBe("A");
+  });
+
+  it("should store session data upon creation", async () => {
+    const session = await client.createSession({
+      studyId: "example",
+
+      privateInfo: {
+        name: "Session No Duo",
+      },
+      publicInfo: {
+        condition: "C",
+      },
+    });
+
+    const publicSessionInfo = await session.getPublicInfo();
+    expect(publicSessionInfo.publicInfo.condition).toBe("C");
   });
 
   it("should finish a session", async () => {

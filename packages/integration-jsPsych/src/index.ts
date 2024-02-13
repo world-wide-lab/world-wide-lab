@@ -37,6 +37,20 @@ interface SetupOptions {
    * use jsPsychWorldWideLab.storeParticipantId().
    */
   linkParticipant?: boolean;
+
+  /**
+   * Options to pass on to the Session creator. These can be used to store
+   * both private and public information about the session.
+   * Please note that sensitive data MUST only be stored under privateInfo,
+   * as all publicInfo can be retrieved by anyone with the session's ID.
+   *
+   * Public info can be used to store non-sensitive information, such as
+   * assignments to conditions.
+   */
+  sessionOptions?: {
+    privateInfo?: ObjectWithData;
+    publicInfo?: ObjectWithData;
+  };
 }
 
 // Configure our own JsPsychOptions type, as there is no official one yet
@@ -243,6 +257,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     this.session = await this.client.createSession({
       studyId: this.studyId,
       linkParticipant: options.linkParticipant,
+      ...options.sessionOptions,
     });
     this.ready = true;
     this.callSetupCompletedListeners();
