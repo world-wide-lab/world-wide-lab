@@ -29,6 +29,24 @@ routerPublic.get("/", async (req: Request, res: Response) => {
   res.type("text").send("World-Wide-Lab API: ✅");
 });
 
+
+/**
+ * @openapi
+ * /info:
+ *   get:
+ *     summary: Get information about the current World-Wide-Lab instance.
+ *     tags:
+ *       - main
+ *     responses:
+ *       '200':
+ *         description: Information returned successfully
+ */
+routerPublic.get("/info", async (req: Request, res: Response) => {
+  res.type("json").send({
+    version: config.version,
+  });
+});
+
 /**
  * @openapi
  * /participant:
