@@ -148,6 +148,13 @@ exports[`Database Migrations should always create the same table structures 1`] 
       "type": "TINYINT(1)",
       "unique": false,
     },
+    "metadata": {
+      "allowNull": true,
+      "defaultValue": undefined,
+      "primaryKey": false,
+      "type": "JSON",
+      "unique": false,
+    },
     "participantId": {
       "allowNull": true,
       "defaultValue": undefined,

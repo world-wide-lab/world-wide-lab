@@ -117,9 +117,17 @@ const admin = new AdminJS({
             description: columnComments.updatedAt,
           },
           privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+            components: {
+              show: Components.ShowJsonProp,
+            },
             description: columnComments.privateInfo,
           },
           publicInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+            components: {
+              show: Components.ShowJsonProp,
+            },
             description: columnComments.publicInfo,
           },
         },
@@ -132,6 +140,14 @@ const admin = new AdminJS({
           name: null,
           icon: "Archive",
         },
+        actions: {
+          new: {
+            isVisible: false,
+          },
+          edit: {
+            isVisible: false,
+          },
+        },
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
@@ -142,10 +158,24 @@ const admin = new AdminJS({
             description: columnComments.updatedAt,
           },
           privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+            components: {
+              show: Components.ShowJsonProp,
+            },
             description: columnComments.privateInfo,
           },
           publicInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+            components: {
+              show: Components.ShowJsonProp,
+            },
             description: columnComments.publicInfo,
+          },
+          metadata: {
+            isVisible: { list: false, filter: false, show: true, edit: false },
+            components: {
+              show: Components.ShowJsonProp,
+            },
           },
         },
       },
@@ -156,6 +186,14 @@ const admin = new AdminJS({
         navigation: {
           name: null,
           icon: "Document",
+        },
+        actions: {
+          new: {
+            isVisible: false,
+          },
+          edit: {
+            isVisible: false,
+          },
         },
         properties: {
           createdAt: {

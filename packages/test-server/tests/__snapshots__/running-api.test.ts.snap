@@ -85,6 +85,7 @@ exports[`API Routes GET /study/:studyId/data/:dataType should download a raw lis
   "finished",
   "participantId",
   "studyId",
+  "metadata",
 ]
 `;
 
