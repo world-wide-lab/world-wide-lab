@@ -85,6 +85,7 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should download a ra
   "finished",
   "participantId",
   "studyId",
+  "metadata",
 ]
 `;
 
