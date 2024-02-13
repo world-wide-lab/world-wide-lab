@@ -1,6 +1,15 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
 import validator from "validator";
+import {
+  studySchema,
+  participantSchema,
+  sessionSchema,
+  responseSchema,
+  ValidationError,
+  fullParticipantSchema,
+  fullSessionSchema,
+} from "../schemas";
 
 const routerPublic = express.Router();
 
@@ -26,6 +35,17 @@ routerPublic.get("/", async (req: Request, res: Response) => {
  *     summary: Create a new participant
  *     tags:
  *       - main
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               privateInfo:
+ *                 type: object
+ *               publicInfo:
+ *                 type: object
  *     responses:
  *       '200':
  *         description: Participant created successfully
@@ -34,11 +54,17 @@ routerPublic.get("/", async (req: Request, res: Response) => {
  */
 routerPublic.post("/participant", async (req: Request, res: Response) => {
   try {
-    const participant = await sequelize.models.Participant.create();
+    const participantParams = participantSchema.validateSync(req.body);
+    const participant =
+      await sequelize.models.Participant.create(participantParams);
     res.json(participant);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create participant" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to create participant" });
+    }
   }
 });
 
@@ -77,15 +103,14 @@ routerPublic.post("/participant", async (req: Request, res: Response) => {
 routerPublic.put(
   "/participant/:participantId",
   async (req: Request, res: Response) => {
-    const { participantId } = req.params;
-    const newData = req.body;
     try {
-      if (!validator.isUUID(participantId)) {
-        res.status(400).json({ error: "participantId is not a valid UUID" });
-        return;
-      }
+      const { participantId } = req.params;
+      const newData = participantSchema.validateSync(req.body);
+      const participantWhere = fullParticipantSchema
+        .pick(["participantId"])
+        .validateSync({ participantId });
       const updatedRows = await sequelize.models.Participant.update(newData, {
-        where: { participantId },
+        where: participantWhere,
       });
       if (updatedRows[0] == 1) {
         res.status(200).send({ success: true });
@@ -93,8 +118,12 @@ routerPublic.put(
         res.status(400).json({ error: "Unknown participantId" });
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to update participant" });
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else {
+        console.error(error);
+        res.status(500).json({ error: "Failed to update participant" });
+      }
     }
   },
 );
@@ -124,14 +153,13 @@ routerPublic.put(
 routerPublic.get(
   "/participant/:participantId",
   async (req: Request, res: Response) => {
-    const { participantId } = req.params;
     try {
-      if (!validator.isUUID(participantId)) {
-        res.status(400).json({ error: "participantId is not a valid UUID" });
-        return;
-      }
+      const { participantId } = req.params;
+      const participantWhere = fullParticipantSchema
+        .pick(["participantId"])
+        .validateSync({ participantId });
       const participant = await sequelize.models.Participant.findOne({
-        where: { participantId },
+        where: participantWhere,
         attributes: ["participantId", "publicInfo"],
       });
       if (participant) {
@@ -140,8 +168,12 @@ routerPublic.get(
         res.status(400).json({ error: "Unknown participantId" });
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to update participant" });
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else {
+        console.error(error);
+        res.status(500).json({ error: "Failed to update participant" });
+      }
     }
   },
 );
@@ -162,6 +194,10 @@ routerPublic.get(
  *             properties:
  *               studyId:
  *                 type: string
+ *               privateInfo:
+ *                 type: object
+ *               publicInfo:
+ *                 type: object
  *             required:
  *               - studyId
  *     responses:
@@ -171,13 +207,17 @@ routerPublic.get(
  *         description: Failed to create study
  */
 routerPublic.post("/study", async (req: Request, res: Response) => {
-  const { studyId } = req.body;
   try {
-    const study = await sequelize.models.Study.create({ studyId });
+    const studyParams = studySchema.validateSync(req.body);
+    const study = await sequelize.models.Study.create(studyParams);
     res.json(study);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create study" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to create study" });
+    }
   }
 });
 
@@ -199,6 +239,10 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  *                 type: string
  *               participantId:
  *                 type: string
+ *               privateInfo:
+ *                 type: object
+ *               publicInfo:
+ *                 type: object
  *             required:
  *               - studyId
  *     responses:
@@ -210,33 +254,17 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  *         description: Failed to create session
  */
 routerPublic.post("/session", async (req: Request, res: Response) => {
-  const { participantId, studyId } = req.body;
   try {
-    const sessionData: {
-      studyId: string;
-      participantId?: string;
-    } = {
-      studyId,
-    };
-
-    // Check for participantId (optional)
-    if (participantId !== undefined) {
-      if (!validator.isUUID(participantId)) {
-        res.status(400).json({ error: "participantId is not a valid UUID" });
-        return;
-      }
-      sessionData.participantId = participantId;
-    }
-
-    if (studyId !== undefined) {
-      const session = await sequelize.models.Session.create(sessionData);
-      res.json(session);
-    } else {
-      res.status(400).json({ error: "Missing participantId or studyId." });
-    }
+    const sessionParams = sessionSchema.validateSync(req.body);
+    const session = await sequelize.models.Session.create(sessionParams);
+    res.json(session);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create session" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to create session" });
+    }
   }
 });
 
@@ -265,15 +293,13 @@ routerPublic.post("/session", async (req: Request, res: Response) => {
  *         description: Failed to update session
  */
 routerPublic.post("/session/finish", async (req: Request, res: Response) => {
-  const { sessionId } = req.body;
   try {
-    if (!validator.isUUID(sessionId)) {
-      res.status(400).json({ error: "sessionId is not a valid UUID" });
-      return;
-    }
+    const sessionWhere = fullSessionSchema
+      .pick(["sessionId"])
+      .validateSync(req.body);
     const updatedRows = await sequelize.models.Session.update(
       { finished: true },
-      { where: { sessionId } },
+      { where: sessionWhere },
     );
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
@@ -281,8 +307,12 @@ routerPublic.post("/session/finish", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update session" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update session" });
+    }
   }
 });
 
@@ -319,15 +349,17 @@ routerPublic.post("/session/finish", async (req: Request, res: Response) => {
  *         description: Failed to update session
  */
 routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
-  const { sessionId } = req.params;
-  const newData = req.body;
   try {
-    if (!validator.isUUID(sessionId)) {
-      res.status(400).json({ error: "sessionId is not a valid UUID" });
-      return;
-    }
-    const updatedRows = await sequelize.models.Session.update(newData, {
-      where: { sessionId },
+    const { sessionId } = req.params;
+    const sessionWhere = fullSessionSchema
+      .pick(["sessionId"])
+      .validateSync({ sessionId });
+    const sessionParams = sessionSchema
+      .omit(["studyId", "participantId", "finished"])
+      .validateSync(req.body);
+
+    const updatedRows = await sequelize.models.Session.update(sessionParams, {
+      where: sessionWhere,
     });
     if (updatedRows[0] == 1) {
       res.status(200).send({ success: true });
@@ -335,8 +367,12 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update session" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update session" });
+    }
   }
 });
 
@@ -363,14 +399,13 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
  *         description: Failed to retrieve session information.
  */
 routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
-  const { sessionId } = req.params;
   try {
-    if (!validator.isUUID(sessionId)) {
-      res.status(400).json({ error: "sessionId is not a valid UUID" });
-      return;
-    }
+    const { sessionId } = req.params;
+    const sessionWhere = fullSessionSchema
+      .pick(["sessionId"])
+      .validateSync({ sessionId });
     const session = await sequelize.models.Session.findOne({
-      where: { sessionId },
+      where: sessionWhere,
       attributes: ["sessionId", "publicInfo"],
     });
     if (session) {
@@ -379,8 +414,12 @@ routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Unknown sessionId" });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update session" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update session" });
+    }
   }
 });
 
@@ -417,31 +456,14 @@ routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
  *         description: Failed to create response
  */
 routerPublic.post("/response", async (req: Request, res: Response) => {
-  const { sessionId, name, payload } = req.body;
-
-  // Validate payload, it can be NULL (undefined) or a JSON object
-  if (
-    !(payload === null || payload === undefined || typeof payload === "object")
-  ) {
-    res
-      .status(400)
-      .json({ error: "Payload has to be a JSON object, undefined or null." });
-    return;
-  }
-  if (!validator.isUUID(sessionId)) {
-    res.status(400).json({ error: "sessionId is not a valid UUID" });
-    return;
-  }
-
   try {
-    const response = await sequelize.models.Response.create({
-      sessionId,
-      name,
-      payload,
-    });
+    const responseParams = responseSchema.validateSync(req.body);
+    const response = await sequelize.models.Response.create(responseParams);
     res.json(response);
   } catch (error) {
-    if (
+    if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else if (
       error instanceof Error &&
       error.name === "SequelizeForeignKeyConstraintError"
     ) {
