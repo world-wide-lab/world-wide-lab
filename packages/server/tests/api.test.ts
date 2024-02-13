@@ -386,17 +386,7 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(4);
-      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
-        [
-          "responseId",
-          "createdAt",
-          "updatedAt",
-          "name",
-          "payload",
-          "sessionId",
-          "Session.participantId",
-        ]
-      `);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
     it("should download a raw list of sessions", async () => {
@@ -407,18 +397,7 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(3);
-      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
-        [
-          "sessionId",
-          "createdAt",
-          "updatedAt",
-          "privateInfo",
-          "publicInfo",
-          "finished",
-          "participantId",
-          "studyId",
-        ]
-      `);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
     it("should download a raw list of participant", async () => {
@@ -429,16 +408,7 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
-      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
-        [
-          "participantId",
-          "createdAt",
-          "updatedAt",
-          "privateInfo",
-          "publicInfo",
-          "Sessions.sessionId",
-        ]
-      `);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
     it("should download an extracted list of responses", async () => {
@@ -449,17 +419,7 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(4);
-      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
-        [
-          "responseId",
-          "createdAt",
-          "updatedAt",
-          "name",
-          "sessionId",
-          "key_1",
-          "key_2",
-        ]
-      `);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
       expect(response.body[0].key_1).toBe("value 1");
       expect(response.body[3].key_2).toBe("value 2");
     });
@@ -524,15 +484,7 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(1);
-      expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
-        [
-          "responseId",
-          "createdAt",
-          "updatedAt",
-          "name",
-          "sessionId",
-        ]
-      `);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
     it("should require authentication", async () => {
