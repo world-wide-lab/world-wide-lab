@@ -56,6 +56,20 @@ async function up() {
   await umzug.up();
 }
 
+let latestMigration: string
+async function getLatestMigration(includeSuffix: boolean): Promise<string> {
+  if (latestMigration === undefined) {
+    const executed = await umzug.executed();
+    latestMigration = executed[executed.length - 1].name;
+  }
+  if (includeSuffix) {
+    return latestMigration
+  } else {
+    return latestMigration.substring(0, latestMigration.lastIndexOf('.'))
+
+  }
+}
+
 if (require.main === module) {
   // Can be called via e.g.
   // node dist/db/migrate.js create --name migration-name
@@ -67,4 +81,4 @@ if (require.main === module) {
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
 export type Migration = typeof umzug._types.migration;
 
-export { umzug, up };
+export { umzug, up, getLatestMigration };
