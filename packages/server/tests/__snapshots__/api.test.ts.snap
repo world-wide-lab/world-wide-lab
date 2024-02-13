@@ -90,6 +90,18 @@ exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = 
 }
 `;
 
+exports[`API Routes POST /session missing studyId should lead to an error 1`] = `
+{
+  "error": "studyId is a required field",
+}
+`;
+
+exports[`API Routes POST /session should validate extra info 1`] = `
+{
+  "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
+}
+`;
+
 exports[`API Routes POST /session/finish should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
@@ -105,6 +117,12 @@ exports[`API Routes POST /session/finish should fail when the sessionId is inval
 exports[`API Routes POST /session/finish should mark a session as finished 1`] = `
 {
   "success": true,
+}
+`;
+
+exports[`API Routes POST /study should validate extra info 1`] = `
+{
+  "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
 }
 `;
 

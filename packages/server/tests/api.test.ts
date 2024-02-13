@@ -118,6 +118,28 @@ describe("API Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("studyId");
     });
+
+    it("should create a new study with extra info", async () => {
+      const response = await endpoint
+        .post("/v1/study")
+        .send({
+          studyId: STUDY_ID + "_extra",
+          privateInfo: { integer: 10 },
+          publicInfo: { string: "lorem" },
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("studyId");
+    });
+
+    it("should validate extra info", async () => {
+      const response = await endpoint
+        .post("/v1/study")
+        .send({ studyId: STUDY_ID + "_extra", privateInfo: 10 });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
   });
 
   describe("POST /session", () => {
@@ -134,12 +156,28 @@ describe("API Routes", () => {
       sessionId = response.body.sessionId;
     });
 
+    it("should start a new session with extra info", async () => {
+      const response = await endpoint
+        .post("/v1/session")
+        .send({
+          participantId,
+          studyId,
+          privateInfo: { integer: 10 },
+          publicInfo: { string: "lorem" },
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("participantId", participantId);
+      expect(response.body).toHaveProperty("studyId", studyId);
+    });
+
     it("missing studyId should lead to an error", async () => {
       const response = await endpoint
         .post("/v1/session")
         .send({ participantId });
 
       expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
     });
     it("missing participantId should be ok", async () => {
       const response = await endpoint.post("/v1/session").send({ studyId });
@@ -147,6 +185,15 @@ describe("API Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("studyId", studyId);
       expect(response.body).toHaveProperty("sessionId");
+    });
+
+    it("should validate extra info", async () => {
+      const response = await endpoint
+        .post("/v1/session")
+        .send({ participantId, studyId, privateInfo: 10 });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
     });
   });
 
@@ -343,7 +390,7 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.body.count).toBe(3);
+      expect(response.body.count).toBe(4);
     });
 
     it("should return the correct count (for only finished sessions)", async () => {
@@ -406,7 +453,7 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(3);
+      expect(response.body.length).toBe(4);
       expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
         [
           "sessionId",
@@ -428,7 +475,7 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(2);
+      expect(response.body.length).toBe(3);
       expect(Object.keys(response.body[0])).toMatchInlineSnapshot(`
         [
           "participantId",
