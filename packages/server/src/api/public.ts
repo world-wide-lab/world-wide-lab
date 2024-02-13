@@ -1,6 +1,5 @@
 import express, { Request, Response } from "express";
 import sequelize from "../db";
-import validator from "validator";
 import {
   studySchema,
   participantSchema,
@@ -9,7 +8,9 @@ import {
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,
+  SessionParams,
 } from "../schemas";
+import config from "../config";
 
 const routerPublic = express.Router();
 
@@ -255,7 +256,17 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  */
 routerPublic.post("/session", async (req: Request, res: Response) => {
   try {
-    const sessionParams = sessionSchema.validateSync(req.body);
+    const sessionParams: SessionParams & {
+      metadata?: {};
+    } = sessionSchema.validateSync(req.body);
+
+    // Generate metadata
+    sessionParams.metadata = {
+      wwl_version: config.version,
+      userAgent: req.headers["user-agent"],
+      referer: req.headers["referer"],
+    };
+
     const session = await sequelize.models.Session.create(sessionParams);
     res.json(session);
   } catch (error) {

@@ -48,12 +48,14 @@ const fullSessionSchema = object({
   privateInfo: object().optional(),
   publicInfo: object().optional(),
   finished: boolean(),
+  metadata: object().optional(),
 }).noUnknown();
 const sessionSchema = fullSessionSchema.omit([
   "sessionId",
   "createdAt",
   "updatedAt",
   "finished",
+  "metadata",
 ]);
 
 const fullResponseSchema = object({

@@ -142,6 +142,11 @@ function defineModels(sequelize: Sequelize) {
         allowNull: false,
         comment: columnComments.studyId,
       },
+      metadata: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: `Metadata for each session. Automatically filled by World-Wide-Lab, including information such as the server's version.`,
+      },
     },
     {
       tableName: "wwl_sessions",
