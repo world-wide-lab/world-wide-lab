@@ -355,7 +355,7 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
       .pick(["sessionId"])
       .validateSync({ sessionId });
     const sessionParams = sessionSchema
-      .omit(["studyId", "participantId", "finished"])
+      .omit(["studyId", "participantId"])
       .validateSync(req.body);
 
     const updatedRows = await sequelize.models.Session.update(sessionParams, {
