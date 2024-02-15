@@ -11,7 +11,7 @@ import {
   SessionParams,
 } from "../schemas";
 import config from "../config";
-import { getLatestMigration } from "../db/migrate"
+import { getLatestMigration } from "../db/migrate";
 
 const routerPublic = express.Router();
 
@@ -29,7 +29,6 @@ const routerPublic = express.Router();
 routerPublic.get("/", async (req: Request, res: Response) => {
   res.type("text").send("World-Wide-Lab API: ✅");
 });
-
 
 /**
  * @openapi

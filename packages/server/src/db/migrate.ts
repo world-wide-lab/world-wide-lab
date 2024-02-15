@@ -56,17 +56,16 @@ async function up() {
   await umzug.up();
 }
 
-let latestMigration: string
+let latestMigration: string;
 async function getLatestMigration(includeSuffix: boolean): Promise<string> {
   if (latestMigration === undefined) {
     const executed = await umzug.executed();
     latestMigration = executed[executed.length - 1].name;
   }
   if (includeSuffix) {
-    return latestMigration
+    return latestMigration;
   } else {
-    return latestMigration.substring(0, latestMigration.lastIndexOf('.'))
-
+    return latestMigration.substring(0, latestMigration.lastIndexOf("."));
   }
 }
 
