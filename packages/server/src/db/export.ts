@@ -1,6 +1,85 @@
+import type { Response } from "express";
+import { json2csv } from "json-2-csv";
 import { Sequelize, QueryTypes } from "sequelize";
+import config from "../config";
 
-async function paginatedExport({
+// Export data from the database in chunks
+async function chunkedExport(
+  res: Response,
+  queryData: (offset: number, limit: number) => Promise<object[]>,
+  format: "json" | "csv",
+  limit: number = Infinity,
+  pageSize: number = config.database.chunkSize,
+) {
+  const onStart = () => {
+    if (format === "json") {
+      res.status(200).contentType("application/json");
+
+      res.write("[");
+    } else if (format === "csv") {
+      res.status(200).contentType("text/csv");
+    }
+  };
+
+  // Process & return each chunk of data
+  const onData = async (data: object[], offset: number) => {
+    if (format === "json") {
+      // Convert data to JSON string
+      const json = JSON.stringify(data);
+
+      if (offset > 0) {
+        // Add comma in between JSON chunks
+        res.write(",");
+      }
+
+      // Remove first and last characters from JSON string
+      // They should be "[" and "]" respectively.
+      // Since we want to combine data from multiple chunks, we have to
+      // remove them within every chunk and only add them once in
+      // onStart and onEnd.
+      res.write(json.substring(1, json.length - 1));
+    } else if (format === "csv") {
+      // Only include header in first chunk
+      const prependHeader = offset === 0;
+
+      if (offset > 0) {
+        // Add newline in between CSV chunks
+        res.write("\n");
+      }
+
+      // Convert to CSV
+      res.write(
+        json2csv(data, {
+          prependHeader,
+          expandNestedObjects: false,
+          useDateIso8601Format: true,
+        }),
+      );
+    } else {
+      throw new Error(`Unknown format: ${format}`);
+    }
+  };
+  // Complete the data export
+  const onEnd = () => {
+    if (format === "json") {
+      res.write("]");
+    }
+
+    // Mark the response as finished
+    res.end();
+  };
+
+  return await chunkedQuery({
+    pageSize,
+    queryData,
+    onData,
+    onStart,
+    onEnd,
+    limit,
+  });
+}
+
+async function chunkedQuery({
   pageSize,
   queryData,
   onData,
@@ -107,4 +186,4 @@ async function generateExtractedPayloadQuery(
   `;
 }
 
-export { paginatedExport, generateExtractedPayloadQuery };
+export { chunkedExport as paginatedExport, generateExtractedPayloadQuery };
