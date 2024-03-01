@@ -98,6 +98,10 @@ async function chunkedQuery({
 
   let n_rows;
   let first_iteration = true;
+  if (limit < pageSize) {
+    pageSize = limit;
+  }
+
   do {
     // Retrieve the data
     let data = await queryData(offset, pageSize);

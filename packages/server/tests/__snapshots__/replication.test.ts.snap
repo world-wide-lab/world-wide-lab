@@ -1,0 +1,83 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Replication API of Replication Destination should fail when not authenticated 1`] = `
+{
+  "error": "Authentication via API Key required",
+}
+`;
+
+exports[`Replication API of Replication Destination should fail when not configured to act as destination source 1`] = `
+{
+  "error": "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
+}
+`;
+
+exports[`Replication API of Replication Destination should work as intended 1`] = `
+{
+  "message": "Success!",
+}
+`;
+
+exports[`Replication API of Replication Source should download a raw list of responses 1`] = `
+[
+  "responseId",
+  "createdAt",
+  "updatedAt",
+  "name",
+  "payload",
+  "sessionId",
+]
+`;
+
+exports[`Replication API of Replication Source should download a raw list of sessions 1`] = `
+[
+  "sessionId",
+  "createdAt",
+  "updatedAt",
+  "privateInfo",
+  "publicInfo",
+  "finished",
+  "participantId",
+  "studyId",
+  "metadata",
+]
+`;
+
+exports[`Replication API of Replication Source should download a raw list of studies 1`] = `
+[
+  "studyId",
+  "createdAt",
+  "updatedAt",
+  "privateInfo",
+  "publicInfo",
+  "deletionProtection",
+]
+`;
+
+exports[`Replication API of Replication Source should fail when not authenticated 1`] = `
+{
+  "error": "Authentication via API Key required",
+}
+`;
+
+exports[`Replication API of Replication Source should fail when not configured to act as replication source 1`] = `
+{
+  "error": "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
+}
+`;
+
+exports[`Replication API of Replication Source should fail when not configured to act as replication source 2`] = `
+{
+  "error": "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
+}
+`;
+
+exports[`Replication API of Replication Source should retrieve a list of participants 1`] = `
+[
+  "participantId",
+  "createdAt",
+  "updatedAt",
+  "privateInfo",
+  "publicInfo",
+]
+`;

@@ -11,7 +11,7 @@ import {
   SessionParams,
 } from "../schemas";
 import config from "../config";
-import { getLatestMigration } from "../db/migrate";
+import { getDbVersion } from "../db/replication";
 
 const routerPublic = express.Router();
 
@@ -44,7 +44,7 @@ routerPublic.get("/", async (req: Request, res: Response) => {
 routerPublic.get("/info", async (req: Request, res: Response) => {
   res.type("json").send({
     version: config.version,
-    db_version: await getLatestMigration(false),
+    db_version: await getDbVersion(),
   });
 });
 

@@ -11,6 +11,11 @@ import { sanitizeStudyId } from "../db/util";
 import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
 import config from "../config";
 import { string, object, number, date, ValidationError } from "yup";
+import {
+  findModelByTableName,
+  runReplication,
+  UnknownTableError,
+} from "../db/replication";
 
 const routerProtectedWithoutAuthentication = express.Router();
 
@@ -206,6 +211,11 @@ routerProtectedWithoutAuthentication.get(
  *      - replication
  *     security:
  *      - apiKey: []
+ *     description: >
+ *       Retrieve data from a table for replication. The data will be returned
+ *       as a JSON array. The data will be filtered to only include records
+ *       updated after the specified date-time.
+ *       Set REPLICATION_ROLE to 'source' to enable this feature.
  *     parameters:
  *       - in: path
  *         name: table
@@ -242,6 +252,8 @@ routerProtectedWithoutAuthentication.get(
  *         description: Invalid input, object invalid
  *       404:
  *         description: Table not found
+ *       418:
+ *         description: Server is not configured to serve as a replication source
  *       500:
  *         description: An error occurred while trying to export the table for replication
  */
@@ -249,6 +261,14 @@ routerProtectedWithoutAuthentication.get(
   "/replication/source/get-table/:table/",
   async (req: Request, res: Response) => {
     try {
+      if (config.replication.role !== "source") {
+        res.status(418).json({
+          error:
+            "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
+        });
+        return;
+      }
+
       const { table } = req.params;
       const { updated_after, limit } = object({
         updated_after: date().required(),
@@ -256,15 +276,7 @@ routerProtectedWithoutAuthentication.get(
       }).validateSync(req.query);
 
       // Find the correct model for the table
-      const model = Object.values(sequelize.models).filter(
-        (model) => model.tableName === table,
-      )[0];
-
-      if (!model) {
-        const error = Error(`Unknown table: ${table}`);
-        error.name = "UnknownTableError";
-        throw error;
-      }
+      const model = findModelByTableName(table);
 
       const dataQueryFunction = async (offset: number, pageSize: number) => {
         return await model.findAll({
@@ -280,6 +292,67 @@ routerProtectedWithoutAuthentication.get(
 
       // Do a pagninated (or chunked) export of the data
       await paginatedExport(res, dataQueryFunction, "json", limit);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else if (error instanceof UnknownTableError) {
+        res.status(404).json({ error: error.message });
+      } else {
+        console.error(error);
+        if (res.headersSent) {
+          // Header has already been sent, we can not return JSON as a type
+          res.send(
+            "ERROR: Failed to export table for replication after response has been partially constructed.",
+          );
+        } else {
+          res
+            .status(500)
+            .json({ error: "Failed to export table for replication" });
+        }
+      }
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /replication/destination/update:
+ *   get:
+ *     summary: Update the replication destination
+ *     tags:
+ *      - replication
+ *     security:
+ *      - apiKey: []
+ *     description: >
+ *       Update the replication destination by running the replication process.
+ *       Set REPLICATION_ROLE to 'destination' to enable this feature.
+ *     responses:
+ *       200:
+ *         description: Success
+ *       418:
+ *         description: Server is not configured to serve as a replication destination
+ *       400:
+ *         description: Invalid input, object invalid
+ *       404:
+ *         description: Table not found
+ *       500:
+ *         description: An error occurred while trying to export the table for replication
+ */
+routerProtectedWithoutAuthentication.get(
+  "/replication/destination/update",
+  async (req: Request, res: Response) => {
+    try {
+      if (config.replication.role !== "destination") {
+        res.status(418).json({
+          error:
+            "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
+        });
+        return;
+      }
+
+      await runReplication();
+
+      res.status(200).json({ message: "Success!" });
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ error: error.message });
