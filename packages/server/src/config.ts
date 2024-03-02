@@ -116,8 +116,8 @@ const config = {
       | "source"
       | "destination"
       | null,
-    source: getStringFromEnv("REPLICATION_SOURCE"),
-    sourceApiKey: getStringFromEnv("REPLICATION_SOURCE_API_KEY"),
+    source: getStringFromEnv("REPLICATION_SOURCE", null),
+    sourceApiKey: getStringFromEnv("REPLICATION_SOURCE_API_KEY", null),
 
     chunkSize: getIntFromEnv("REPLICATION_CHUNK_SIZE") || 100000,
   },
