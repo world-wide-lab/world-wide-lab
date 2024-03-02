@@ -10,10 +10,16 @@ function getValueFromEnv(key: string): string | undefined {
   }
 }
 
+function getStringFromEnv(key: string): string;
 function getStringFromEnv(
   key: string,
-  defaultValue: string | undefined | null = null,
-): string | null {
+  defaultValue: string | undefined,
+): string;
+function getStringFromEnv(key: string, defaultValue: null): string | null;
+function getStringFromEnv(
+  key: string,
+  defaultValue?: string | undefined | null,
+) {
   const value = getValueFromEnv(key);
   if (value === undefined) {
     if (defaultValue === undefined) {
