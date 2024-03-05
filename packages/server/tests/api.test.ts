@@ -160,11 +160,19 @@ describe("API Routes", () => {
         studyId,
         privateInfo: { integer: 10 },
         publicInfo: { string: "lorem" },
+        clientMetadata: { version: "1.0", queryParameters: { test: "test" } },
       });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("participantId", participantId);
       expect(response.body).toHaveProperty("studyId", studyId);
+      expect(response.body).toHaveProperty("sessionId");
+
+      const session = await sequelize.models.Session.findOne({
+        where: { sessionId: response.body.sessionId },
+      });
+      // @ts-ignore
+      expect(session.metadata).toMatchSnapshot();
     });
 
     it("missing studyId should lead to an error", async () => {

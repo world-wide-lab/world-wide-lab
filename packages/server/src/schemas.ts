@@ -55,8 +55,10 @@ const sessionSchema = fullSessionSchema.omit([
   "createdAt",
   "updatedAt",
   "finished",
-  "metadata",
 ]);
+const sessionCreationRequestSchema = sessionSchema.omit(["metadata"]).shape({
+  clientMetadata: object(),
+});
 
 const fullResponseSchema = object({
   responseId: number().integer().required(),
@@ -76,6 +78,7 @@ export {
   studySchema,
   participantSchema,
   sessionSchema,
+  sessionCreationRequestSchema,
   responseSchema,
   fullStudySchema,
   fullParticipantSchema,
