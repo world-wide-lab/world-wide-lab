@@ -60,8 +60,13 @@ type ObjectWithData = {
 };
 
 export class Client {
+  _library: string;
+  _libraryVersion?: string;
+
   constructor(public options: ClientOptions) {
     console.log("Initializing Client", options);
+
+    this._library = "@world-wide-lab/client";
   }
 
   /**
@@ -121,10 +126,14 @@ export class Client {
       studyId: sessionOptions.studyId,
       clientMetadata: {
         version: VERSION,
+        library: this._library,
       },
     };
 
     // Generate Client Metadata
+    if (this._libraryVersion) {
+      sessionData.clientMetadata.libraryVersion = this._libraryVersion;
+    }
     if (typeof window !== "undefined" && "location" in window) {
       sessionData.clientMetadata.url = window.location.href;
 

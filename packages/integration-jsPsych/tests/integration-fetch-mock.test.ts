@@ -1,9 +1,10 @@
 import { initJsPsych } from "jspsych";
-import { VERSION } from "@world-wide-lab/client";
+import { VERSION as clientVersion } from "@world-wide-lab/client";
 import jsPsychHtmlKeyboardResponse from "@jspsych/plugin-html-keyboard-response";
 import { startTimeline, pressKey } from "@jspsych/test-utils";
 
 import jsPsychWorldWideLab from "../src";
+import { version } from "../package.json";
 
 const url = "https://non-existing-wwl-url/";
 
@@ -32,7 +33,9 @@ const MOCK_RESPONSES = {
 };
 
 const clientMetadata = {
-  version: VERSION,
+  version: clientVersion,
+  library: "@world-wide-lab/integration-jspsych",
+  libraryVersion: version,
   url: "http://localhost/",
   navigator: {
     language: "en-US",

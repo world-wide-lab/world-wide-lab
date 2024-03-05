@@ -17,6 +17,7 @@
   "source": "src/index.ts",
   "scripts": {
     "prepack": "npm run build",
+    "prebuild": "node -p \"'export const VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
     "test": "jest",
     "test:watch": "npm test -- --watch",
     "tsc": "tsc",

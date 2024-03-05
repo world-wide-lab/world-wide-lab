@@ -12,6 +12,7 @@ import {
   Session,
   SessionResponseOptions,
 } from "@world-wide-lab/client";
+import { VERSION } from "./version";
 
 interface InitializeParameters {}
 
@@ -252,6 +253,8 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     this.client = new Client({
       url: options.url,
     });
+    this.client._library = "@world-wide-lab/integration-jspsych";
+    this.client._libraryVersion = VERSION;
     this.studyId = options.studyId;
 
     this.session = await this.client.createSession({

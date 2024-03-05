@@ -3,6 +3,7 @@
 exports[`Client should start a new session (without a linked participant) 1`] = `
 {
   "clientMetadata": {
+    "library": "@world-wide-lab/client",
     "version": "0.2.0",
   },
   "studyId": "example",
