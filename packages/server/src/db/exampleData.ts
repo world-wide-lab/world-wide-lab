@@ -1,9 +1,10 @@
 import { Sequelize } from "sequelize";
 import { logger } from "../logger";
 
-async function generateExampleData(sequelize: Sequelize) {
-  const studyId = "example";
-
+async function generateExampleData(
+  sequelize: Sequelize,
+  studyId: string = "example",
+) {
   const exampleStudyCount = (
     await sequelize.models.Study.findAndCountAll({
       where: {

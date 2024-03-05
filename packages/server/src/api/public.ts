@@ -11,6 +11,7 @@ import {
   SessionParams,
 } from "../schemas";
 import config from "../config";
+import { getDbVersion } from "../db/replication";
 
 const routerPublic = express.Router();
 
@@ -27,6 +28,24 @@ const routerPublic = express.Router();
  */
 routerPublic.get("/", async (req: Request, res: Response) => {
   res.type("text").send("World-Wide-Lab API: ✅");
+});
+
+/**
+ * @openapi
+ * /info:
+ *   get:
+ *     summary: Get information about the current World-Wide-Lab instance.
+ *     tags:
+ *       - main
+ *     responses:
+ *       '200':
+ *         description: Information returned successfully
+ */
+routerPublic.get("/info", async (req: Request, res: Response) => {
+  res.type("json").send({
+    version: config.version,
+    db_version: await getDbVersion(),
+  });
 });
 
 /**

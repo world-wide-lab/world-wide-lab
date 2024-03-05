@@ -4,13 +4,18 @@ import Sequelize from "sequelize";
 import type { Client } from "pg";
 import { to as copyTo } from "pg-copy-streams";
 import { pipeline } from "node:stream/promises";
-import { json2csv } from "json-2-csv";
 
 import sequelize from "../db";
 import { requireAuthMiddleware } from "./authMiddleware";
 import { sanitizeStudyId } from "../db/util";
 import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
 import config from "../config";
+import { string, object, number, date, ValidationError } from "yup";
+import {
+  findModelByTableName,
+  runReplication,
+  UnknownTableError,
+} from "../db/replication";
 
 const routerProtectedWithoutAuthentication = express.Router();
 
@@ -24,7 +29,7 @@ const routerProtectedWithoutAuthentication = express.Router();
  *       available for each study. The downloads may take a while depending
  *       on the amount of data and whether or not it needs to be transformed.
  *     tags:
- *       - main
+ *       - download
  *     security:
  *      - apiKey: []
  *     parameters:
@@ -72,7 +77,18 @@ routerProtectedWithoutAuthentication.get(
   "/study/:studyId/data/:dataType/:format",
   async (req: Request, res: Response) => {
     try {
-      const { studyId, dataType, format } = req.params;
+      const { studyId, dataType, format } = object({
+        studyId: string().required(),
+        dataType: string()
+          .oneOf([
+            "responses-raw",
+            "sessions-raw",
+            "participants-raw",
+            "responses-extracted-payload",
+          ])
+          .required(),
+        format: string().oneOf(["json", "csv"]).required(),
+      }).validateSync(req.params);
 
       // Verify whether the study exists
       let study = await sequelize.models.Study.findOne({ where: { studyId } });
@@ -175,73 +191,196 @@ routerProtectedWithoutAuthentication.get(
       if (dataQueryFunction !== undefined) {
         // Do a pagninated (or chunked) export of the data using the specified
         // dataQueryFunction to retrieve chunks of data.
-        paginatedExport({
-          pageSize: config.database.chunkSize,
-          queryData: dataQueryFunction,
-          // Initialize the data export
-          onStart: () => {
-            if (format === "json") {
-              res.status(200).contentType("application/json");
-
-              res.write("[");
-            } else if (format === "csv") {
-              res.status(200).contentType("text/csv");
-            }
-          },
-          // Process & return each chunk of data
-          onData: async (data, offset) => {
-            if (format === "json") {
-              // Convert data to JSON string
-              const json = JSON.stringify(data);
-
-              if (offset > 0) {
-                // Add comma in between JSON chunks
-                res.write(",");
-              }
-
-              // Remove first and last characters from JSON string
-              // They should be "[" and "]" respectively.
-              // Since we want to combine data from multiple chunks, we have to
-              // remove them within every chunk and only add them once in
-              // onStart and onEnd.
-              res.write(json.substring(1, json.length - 1));
-            } else if (format === "csv") {
-              // Only include header in first chunk
-              const prependHeader = offset === 0;
-
-              if (offset > 0) {
-                // Add newline in between CSV chunks
-                res.write("\n");
-              }
-
-              // Convert to CSV
-              res.write(
-                json2csv(data, {
-                  prependHeader,
-                  expandNestedObjects: false,
-                  useDateIso8601Format: true,
-                }),
-              );
-            } else {
-              throw new Error(`Unknown format: ${format}`);
-            }
-          },
-          // Complete the data export
-          onEnd: () => {
-            if (format === "json") {
-              res.write("]");
-            }
-
-            // Mark the response as finished
-            res.end();
-          },
-        });
+        paginatedExport(res, dataQueryFunction, format);
       } else {
         throw new Error(`Missing dataQueryFunction`);
       }
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to retrieve study data" });
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /replication/source/get-table/{table}:
+ *   get:
+ *     summary: Retrieve a table's data for replication
+ *     tags:
+ *      - replication
+ *     security:
+ *      - apiKey: []
+ *     description: >
+ *       Retrieve data from a table for replication. The data will be returned
+ *       as a JSON array. The data will be filtered to only include records
+ *       updated after the specified date-time.
+ *       Set REPLICATION_ROLE to 'source' to enable this feature.
+ *     parameters:
+ *       - in: path
+ *         name: table
+ *         required: true
+ *         example: wwl_responses
+ *         schema:
+ *           type: string
+ *         description: The name of the table to retrieve data from
+ *       - in: query
+ *         name: updated_after
+ *         required: true
+ *         example: 2000-01-01T00:00:00Z
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Only retrieve data updated after this date-time
+ *       - in: query
+ *         name: limit
+ *         required: true
+ *         example: 10000
+ *         schema:
+ *           type: integer
+ *       - in: offset
+ *         name: limit
+ *         required: false
+ *         default: 0
+ *         schema:
+ *           type: integer
+ *         description: The maximum number of records to retrieve
+ *     responses:
+ *       200:
+ *         description: A JSON array of the table's data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       400:
+ *         description: Invalid input, object invalid
+ *       404:
+ *         description: Table not found
+ *       418:
+ *         description: Server is not configured to serve as a replication source
+ *       500:
+ *         description: An error occurred while trying to export the table for replication
+ */
+routerProtectedWithoutAuthentication.get(
+  "/replication/source/get-table/:table/",
+  async (req: Request, res: Response) => {
+    try {
+      if (config.replication.role !== "source") {
+        res.status(418).json({
+          error:
+            "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
+        });
+        return;
+      }
+
+      const { table } = req.params;
+      const { updated_after, limit, offset } = object({
+        updated_after: date().required(),
+        limit: number().required(),
+        offset: number().default(0),
+      }).validateSync(req.query);
+
+      // Find the correct model for the table
+      const model = findModelByTableName(table);
+
+      const dataQueryFunction = async (
+        queryOffset: number,
+        pageSize: number,
+      ) => {
+        return await model.findAll({
+          where: {
+            updatedAt: {
+              [Sequelize.Op.gt]: updated_after,
+            },
+          },
+          offset: queryOffset,
+          limit: pageSize,
+        });
+      };
+
+      // Do a pagninated (or chunked) export of the data
+      await paginatedExport(res, dataQueryFunction, "json", limit, offset);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else if (error instanceof UnknownTableError) {
+        res.status(404).json({ error: error.message });
+      } else {
+        console.error(error);
+        if (res.headersSent) {
+          // Header has already been sent, we can not return JSON as a type
+          res.send(
+            "ERROR: Failed to export table for replication after response has been partially constructed.",
+          );
+        } else {
+          res
+            .status(500)
+            .json({ error: "Failed to export table for replication" });
+        }
+      }
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /replication/destination/update:
+ *   get:
+ *     summary: Update the replication destination
+ *     tags:
+ *      - replication
+ *     security:
+ *      - apiKey: []
+ *     description: >
+ *       Update the replication destination by running the replication process.
+ *       Set REPLICATION_ROLE to 'destination' to enable this feature.
+ *     responses:
+ *       200:
+ *         description: Success
+ *       418:
+ *         description: Server is not configured to serve as a replication destination
+ *       400:
+ *         description: Invalid input, object invalid
+ *       404:
+ *         description: Table not found
+ *       500:
+ *         description: An error occurred while trying to export the table for replication
+ */
+routerProtectedWithoutAuthentication.get(
+  "/replication/destination/update",
+  async (req: Request, res: Response) => {
+    try {
+      if (config.replication.role !== "destination") {
+        res.status(418).json({
+          error:
+            "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
+        });
+        return;
+      }
+
+      await runReplication();
+
+      res.status(200).json({ message: "Success!" });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else if (error instanceof Error && error.name === "UnknownTableError") {
+        res.status(404).json({ error: error.message });
+      } else {
+        console.error(error);
+        if (res.headersSent) {
+          // Header has already been sent, we can not return JSON as a type
+          res.send(
+            "ERROR: Failed to export table for replication after response has been partially constructed.",
+          );
+        } else {
+          res
+            .status(500)
+            .json({ error: "Failed to export table for replication" });
+        }
+      }
     }
   },
 );

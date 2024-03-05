@@ -39,6 +39,14 @@ const options = {
         name: "update",
         description: "Update information about participants or sessions.",
       },
+      {
+        name: "download",
+        description: "Export or download data for analyses.",
+      },
+      {
+        name: "replication",
+        description: "Replicate data from a WWL server to another.",
+      },
     ],
     components: {
       securitySchemes: {

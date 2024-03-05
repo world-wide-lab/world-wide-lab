@@ -10,10 +10,23 @@ function getValueFromEnv(key: string): string | undefined {
   }
 }
 
-function getStringFromEnv(key: string): string {
+function getStringFromEnv(key: string): string;
+function getStringFromEnv(
+  key: string,
+  defaultValue: string | undefined,
+): string;
+function getStringFromEnv(key: string, defaultValue: null): string | null;
+function getStringFromEnv(
+  key: string,
+  defaultValue?: string | undefined | null,
+) {
   const value = getValueFromEnv(key);
   if (value === undefined) {
-    throw new Error(`${key} must not be empty!`);
+    if (defaultValue === undefined) {
+      throw new Error(`${key} must not be empty!`);
+    } else {
+      return defaultValue;
+    }
   }
   return value;
 }
@@ -97,7 +110,39 @@ const config = {
   },
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
+
+  replication: {
+    role: getStringFromEnv("REPLICATION_ROLE", null) as
+      | "source"
+      | "destination"
+      | null,
+    source: getStringFromEnv("REPLICATION_SOURCE", null),
+    sourceApiKey: getStringFromEnv("REPLICATION_SOURCE_API_KEY", null),
+
+    chunkSize: getIntFromEnv("REPLICATION_CHUNK_SIZE") || 100000,
+  },
 };
+
+// Set config values based on other values
+if (config.replication.role !== null) {
+  if (config.replication.role === "source") {
+    if (config.replication.source || config.replication.sourceApiKey) {
+      throw new Error(
+        `When REPLICATION_ROLE is set to "source", REPLICATION_SOURCE and REPLICATION_SOURCE_API_KEY must not be set.`,
+      );
+    }
+  } else if (config.replication.role === "destination") {
+    if (config.replication.source || config.replication.sourceApiKey) {
+      throw new Error(
+        `When REPLICATION_ROLE is set to "destination", REPLICATION_SOURCE and REPLICATION_SOURCE_API_KEY have to be set.`,
+      );
+    }
+  } else {
+    throw new Error(
+      `Invalid value for REPLICATION_ROLE: ${config.replication.role}. Only "source" and "destination" are supported.`,
+    );
+  }
+}
 
 // Validate configuration
 if (config.admin.enabled && config.admin.auth.enabled) {

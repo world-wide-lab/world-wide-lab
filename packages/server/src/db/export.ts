@@ -1,31 +1,124 @@
+import type { Response } from "express";
+import { json2csv } from "json-2-csv";
 import { Sequelize, QueryTypes } from "sequelize";
+import config from "../config";
 
-async function paginatedExport({
+// Export data from the database in chunks
+async function chunkedExport(
+  res: Response,
+  queryData: (offset: number, limit: number) => Promise<object[]>,
+  format: "json" | "csv",
+  limit: number = Infinity,
+  initialOffset: number = 0,
+  pageSize: number = config.database.chunkSize,
+) {
+  const onStart = () => {
+    if (format === "json") {
+      res.status(200).contentType("application/json");
+
+      res.write("[");
+    } else if (format === "csv") {
+      res.status(200).contentType("text/csv");
+    }
+  };
+
+  // Process & return each chunk of data
+  const onData = async (data: object[], offset: number) => {
+    const isFirstChunk = offset === initialOffset;
+
+    if (format === "json") {
+      // Convert data to JSON string
+      const json = JSON.stringify(data);
+
+      if (!isFirstChunk) {
+        // Add comma in between JSON chunks
+        res.write(",");
+      }
+
+      // Remove first and last characters from JSON string
+      // They should be "[" and "]" respectively.
+      // Since we want to combine data from multiple chunks, we have to
+      // remove them within every chunk and only add them once in
+      // onStart and onEnd.
+      res.write(json.substring(1, json.length - 1));
+    } else if (format === "csv") {
+      if (!isFirstChunk) {
+        // Add newline in between CSV chunks
+        res.write("\n");
+      }
+
+      // Convert to CSV
+      res.write(
+        json2csv(data, {
+          prependHeader: isFirstChunk,
+          expandNestedObjects: false,
+          useDateIso8601Format: true,
+        }),
+      );
+    } else {
+      throw new Error(`Unknown format: ${format}`);
+    }
+  };
+  // Complete the data export
+  const onEnd = () => {
+    if (format === "json") {
+      res.write("]");
+    }
+
+    // Mark the response as finished
+    res.end();
+  };
+
+  return await chunkedQuery({
+    pageSize,
+    queryData,
+    onData,
+    onStart,
+    onEnd,
+    limit,
+    initialOffset,
+  });
+}
+
+async function chunkedQuery({
   pageSize,
   queryData,
   onData,
   onStart = () => {},
   onEnd = () => {},
+  limit = Infinity,
+  initialOffset = 0,
 }: {
   pageSize: number;
   queryData: (offset: number, limit: number) => Promise<object[]>;
   onData: (data: object[], offset: number) => Promise<void>;
   onStart?: () => void;
   onEnd?: () => void;
+  limit?: number;
+  initialOffset?: number;
 }) {
-  let offset = 0;
-  let limit = pageSize;
-
-  onStart();
+  let offset = initialOffset;
 
   let n_rows;
+  let first_iteration = true;
+  if (limit < pageSize) {
+    pageSize = limit;
+  }
+
   do {
     // Retrieve the data
-    let data = await queryData(offset, limit);
+    let data = await queryData(offset, pageSize);
     if (!Array.isArray(data)) {
       throw new Error("Data is always expected to be returned as an Array");
     }
     n_rows = data.length;
+
+    if (first_iteration) {
+      // Call onStart after we received data for the first time to still allow
+      // sending error status codes if query code fails.
+      onStart();
+      first_iteration = false;
+    }
 
     // Do something with the data (usually returning it to the user)
     if (n_rows > 0) {
@@ -35,9 +128,13 @@ async function paginatedExport({
     // Increase the offset in case we will continue
     offset += pageSize;
 
+    if (offset + pageSize > limit) {
+      pageSize = limit - offset;
+    }
+
     // Check whether we already got all data
     // e.g. we either got an empty result or our result was less than the limit
-  } while (n_rows > 0 && n_rows === limit);
+  } while (n_rows > 0 && n_rows === pageSize && offset < limit);
 
   onEnd();
 }
@@ -96,4 +193,4 @@ async function generateExtractedPayloadQuery(
   `;
 }
 
-export { paginatedExport, generateExtractedPayloadQuery };
+export { chunkedExport as paginatedExport, generateExtractedPayloadQuery };
