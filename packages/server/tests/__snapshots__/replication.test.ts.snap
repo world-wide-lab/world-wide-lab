@@ -43,6 +43,20 @@ exports[`Replication API of Replication Source should download a raw list of ses
 ]
 `;
 
+exports[`Replication API of Replication Source should download a raw list of sessions, honoring offsets 1`] = `
+[
+  "sessionId",
+  "createdAt",
+  "updatedAt",
+  "privateInfo",
+  "publicInfo",
+  "finished",
+  "participantId",
+  "studyId",
+  "metadata",
+]
+`;
+
 exports[`Replication API of Replication Source should download a raw list of studies 1`] = `
 [
   "studyId",

@@ -238,6 +238,12 @@ routerProtectedWithoutAuthentication.get(
  *         example: 10000
  *         schema:
  *           type: integer
+ *       - in: offset
+ *         name: limit
+ *         required: false
+ *         default: 0
+ *         schema:
+ *           type: integer
  *         description: The maximum number of records to retrieve
  *     responses:
  *       200:
@@ -270,28 +276,32 @@ routerProtectedWithoutAuthentication.get(
       }
 
       const { table } = req.params;
-      const { updated_after, limit } = object({
+      const { updated_after, limit, offset } = object({
         updated_after: date().required(),
         limit: number().required(),
+        offset: number().default(0),
       }).validateSync(req.query);
 
       // Find the correct model for the table
       const model = findModelByTableName(table);
 
-      const dataQueryFunction = async (offset: number, pageSize: number) => {
+      const dataQueryFunction = async (
+        queryOffset: number,
+        pageSize: number,
+      ) => {
         return await model.findAll({
           where: {
             updatedAt: {
               [Sequelize.Op.gt]: updated_after,
             },
           },
-          offset: offset,
+          offset: queryOffset,
           limit: pageSize,
         });
       };
 
       // Do a pagninated (or chunked) export of the data
-      await paginatedExport(res, dataQueryFunction, "json", limit);
+      await paginatedExport(res, dataQueryFunction, "json", limit, offset);
     } catch (error) {
       if (error instanceof ValidationError) {
         res.status(400).json({ error: error.message });

@@ -9,6 +9,7 @@ async function chunkedExport(
   queryData: (offset: number, limit: number) => Promise<object[]>,
   format: "json" | "csv",
   limit: number = Infinity,
+  initialOffset: number = 0,
   pageSize: number = config.database.chunkSize,
 ) {
   const onStart = () => {
@@ -23,11 +24,13 @@ async function chunkedExport(
 
   // Process & return each chunk of data
   const onData = async (data: object[], offset: number) => {
+    const isFirstChunk = offset === initialOffset;
+
     if (format === "json") {
       // Convert data to JSON string
       const json = JSON.stringify(data);
 
-      if (offset > 0) {
+      if (!isFirstChunk) {
         // Add comma in between JSON chunks
         res.write(",");
       }
@@ -39,10 +42,7 @@ async function chunkedExport(
       // onStart and onEnd.
       res.write(json.substring(1, json.length - 1));
     } else if (format === "csv") {
-      // Only include header in first chunk
-      const prependHeader = offset === 0;
-
-      if (offset > 0) {
+      if (!isFirstChunk) {
         // Add newline in between CSV chunks
         res.write("\n");
       }
@@ -50,7 +50,7 @@ async function chunkedExport(
       // Convert to CSV
       res.write(
         json2csv(data, {
-          prependHeader,
+          prependHeader: isFirstChunk,
           expandNestedObjects: false,
           useDateIso8601Format: true,
         }),
@@ -76,6 +76,7 @@ async function chunkedExport(
     onStart,
     onEnd,
     limit,
+    initialOffset,
   });
 }
 
@@ -86,6 +87,7 @@ async function chunkedQuery({
   onStart = () => {},
   onEnd = () => {},
   limit = Infinity,
+  initialOffset = 0,
 }: {
   pageSize: number;
   queryData: (offset: number, limit: number) => Promise<object[]>;
@@ -93,8 +95,9 @@ async function chunkedQuery({
   onStart?: () => void;
   onEnd?: () => void;
   limit?: number;
+  initialOffset?: number;
 }) {
-  let offset = 0;
+  let offset = initialOffset;
 
   let n_rows;
   let first_iteration = true;

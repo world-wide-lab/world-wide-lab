@@ -9,6 +9,7 @@ import generateExampleData from "../src/db/exampleData";
 import { UnknownTableError, findModelByTableName } from "../src/db/replication";
 import config from "../src/config";
 import { up } from "../src/db/migrate";
+import { URL } from "url";
 
 const endpoint = request(app);
 
@@ -101,6 +102,19 @@ describe("Replication", () => {
       expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
+    it("should download a raw list of sessions, honoring offsets", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/replication/source/get-table/wwl_sessions?limit=12&offset=8&updated_after=${updatedAfter}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(8);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
+    });
+
     it("should download a raw list of responses", async () => {
       const response = await endpoint
         .get(
@@ -168,7 +182,6 @@ describe("Replication", () => {
       const infoData = infoRepsonse.body;
 
       // Set up Mocks
-      const responseTrackerState: { [key: string]: any } = {};
       const MOCK_RESPONSES = {
         "/v1/info": {
           GET: () => {
@@ -176,141 +189,142 @@ describe("Replication", () => {
             return infoData;
           },
         },
-        "/v1/replication/source/get-table/wwl_responses/?limit=2&updated_after=":
-          {
-            GET: () => {
-              const key =
-                "/v1/replication/source/get-table/wwl_responses/?limit=2&updated_after=";
-              const i = responseTrackerState?.[key] || 0;
-              let data;
-              if (i == 0) {
-                data = [
-                  {
-                    responseId: 1,
-                    createdAt: "2024-02-13T22:16:56.539Z",
-                    updatedAt: "2024-02-13T22:16:56.539Z",
-                    name: "trial-1",
-                    payload: {
-                      response: "Response #1",
-                    },
-                    sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
-                  },
-                  {
-                    responseId: 2,
-                    createdAt: "2024-02-13T22:16:56.540Z",
-                    updatedAt: "2024-02-13T22:16:56.540Z",
-                    name: "trial-2",
-                    payload: {
-                      response: "Response #2",
-                    },
-                    sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
-                  },
-                ];
-              } else if (i == 1) {
-                data = [
-                  {
-                    responseId: 3,
-                    createdAt: "2024-02-13T22:16:56.540Z",
-                    updatedAt: "2024-02-13T22:16:56.540Z",
-                    name: "trial-3",
-                    payload: {
-                      response: "Response #3",
-                    },
-                    sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
-                  },
-                  {
-                    responseId: 4,
-                    createdAt: "2024-02-13T22:16:56.544Z",
-                    updatedAt: "2024-02-13T22:16:56.544Z",
-                    name: "trial-1",
-                    payload: {
-                      response: "Response #1",
-                    },
-                    sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
-                  },
-                ];
-              } else {
-                data = [
-                  {
-                    responseId: 5,
-                    createdAt: "2024-02-13T22:16:56.544Z",
-                    updatedAt: "2024-02-13T22:16:56.544Z",
-                    name: "trial-2",
-                    payload: {
-                      response: "Response #2",
-                    },
-                    sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
-                  },
-                ];
-              }
-              // @ts-ignore
-              responseTrackerState[key] = i + 1;
-              return data;
+        "/v1/replication/source/get-table/wwl_responses/?": {
+          GET: [
+            {
+              responseId: 1,
+              createdAt: "2024-02-13T22:16:56.539Z",
+              updatedAt: "2024-02-13T22:16:56.539Z",
+              name: "trial-1",
+              payload: {
+                response: "Response #1",
+              },
+              sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
             },
-          },
-        "/v1/replication/source/get-table/wwl_studies/?limit=2&updated_after=":
-          {
-            GET: [
-              {
-                studyId: "replication-test",
-                createdAt: "2024-02-13T22:16:56.533Z",
-                updatedAt: "2024-02-13T22:16:56.533Z",
-                privateInfo: null,
-                publicInfo: null,
-                deletionProtection: true,
+            {
+              responseId: 2,
+              createdAt: "2024-02-13T22:16:56.540Z",
+              updatedAt: "2024-02-13T22:16:56.540Z",
+              name: "trial-2",
+              payload: {
+                response: "Response #2",
               },
-            ],
-          },
-        "/v1/replication/source/get-table/wwl_participants/?limit=2&updated_after=":
-          {
-            GET: [
-              {
-                participantId: "38c10788-6062-43d3-a2e7-cfa929ddaf57",
-                createdAt: "2024-02-09T22:16:56.536Z",
-                updatedAt: "2024-02-13T22:16:56.536Z",
-                privateInfo: {
-                  description: "Example User #1",
-                },
-                publicInfo: null,
+              sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
+            },
+            {
+              responseId: 3,
+              createdAt: "2024-02-13T22:16:56.540Z",
+              updatedAt: "2024-02-13T22:16:56.540Z",
+              name: "trial-3",
+              payload: {
+                response: "Response #3",
               },
-              {
-                participantId: "6b5112d6-93ba-471f-9d76-7deec118ab89",
-                createdAt: "2024-02-10T22:16:56.542Z",
-                updatedAt: "2024-02-13T22:16:56.542Z",
-                privateInfo: {
-                  description: "Example User #2",
-                },
-                publicInfo: null,
+              sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
+            },
+            {
+              responseId: 4,
+              createdAt: "2024-02-13T22:16:56.544Z",
+              updatedAt: "2024-02-13T22:16:56.544Z",
+              name: "trial-1",
+              payload: {
+                response: "Response #1",
               },
-            ],
-          },
-        "/v1/replication/source/get-table/wwl_sessions/?limit=2&updated_after=":
-          {
-            GET: [
-              {
-                sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
-                createdAt: "2024-02-09T22:16:56.536Z",
-                updatedAt: "2024-02-13T22:16:56.538Z",
-                privateInfo: null,
-                publicInfo: null,
-                finished: true,
-                participantId: "38c10788-6062-43d3-a2e7-cfa929ddaf57",
-                studyId: "replication-test",
-                metadata: null,
+              sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
+            },
+            {
+              responseId: 5,
+              createdAt: "2024-02-13T22:16:56.544Z",
+              updatedAt: "2024-02-13T22:16:56.544Z",
+              name: "trial-2",
+              payload: {
+                response: "Response #2",
               },
-              {
-                sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
-                createdAt: "2024-02-10T22:16:56.542Z",
-                updatedAt: "2024-02-13T22:16:56.543Z",
-                privateInfo: null,
-                publicInfo: null,
-                finished: true,
-                participantId: "6b5112d6-93ba-471f-9d76-7deec118ab89",
-                studyId: "replication-test",
-                metadata: null,
+              sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
+            },
+          ],
+        },
+        "/v1/replication/source/get-table/wwl_studies/?": {
+          GET: [
+            {
+              studyId: "replication-test",
+              createdAt: "2024-02-13T22:16:56.533Z",
+              updatedAt: "2024-02-13T22:16:56.533Z",
+              privateInfo: null,
+              publicInfo: null,
+              deletionProtection: true,
+            },
+          ],
+        },
+        "/v1/replication/source/get-table/wwl_participants/?": {
+          GET: [
+            {
+              participantId: "38c10788-6062-43d3-a2e7-cfa929ddaf57",
+              createdAt: "2024-02-09T22:16:56.536Z",
+              updatedAt: "2024-02-13T22:16:56.536Z",
+              privateInfo: {
+                description: "Example User #1",
               },
-            ],
-          },
+              publicInfo: null,
+            },
+            {
+              participantId: "6b5112d6-93ba-471f-9d76-7deec118ab89",
+              createdAt: "2024-02-10T22:16:56.542Z",
+              updatedAt: "2024-02-13T22:16:56.542Z",
+              privateInfo: {
+                description: "Example User #2",
+              },
+              publicInfo: null,
+            },
+          ],
+        },
+        "/v1/replication/source/get-table/wwl_sessions/?": {
+          GET: [
+            {
+              sessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
+              createdAt: "2024-02-09T22:16:56.536Z",
+              updatedAt: "2024-02-13T22:16:56.538Z",
+              privateInfo: null,
+              publicInfo: null,
+              finished: true,
+              participantId: "38c10788-6062-43d3-a2e7-cfa929ddaf57",
+              studyId: "replication-test",
+              metadata: null,
+            },
+            {
+              sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
+              createdAt: "2024-02-10T22:16:56.542Z",
+              updatedAt: "2024-02-13T22:16:56.543Z",
+              privateInfo: null,
+              publicInfo: null,
+              finished: true,
+              participantId: "6b5112d6-93ba-471f-9d76-7deec118ab89",
+              studyId: "replication-test",
+              metadata: null,
+            },
+            {
+              sessionId: "0ec73e4e-6aea-42cc-bfee-8f700bfa1bcd",
+              createdAt: "2024-02-10T22:16:56.542Z",
+              updatedAt: "2024-02-10T22:16:56.542Z",
+              privateInfo: null,
+              publicInfo: null,
+              finished: true,
+              participantId: "38c10788-6062-43d3-a2e7-cfa929ddaf57",
+              studyId: "replication-test",
+              metadata: null,
+            },
+            {
+              sessionId: "be218a6f-b3f7-4b01-84e0-c26a8782dd0b",
+              createdAt: "2024-02-10T22:16:56.542Z",
+              updatedAt: "2024-02-13T22:16:56.543Z",
+              privateInfo: null,
+              publicInfo: null,
+              finished: true,
+              participantId: "6b5112d6-93ba-471f-9d76-7deec118ab89",
+              studyId: "replication-test",
+              metadata: null,
+            },
+          ],
+        },
       };
       // @ts-ignore (typescript doesn't recognize the mock function)
       global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
@@ -333,10 +347,21 @@ describe("Replication", () => {
           throw new Error(`No mock response for "${endpoint}" "${method}"`);
         }
 
-        const data =
-          typeof matchingRespone == "function"
-            ? matchingRespone()
-            : matchingRespone;
+        let data: Array<object> | object;
+        if (typeof matchingRespone == "function") {
+          // Function => execute it
+          data = matchingRespone({ endpoint });
+        } else if (Array.isArray(matchingRespone)) {
+          // Array => get slices via limit and offset
+          const url = new URL(endpoint, "http://localhost");
+          const limit = parseInt(url.searchParams.get("limit") as string);
+          const offset = parseInt(url.searchParams.get("offset") as string);
+
+          data = matchingRespone.slice(offset, offset + limit);
+        } else {
+          // Else just return as is
+          data = matchingRespone;
+        }
 
         return Promise.resolve({
           json: () => Promise.resolve(data),
@@ -368,7 +393,7 @@ describe("Replication", () => {
           studyId: "replication-test",
         },
       });
-      expect(sessions.length).toBe(2);
+      expect(sessions.length).toBe(4);
       // @ts-ignore
       const participantIds = sessions.map((s) => s.participantId);
       // @ts-ignore
@@ -390,7 +415,7 @@ describe("Replication", () => {
           },
         },
       });
-      expect(nResponses).toBe(2);
+      expect(nResponses).toBe(5);
     });
 
     it("should fail when not configured to act as destination source", async () => {

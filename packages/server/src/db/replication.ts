@@ -48,14 +48,21 @@ async function importTableData(tableName: string, tableData: any[]) {
 }
 
 // Retrieve data from the source
-async function fetchTableDataFromSource(tableName: string) {
+async function fetchTableDataFromSource(
+  tableName: string,
+  limit: number,
+  offset: number,
+) {
+  console.log("Fetching data from source", tableName, limit, offset);
+
   const model = findModelByTableName(tableName);
   const lastUpdated = (await model.max("updatedAt")) as Date;
 
   const result = await fetch(
     `${config.replication.source}/v1/replication/source/get-table/${tableName}/?` +
       new URLSearchParams({
-        limit: String(config.replication.chunkSize),
+        limit: String(limit),
+        offset: String(offset),
         updated_after: lastUpdated.toISOString(),
       }),
     {
@@ -94,6 +101,20 @@ async function verifyDatabaseVersion() {
   }
 }
 
+async function replicateTable(tableName: string) {
+  const limit = config.replication.chunkSize;
+  let offset = 0;
+  let rowCount = limit;
+  while (rowCount == limit) {
+    const tableData = await fetchTableDataFromSource(tableName, limit, offset);
+    rowCount = tableData.length;
+
+    await importTableData(tableName, tableData);
+
+    offset += limit;
+  }
+}
+
 // Perform a full replication update across all supported tables
 async function runReplication() {
   // Check whether both databases are compatible
@@ -112,8 +133,7 @@ async function runReplication() {
 
   // Replicate each database table one by one
   for (const tableName of tablesToReplicate) {
-    const tableData = await fetchTableDataFromSource(tableName);
-    await importTableData(tableName, tableData);
+    await replicateTable(tableName);
   }
 }
 
