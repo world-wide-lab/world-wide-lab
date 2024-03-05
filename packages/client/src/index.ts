@@ -1,3 +1,5 @@
+import { VERSION } from "./version";
+
 type ClientOptions = {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
@@ -114,9 +116,33 @@ export class Client {
     const sessionData: ExtraInfoOptions & {
       studyId: string;
       participantId?: string;
+      clientMetadata: ObjectWithData;
     } = {
       studyId: sessionOptions.studyId,
+      clientMetadata: {
+        version: VERSION,
+      },
     };
+
+    // Generate Client Metadata
+    if (typeof window !== "undefined" && "location" in window) {
+      sessionData.clientMetadata.url = window.location.href;
+
+      const search = window.location.search;
+      if (search.length > 0) {
+        sessionData.clientMetadata.searchParams = {};
+        const searchParams = new URLSearchParams(search);
+        for (const [key, value] of searchParams) {
+          sessionData.clientMetadata.searchParams[key] = value;
+        }
+      }
+    }
+    if (typeof navigator !== "undefined") {
+      sessionData.clientMetadata.navigator = {
+        language: navigator.language,
+        languages: navigator.languages,
+      };
+    }
 
     // Create a participant if requested
     let participant: Participant | undefined;
@@ -338,3 +364,5 @@ export class Session extends ClientModel {
     }
   }
 }
+
+export { VERSION };

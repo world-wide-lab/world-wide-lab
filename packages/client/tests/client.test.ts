@@ -1,6 +1,8 @@
 // Set up fake environment variables
 import "./setup_env";
 
+import { version as packageVersion } from "../package.json";
+
 import { Client as DevClient, Participant, Session } from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
@@ -18,6 +20,8 @@ describe("Client", () => {
 
     // @ts-ignore - We know that the server will only be returned after listen() is finished
     client = new Client({ url: `http://localhost:${server.address().port}` });
+
+    global.fetch = jest.fn(fetch);
   }, 10000);
   afterAll(async () => {
     await new Promise((resolve, reject) => {
@@ -43,6 +47,13 @@ describe("Client", () => {
 
     expect(session instanceof Session).toBe(true);
     expect(session.sessionId).toBeDefined();
+
+    // @ts-ignore Complicated to get typescript to acknowledge that fetch is indeed also a mock function now
+    const sessionParams = JSON.parse(global.fetch.mock.calls.pop()[1].body);
+    expect(sessionParams).toMatchSnapshot();
+
+    // Version should be up to date
+    expect(sessionParams.clientMetadata.version).toBe(packageVersion);
   });
 
   it("should start a new session (with a linked participant)", async () => {
