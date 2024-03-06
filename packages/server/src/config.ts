@@ -129,7 +129,7 @@ if (config.replication.role !== null) {
       );
     }
   } else if (config.replication.role === "destination") {
-    if (config.replication.source || config.replication.sourceApiKey) {
+    if (!config.replication.source || !config.replication.sourceApiKey) {
       throw new Error(
         `When REPLICATION_ROLE is set to "destination", REPLICATION_SOURCE and REPLICATION_SOURCE_API_KEY have to be set.`,
       );
