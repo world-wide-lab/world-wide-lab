@@ -64,6 +64,7 @@ const cluster = new aws.ecs.Cluster("wwl-cluster", {});
 const service = new awsx.ecs.FargateService("wwl-server-service", {
   cluster: cluster.arn,
   assignPublicIp: true,
+  forceNewDeployment: true,
   taskDefinitionArgs: {
     container: {
       name: "wwl-server",
