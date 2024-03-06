@@ -57,10 +57,12 @@ describe("Client", () => {
 
     // @ts-ignore Complicated to get typescript to acknowledge that fetch is indeed also a mock function now
     const sessionParams = JSON.parse(global.fetch.mock.calls.pop()[1].body);
-    expect(sessionParams).toMatchSnapshot();
 
     // Version should be up to date
     expect(sessionParams.clientMetadata.version).toBe(packageVersion);
+
+    sessionParams.clientMetadata.version = "VERSION";
+    expect(sessionParams).toMatchSnapshot();
   });
 
   it("should start a new session (with a linked participant)", async () => {

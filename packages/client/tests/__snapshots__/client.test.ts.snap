@@ -9,7 +9,7 @@ exports[`Client should start a new session (without a linked participant) 1`] = 
       "otherId": "test",
     },
     "url": "https://worldwidelab.org/?myId=123&otherId=test",
-    "version": "0.2.0",
+    "version": "VERSION",
   },
   "studyId": "example",
 }
