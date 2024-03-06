@@ -31,10 +31,7 @@ function getStringFromEnv(
   return value;
 }
 
-function getBooleanFromEnv(
-  key: string,
-  defaultValue: boolean = false,
-): boolean {
+function getBooleanFromEnv(key: string, defaultValue = false): boolean {
   const value = getValueFromEnv(key);
   if (value === undefined) {
     return defaultValue;

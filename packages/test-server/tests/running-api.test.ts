@@ -45,7 +45,7 @@ if (process.env.WWL_SERVER_URL === undefined) {
 describe("API Routes", () => {
   let participantId: string;
   let sessionId: string;
-  let studyId: string = STUDY_ID;
+  const studyId: string = STUDY_ID;
 
   describe("POST /participant", () => {
     it("should create a new participant", async () => {

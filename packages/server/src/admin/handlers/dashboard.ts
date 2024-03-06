@@ -11,11 +11,11 @@ type SessionCountEntry = {
   n_finished: number;
 };
 
-export const dashboardHandler: PageHandler = async function (
+export const dashboardHandler: PageHandler = async (
   request: any,
   response: any,
   context: PageContext,
-): Promise<any> {
+): Promise<any> => {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - DASHBOARD_TIMEFRAME);
   oneWeekAgo.setHours(0, 0, 0, 0);
@@ -38,7 +38,7 @@ export const dashboardHandler: PageHandler = async function (
   })) as unknown as SessionCountEntry[];
 
   // Created missing date entries if there are no sessions for that day
-  let currentDate = new Date(oneWeekAgo);
+  const currentDate = new Date(oneWeekAgo);
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 0);
   const fullSessionCounts: SessionCountEntry[] = [];

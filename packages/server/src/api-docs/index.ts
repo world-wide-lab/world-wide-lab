@@ -9,7 +9,7 @@ const options = {
   customCss: ".swagger-ui .topbar { display: none }",
   swaggerOptions: {
     url: "./openapi.json",
-    onComplete: function () {
+    onComplete: () => {
       // https://stackoverflow.com/questions/1420881/how-to-extract-base-url-from-a-string-in-javascript
       // modified to also remove any GET parameters e.g. myUrl.php?test=123
       function getUrlOrigin(url: string) {

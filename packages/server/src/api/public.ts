@@ -571,7 +571,7 @@ routerPublic.get(
 
       // When the count is 0, check whether it may be due to the study not existing
       if (count === 0) {
-        let study = await sequelize.models.Study.findOne({
+        const study = await sequelize.models.Study.findOne({
           where: { studyId },
         });
         if (!study) {

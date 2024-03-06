@@ -91,7 +91,9 @@ routerProtectedWithoutAuthentication.get(
       }).validateSync(req.params);
 
       // Verify whether the study exists
-      let study = await sequelize.models.Study.findOne({ where: { studyId } });
+      const study = await sequelize.models.Study.findOne({
+        where: { studyId },
+      });
       if (!study) {
         res.status(400).json({ error: "Unknown studyId" });
         return;

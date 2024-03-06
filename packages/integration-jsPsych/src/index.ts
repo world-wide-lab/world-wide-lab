@@ -14,13 +14,13 @@ import {
 } from "@world-wide-lab/client";
 import { VERSION } from "./version";
 
-interface InitializeParameters {}
+type InitializeParameters = {};
 
-interface OnStartParameters {}
+type OnStartParameters = {};
 
-interface OnLoadParameters {}
+type OnLoadParameters = {};
 
-interface OnFinishParameters {}
+type OnFinishParameters = {};
 
 interface SetupOptions {
   /**
@@ -240,7 +240,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   public static client: Client;
   public static studyId: string;
   public static session: Session;
-  public static ready: boolean = false;
+  public static ready = false;
 
   public static async setup(options: SetupOptions): Promise<void> {
     if (this.ready) {

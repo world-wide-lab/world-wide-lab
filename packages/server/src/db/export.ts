@@ -9,7 +9,7 @@ async function chunkedExport(
   queryData: (offset: number, limit: number) => Promise<object[]>,
   format: "json" | "csv",
   limit: number = Infinity,
-  initialOffset: number = 0,
+  initialOffset = 0,
   pageSize: number = config.database.chunkSize,
 ) {
   const onStart = () => {
@@ -107,7 +107,7 @@ async function chunkedQuery({
 
   do {
     // Retrieve the data
-    let data = await queryData(offset, pageSize);
+    const data = await queryData(offset, pageSize);
     if (!Array.isArray(data)) {
       throw new Error("Data is always expected to be returned as an Array");
     }

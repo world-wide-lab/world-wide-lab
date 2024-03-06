@@ -42,7 +42,7 @@ const logger = winston.createLogger({
   levels: customLevels,
 });
 
-const log_sql = function (message: string) {
+const log_sql = (message: string) => {
   // Log only the message itself to avoid additional clutter
   // Additional props are available, you can check these by modifying the props
   // above to function (...message: any[]) and logging that.

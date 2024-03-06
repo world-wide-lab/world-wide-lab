@@ -24,7 +24,7 @@ async function newStudyHandler(
       resource,
     );
 
-    let record = await resource.build(params);
+    const record = await resource.build(params);
 
     // * Beginning of changes *
     // Old Code:
