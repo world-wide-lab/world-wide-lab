@@ -9,6 +9,7 @@ import {
   fullParticipantSchema,
   fullSessionSchema,
   SessionParams,
+  sessionCreationRequestSchema,
 } from "../schemas";
 import config from "../config";
 import { getDbVersion } from "../db/replication";
@@ -263,6 +264,8 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  *                 type: object
  *               publicInfo:
  *                 type: object
+ *               clientMetadata:
+ *                 type: object
  *             required:
  *               - studyId
  *     responses:
@@ -275,18 +278,23 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  */
 routerPublic.post("/session", async (req: Request, res: Response) => {
   try {
-    const sessionParams: SessionParams & {
-      metadata?: {};
-    } = sessionSchema.validateSync(req.body);
+    const requestParams: SessionParams & {
+      clientMetadata?: {};
+    } = sessionCreationRequestSchema.validateSync(req.body);
 
     // Generate metadata
-    sessionParams.metadata = {
+    requestParams.metadata = {
       wwl_version: config.version,
       userAgent: req.headers["user-agent"],
       referer: req.headers["referer"],
+      client: requestParams.clientMetadata,
     };
 
+    // Keep only proper fields for the database
+    const sessionParams: SessionParams =
+      sessionSchema.validateSync(requestParams);
     const session = await sequelize.models.Session.create(sessionParams);
+
     res.json(session);
   } catch (error) {
     if (error instanceof ValidationError) {

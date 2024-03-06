@@ -1,3 +1,5 @@
+import { VERSION } from "./version";
+
 type ClientOptions = {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
@@ -58,8 +60,13 @@ type ObjectWithData = {
 };
 
 export class Client {
+  _library: string;
+  _libraryVersion?: string;
+
   constructor(public options: ClientOptions) {
     console.log("Initializing Client", options);
+
+    this._library = "@world-wide-lab/client";
   }
 
   /**
@@ -114,9 +121,37 @@ export class Client {
     const sessionData: ExtraInfoOptions & {
       studyId: string;
       participantId?: string;
+      clientMetadata: ObjectWithData;
     } = {
       studyId: sessionOptions.studyId,
+      clientMetadata: {
+        version: VERSION,
+        library: this._library,
+      },
     };
+
+    // Generate Client Metadata
+    if (this._libraryVersion) {
+      sessionData.clientMetadata.libraryVersion = this._libraryVersion;
+    }
+    if (typeof window !== "undefined" && "location" in window) {
+      sessionData.clientMetadata.url = window.location.href;
+
+      const search = window.location.search;
+      if (search.length > 0) {
+        sessionData.clientMetadata.searchParams = {};
+        const searchParams = new URLSearchParams(search);
+        for (const [key, value] of searchParams) {
+          sessionData.clientMetadata.searchParams[key] = value;
+        }
+      }
+    }
+    if (typeof navigator !== "undefined") {
+      sessionData.clientMetadata.navigator = {
+        language: navigator.language,
+        languages: navigator.languages,
+      };
+    }
 
     // Create a participant if requested
     let participant: Participant | undefined;
@@ -338,3 +373,5 @@ export class Session extends ClientModel {
     }
   }
 }
+
+export { VERSION };

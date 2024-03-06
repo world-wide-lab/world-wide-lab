@@ -155,6 +155,17 @@ exports[`API Routes POST /session missing studyId should lead to an error 1`] = 
 }
 `;
 
+exports[`API Routes POST /session should start a new session with extra info 1`] = `
+{
+  "client": {
+    "queryParameters": {
+      "test": "test",
+    },
+    "version": "1.0",
+  },
+}
+`;
+
 exports[`API Routes POST /session should validate extra info 1`] = `
 {
   "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",

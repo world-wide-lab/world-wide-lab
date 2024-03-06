@@ -1,8 +1,10 @@
 import { initJsPsych } from "jspsych";
+import { VERSION as clientVersion } from "@world-wide-lab/client";
 import jsPsychHtmlKeyboardResponse from "@jspsych/plugin-html-keyboard-response";
 import { startTimeline, pressKey } from "@jspsych/test-utils";
 
 import jsPsychWorldWideLab from "../src";
+import { version } from "../package.json";
 
 const url = "https://non-existing-wwl-url/";
 
@@ -27,6 +29,17 @@ const MOCK_RESPONSES = {
     POST: {
       success: true,
     },
+  },
+};
+
+const clientMetadata = {
+  version: clientVersion,
+  library: "@world-wide-lab/integration-jspsych",
+  libraryVersion: version,
+  url: "http://localhost/",
+  navigator: {
+    language: "en-US",
+    languages: ["en-US", "en"],
   },
 };
 
@@ -74,6 +87,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
+        clientMetadata,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -154,6 +168,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
+        clientMetadata,
         privateInfo: {
           confidential: "shh",
         },
@@ -252,6 +267,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "plugin-study",
+        clientMetadata,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -307,6 +323,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
+        clientMetadata,
         participantId: "my-participant-id",
       }),
       headers: { "Content-Type": "application/json" },
@@ -387,6 +404,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
         studyId: "my-study",
+        clientMetadata,
         participantId: "my-participant-id",
       }),
       headers: { "Content-Type": "application/json" },
