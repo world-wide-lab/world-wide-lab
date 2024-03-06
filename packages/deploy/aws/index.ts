@@ -84,6 +84,7 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
         { name: "DATABASE_URL", value: dbConnectionString },
         { name: "ADMIN_UI", value: "true" },
         { name: "USE_AUTHENTICATION", value: "true" },
+        { name: "REPLICATION_ROLE", value: "source" },
         {
           name: "ADMIN_AUTH_DEFAULT_EMAIL",
           value: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
