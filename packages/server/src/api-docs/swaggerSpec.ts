@@ -22,7 +22,7 @@ const options = {
     },
     servers: [
       {
-        url: `${config.root}:${config.port}/v1`,
+        url: "/v1",
       },
     ],
     tags: [
