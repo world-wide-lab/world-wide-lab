@@ -1,7 +1,7 @@
-import { PageHandler, PageContext } from "adminjs";
+import { PageContext, PageHandler } from "adminjs";
 import { Op } from "sequelize";
-import sequelize from "../../db";
 import config from "../../config";
+import sequelize from "../../db";
 
 const DASHBOARD_TIMEFRAME = 6;
 

@@ -16,4 +16,4 @@ jobs:
       - name: Run tests
         run: npm test
       - name: Check code styling
-        run: npx prettier . --check
+        run: npx @biomejs/biome check . --linter-enabled=false

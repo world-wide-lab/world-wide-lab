@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import config from "../../../config";
 import styled from "styled-components";
+import config from "../../../config";
 
 import { ApiClient } from "adminjs";
 

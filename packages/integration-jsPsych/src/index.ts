@@ -1,10 +1,10 @@
 import {
-  initJsPsych,
   JsPsych,
   JsPsychPlugin,
-  PluginInfo,
   ParameterType,
+  PluginInfo,
   TrialType,
+  initJsPsych,
 } from "jspsych";
 
 import {

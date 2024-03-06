@@ -1,10 +1,10 @@
-import sequelize from "./db";
+import type Server from "http";
 import app from "./app";
 import config from "./config";
-import { logger } from "./logger";
+import sequelize from "./db";
 import generateExampleData from "./db/exampleData";
 import { up } from "./db/migrate";
-import type Server from "http";
+import { logger } from "./logger";
 
 import { ensureStudiesExist } from "./db/ensureStudiesExist";
 

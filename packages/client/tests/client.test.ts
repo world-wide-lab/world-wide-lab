@@ -6,7 +6,7 @@ import { version as packageVersion } from "../package.json";
 import { Client as DevClient, Participant, Session } from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
-import { init as initDev, Server } from "@world-wide-lab/server/src/init.ts";
+import { Server, init as initDev } from "@world-wide-lab/server/src/init.ts";
 
 const Client = process.env.CLIENT === "build" ? import("../dist") : DevClient;
 

@@ -1,15 +1,15 @@
 import {
   Box,
-  Label,
-  Link,
-  Text,
-  Select,
+  Button,
   DrawerContent,
   DrawerFooter,
-  Button,
+  Label,
+  Link,
+  Select,
+  Text,
 } from "@adminjs/design-system";
-import { useState, useMemo } from "react";
 import { ActionProps } from "adminjs";
+import { useMemo, useState } from "react";
 
 const MyNewAction = (props: ActionProps) => {
   const { resource, action, record } = props;

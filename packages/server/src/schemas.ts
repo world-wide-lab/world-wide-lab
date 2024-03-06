@@ -1,13 +1,13 @@
 // Schemas to power Data Validation for the Data Models
 
 import {
-  object,
-  string,
-  date,
-  boolean,
-  number,
   InferType,
   ValidationError,
+  boolean,
+  date,
+  number,
+  object,
+  string,
 } from "yup";
 
 const fullStudySchema = object({

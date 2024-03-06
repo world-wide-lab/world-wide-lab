@@ -1,16 +1,16 @@
-import AdminJS, { AdminPages, AdminPage } from "adminjs";
 import * as AdminJSSequelize from "@adminjs/sequelize";
+import AdminJS, { AdminPages, AdminPage } from "adminjs";
+import config from "../config";
 import sequelize from "../db";
 import { columnComments } from "../db/models";
-import { initializeRouter } from "./router_auth";
-import { componentLoader, Components } from "./components";
-import config from "../config";
-import {
-  newStudyHandler,
-  downloadStudyDataHandler,
-  deleteStudyHandler,
-} from "./handlers/study";
+import { Components, componentLoader } from "./components";
 import { dashboardHandler } from "./handlers/dashboard";
+import {
+  deleteStudyHandler,
+  downloadStudyDataHandler,
+  newStudyHandler,
+} from "./handlers/study";
+import { initializeRouter } from "./router_auth";
 
 AdminJS.registerAdapter({
   Resource: AdminJSSequelize.Resource,

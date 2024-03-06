@@ -1,15 +1,15 @@
 // Set up fake environment variables
 import "./setup_env";
 
+import { URL } from "url";
 import { Op } from "sequelize";
 import request from "supertest";
 import app from "../src/app";
+import config from "../src/config";
 import sequelize from "../src/db";
 import generateExampleData from "../src/db/exampleData";
-import { UnknownTableError, findModelByTableName } from "../src/db/replication";
-import config from "../src/config";
 import { up } from "../src/db/migrate";
-import { URL } from "url";
+import { UnknownTableError, findModelByTableName } from "../src/db/replication";
 
 const endpoint = request(app);
 

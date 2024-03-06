@@ -1,18 +1,18 @@
 import express, { Request, Response } from "express";
+import config from "../config";
 import sequelize from "../db";
+import { getDbVersion } from "../db/replication";
 import {
-  studySchema,
-  participantSchema,
-  sessionSchema,
-  responseSchema,
+  SessionParams,
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,
-  SessionParams,
+  participantSchema,
+  responseSchema,
   sessionCreationRequestSchema,
+  sessionSchema,
+  studySchema,
 } from "../schemas";
-import config from "../config";
-import { getDbVersion } from "../db/replication";
 
 const routerPublic = express.Router();
 

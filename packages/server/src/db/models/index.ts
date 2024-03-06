@@ -1,4 +1,4 @@
-import { Sequelize, DataTypes } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 
 const columnComments = {
   studyId: `The unique identifier for each study. This id is used to link sessions with studies. Must be unique across all studies.`,

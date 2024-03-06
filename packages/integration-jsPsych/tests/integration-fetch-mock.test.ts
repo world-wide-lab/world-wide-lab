@@ -1,10 +1,10 @@
-import { initJsPsych } from "jspsych";
-import { VERSION as clientVersion } from "@world-wide-lab/client";
 import jsPsychHtmlKeyboardResponse from "@jspsych/plugin-html-keyboard-response";
-import { startTimeline, pressKey } from "@jspsych/test-utils";
+import { pressKey, startTimeline } from "@jspsych/test-utils";
+import { VERSION as clientVersion } from "@world-wide-lab/client";
+import { initJsPsych } from "jspsych";
 
-import jsPsychWorldWideLab from "../src";
 import { version } from "../package.json";
+import jsPsychWorldWideLab from "../src";
 
 const url = "https://non-existing-wwl-url/";
 

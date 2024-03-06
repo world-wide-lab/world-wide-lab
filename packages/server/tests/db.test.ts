@@ -2,8 +2,8 @@
 import "./setup_env";
 
 import sequelize from "../src/db";
-import generateExampleData from "../src/db/exampleData";
 import { ensureStudiesExist } from "../src/db/ensureStudiesExist";
+import generateExampleData from "../src/db/exampleData";
 
 describe("Database Models", () => {
   beforeAll(async () => {

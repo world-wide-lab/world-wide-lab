@@ -1,21 +1,21 @@
 import express, { Request, Response } from "express";
 import Sequelize from "sequelize";
 
+import { pipeline } from "node:stream/promises";
 import type { Client } from "pg";
 import { to as copyTo } from "pg-copy-streams";
-import { pipeline } from "node:stream/promises";
 
-import sequelize from "../db";
-import { requireAuthMiddleware } from "./authMiddleware";
-import { sanitizeStudyId } from "../db/util";
-import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
+import { ValidationError, date, number, object, string } from "yup";
 import config from "../config";
-import { string, object, number, date, ValidationError } from "yup";
+import sequelize from "../db";
+import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
 import {
+  UnknownTableError,
   findModelByTableName,
   runReplication,
-  UnknownTableError,
 } from "../db/replication";
+import { sanitizeStudyId } from "../db/util";
+import { requireAuthMiddleware } from "./authMiddleware";
 
 const routerProtectedWithoutAuthentication = express.Router();
 

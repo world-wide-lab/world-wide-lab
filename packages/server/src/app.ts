@@ -1,12 +1,12 @@
 import path from "path";
+import cors from "cors";
 import express, { Request, Response } from "express";
 import helmet from "helmet";
-import cors from "cors";
 
-import api from "./api";
-import { routerProtectedWithoutAuthentication } from "./api/protected";
-import apiDocs from "./api-docs";
 import { admin, adminRouter } from "./admin";
+import api from "./api";
+import apiDocs from "./api-docs";
+import { routerProtectedWithoutAuthentication } from "./api/protected";
 import config from "./config";
 import { logger } from "./logger";
 

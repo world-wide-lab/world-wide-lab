@@ -2,8 +2,8 @@
 import "./setup_env";
 
 import request from "supertest";
-import sequelize from "../src/db";
 import app from "../src/app";
+import sequelize from "../src/db";
 
 const STUDY_ID = "abc123";
 const API_KEY = process.env.DEFAULT_API_KEY;

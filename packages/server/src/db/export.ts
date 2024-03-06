@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { json2csv } from "json-2-csv";
-import { Sequelize, QueryTypes } from "sequelize";
+import { QueryTypes, Sequelize } from "sequelize";
 import config from "../config";
 
 // Export data from the database in chunks

@@ -1,5 +1,5 @@
-import { Umzug, SequelizeStorage } from "umzug";
 import pathLib from "path";
+import { SequelizeStorage, Umzug } from "umzug";
 
 import sequelize from ".";
 import { logger } from "../logger";

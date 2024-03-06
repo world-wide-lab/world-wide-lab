@@ -2,7 +2,7 @@
 import "./setup_env";
 
 import sequelize from "../src/db";
-import { up, umzug } from "../src/db/migrate";
+import { umzug, up } from "../src/db/migrate";
 
 describe("Database Migrations", () => {
   it("should authenticate to database", async () => {
