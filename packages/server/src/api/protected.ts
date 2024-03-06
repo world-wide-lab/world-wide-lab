@@ -227,6 +227,20 @@ routerProtectedWithoutAuthentication.get(
  *           type: string
  *         description: The name of the table to retrieve data from
  *       - in: query
+ *         name: limit
+ *         required: true
+ *         example: 10000
+ *         schema:
+ *           type: integer
+ *         description: The maximum number of records to retrieve
+ *       - in: offset
+ *         name: limit
+ *         required: false
+ *         default: 0
+ *         schema:
+ *           type: integer
+ *         description: The offset of records to retrieve, typically this should be incremented by the limit for pagination
+ *       - in: query
  *         name: updated_after
  *         required: true
  *         example: 2000-01-01T00:00:00Z
@@ -234,19 +248,6 @@ routerProtectedWithoutAuthentication.get(
  *           type: string
  *           format: date-time
  *         description: Only retrieve data updated after this date-time
- *       - in: query
- *         name: limit
- *         required: true
- *         example: 10000
- *         schema:
- *           type: integer
- *       - in: offset
- *         name: limit
- *         required: false
- *         default: 0
- *         schema:
- *           type: integer
- *         description: The maximum number of records to retrieve
  *     responses:
  *       200:
  *         description: A JSON array of the table's data
@@ -279,7 +280,7 @@ routerProtectedWithoutAuthentication.get(
 
       const { table } = req.params;
       const { updated_after, limit, offset } = object({
-        updated_after: date().required(),
+        updated_after: date(),
         limit: number().required(),
         offset: number().default(0),
       }).validateSync(req.query);
@@ -292,13 +293,16 @@ routerProtectedWithoutAuthentication.get(
         pageSize: number,
       ) => {
         return await model.findAll({
-          where: {
-            updatedAt: {
-              [Sequelize.Op.gt]: updated_after,
-            },
-          },
           offset: queryOffset,
           limit: pageSize,
+
+          ...(updated_after && {
+            where: {
+              updatedAt: {
+                [Sequelize.Op.gt]: updated_after,
+              },
+            },
+          }),
         });
       };
 

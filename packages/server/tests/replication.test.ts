@@ -115,6 +115,18 @@ describe("Replication", () => {
       expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
+    it("should download a raw list of responses, honoring offsets, without updated_after", async () => {
+      const response = await endpoint
+        .get(
+          "/v1/replication/source/get-table/wwl_responses?limit=25&offset=22",
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(18);
+    });
+
     it("should download a raw list of responses", async () => {
       const response = await endpoint
         .get(

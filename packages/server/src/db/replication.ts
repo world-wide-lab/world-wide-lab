@@ -59,13 +59,14 @@ async function fetchTableDataFromSource(
   const model = findModelByTableName(tableName);
   const lastUpdated = (await model.max("updatedAt")) as Date;
 
+  const search = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+    ...(lastUpdated && { updated_after: lastUpdated.toISOString() }),
+  }).toString();
+
   const result = await fetch(
-    `${config.replication.source}/v1/replication/source/get-table/${tableName}/?` +
-      new URLSearchParams({
-        limit: String(limit),
-        offset: String(offset),
-        updated_after: lastUpdated.toISOString(),
-      }),
+    `${config.replication.source}/v1/replication/source/get-table/${tableName}/?${search}`,
     {
       method: "get",
       headers: new Headers({
@@ -75,7 +76,7 @@ async function fetchTableDataFromSource(
     },
   );
 
-  return result.json();
+  return await result.json();
 }
 
 // Get a version identifier for the database
