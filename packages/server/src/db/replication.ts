@@ -2,6 +2,7 @@ import type { ModelStatic, Model } from "sequelize";
 import config from "../config";
 import sequelize from "../db";
 import { getLatestMigration } from "./migrate";
+import { logger } from "../logger";
 
 const defaultRequestHeaders = {
   "User-Agent": `WWL Replication / ${config.version}`,
@@ -53,7 +54,7 @@ async function fetchTableDataFromSource(
   limit: number,
   offset: number,
 ) {
-  console.log("Fetching data from source", tableName, limit, offset);
+  logger.info(`Fetching ${tableName} (L:${limit}; O:${offset})`);
 
   const model = findModelByTableName(tableName);
   const lastUpdated = (await model.max("updatedAt")) as Date;
