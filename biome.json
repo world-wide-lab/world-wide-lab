@@ -4,5 +4,17 @@
   },
   "formatter": {
     "indentStyle": "space"
+  },
+  "linter": {
+    "rules": {
+      "suspicious": {
+        "noImplicitAnyLet": "off",
+        "noExplicitAny": "off"
+      },
+      "complexity": {
+        "noForEach": "off",
+        "noBannedTypes": "off"
+      }
+    }
   }
 }

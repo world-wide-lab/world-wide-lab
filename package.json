@@ -7,7 +7,7 @@
     "test": "jest",
     "test:playwright": "npm run test:playwright --workspaces --if-present",
     "test:docker": "./docker/run-test.sh",
-    "format": "npx @biomejs/biome check . --apply --linter-enabled=false",
+    "format": "npx @biomejs/biome check . --apply",
     "check": "npm run format && npm run build && npm run test",
     "build": "npm run build --workspaces --if-present"
   },
