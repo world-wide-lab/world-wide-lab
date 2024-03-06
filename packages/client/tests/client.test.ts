@@ -43,6 +43,13 @@ describe("Client", () => {
   });
 
   it("should start a new session (without a linked participant)", async () => {
+    global.window = {
+      location: {
+        href: "https://worldwidelab.org/?myId=123&otherId=test",
+        search: "?myId=123&otherId=test",
+      },
+    } as any;
+
     const session = await client.createSession({ studyId: "example" });
 
     expect(session instanceof Session).toBe(true);
