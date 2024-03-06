@@ -235,14 +235,12 @@ routerProtectedWithoutAuthentication.get(
  *         description: The maximum number of records to retrieve
  *       - in: offset
  *         name: limit
- *         required: false
  *         default: 0
  *         schema:
  *           type: integer
  *         description: The offset of records to retrieve, typically this should be incremented by the limit for pagination
  *       - in: query
  *         name: updated_after
- *         required: true
  *         example: 2000-01-01T00:00:00Z
  *         schema:
  *           type: string
@@ -378,13 +376,14 @@ routerProtectedWithoutAuthentication.get(
         console.error(error);
         if (res.headersSent) {
           // Header has already been sent, we can not return JSON as a type
-          res.send(
-            "ERROR: Failed to export table for replication after response has been partially constructed.",
-          );
+          res.send("ERROR: Failed to perform replication update.");
         } else {
           res
             .status(500)
-            .json({ error: "Failed to export table for replication" });
+            .json({
+              error:
+                "Failed to perform replication update. Check the error message in the server log.",
+            });
         }
       }
     }

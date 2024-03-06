@@ -41,6 +41,8 @@ function getNonPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
 async function importTableData(tableName: string, tableData: any[]) {
   const model = findModelByTableName(tableName);
 
+  console.log(`Importing ${tableData.length} rows into ${tableName}`);
+
   await model.bulkCreate(tableData, {
     updateOnDuplicate: getNonPrimaryKeyColumns(model),
   });
@@ -71,12 +73,30 @@ async function fetchTableDataFromSource(
       method: "get",
       headers: new Headers({
         ...defaultRequestHeaders,
-        Authorization: `Basic ${config.replication.source}`,
+        Authorization: `Bearer ${config.replication.sourceApiKey}`,
       }),
     },
   );
 
-  return await result.json();
+  const tableData = await result.json();
+
+  // Check whether tableData is an array, else throw an error since sth is wrong
+  if (Array.isArray(tableData)) {
+    return tableData;
+  }
+  const statusCode = result.status;
+  const hasSourceErrorMessage =
+    typeof tableData === "object" && tableData.error;
+  if (hasSourceErrorMessage || statusCode !== 200) {
+    throw new Error(
+      `Replication source reported error when fetching data (${statusCode}). Message: '${
+        hasSourceErrorMessage ? tableData.error : ""
+      }'.`,
+    );
+  }
+  throw new Error(
+    `Error fetching data from source. Table data is not an array: ${tableData}.`,
+  );
 }
 
 // Get a version identifier for the database
