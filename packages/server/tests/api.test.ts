@@ -140,6 +140,16 @@ describe("API Routes", () => {
     });
   });
 
+  describe("GET /study/list", () => {
+    it("should return a list of studies", async () => {
+      const response = await endpoint.get("/v1/study/list").send();
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchSnapshot();
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+  });
+
   describe("POST /session", () => {
     it("should start a new session", async () => {
       const response = await endpoint

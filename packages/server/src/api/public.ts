@@ -244,6 +244,37 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /study/list:
+ *   get:
+ *     summary: Retrieve an array of all studies.
+ *     tags:
+ *       - main
+ *     responses:
+ *       '200':
+ *         description: List of studies in form of a JSON Array of objects.
+ *       '500':
+ *         description: Failed to retrieve study list.
+ */
+routerPublic.get("/study/list", async (req: Request, res: Response) => {
+  try {
+    const studies = await sequelize.models.Study.findAll({
+      attributes: ["studyId"],
+    });
+    const studies2 = await sequelize.models.Study.findAll({});
+    const studies3 = await sequelize.models.Study.findAll({
+      attributes: ["studyId"],
+      raw: true,
+    });
+    console.warn(studies, studies2, studies3);
+    res.json(studies.map((record) => record.toJSON()));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to retrieve list of studies." });
+  }
+});
+
+/**
+ * @openapi
  * /session:
  *   post:
  *     summary: Start a new session

@@ -131,6 +131,17 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should require the c
 }
 `;
 
+exports[`API Routes GET /study/list should return a list of studies 1`] = `
+[
+  {
+    "studyId": "abc123",
+  },
+  {
+    "studyId": "abc123_extra",
+  },
+]
+`;
+
 exports[`API Routes POST /response should fail to submit a response when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
