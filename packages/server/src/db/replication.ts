@@ -15,7 +15,7 @@ class UnknownTableError extends Error {
   }
 }
 
-function findModelByTableName(tableName: string) {
+function findModelByTableName(tableName: string): ModelStatic<Model> {
   const model = Object.values(sequelize.models).filter(
     (model) => model.tableName === tableName,
   )[0];
@@ -55,11 +55,11 @@ async function fetchTableDataFromSource(
   tableName: string,
   limit: number,
   offset: number,
+  lastUpdated?: Date,
 ) {
-  logger.info(`Fetching ${tableName} (L:${limit}; O:${offset})`);
-
-  const model = findModelByTableName(tableName);
-  const lastUpdated = (await model.max("updatedAt")) as Date;
+  logger.info(
+    `Fetching ${tableName} (L:${limit}; O:${offset}; U:${lastUpdated})`,
+  );
 
   const search = new URLSearchParams({
     limit: String(limit),
@@ -124,10 +124,19 @@ async function verifyDatabaseVersion() {
 
 async function replicateTable(tableName: string) {
   const limit = config.replication.chunkSize;
+  const model = findModelByTableName(tableName);
+  const lastUpdated = (await model.max("updatedAt")) as Date;
+
   let offset = 0;
   let rowCount = limit;
-  while (rowCount == limit) {
-    const tableData = await fetchTableDataFromSource(tableName, limit, offset);
+
+  while (rowCount === limit) {
+    const tableData = await fetchTableDataFromSource(
+      tableName,
+      limit,
+      offset,
+      lastUpdated,
+    );
     rowCount = tableData.length;
 
     await importTableData(tableName, tableData);
