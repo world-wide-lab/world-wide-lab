@@ -98,9 +98,10 @@ async function chunkedQuery({
   initialOffset?: number;
 }) {
   let offset = initialOffset;
+  const absoluteLimit = initialOffset + limit;
 
-  let n_rows;
-  let first_iteration = true;
+  let nRowsResult: number;
+  let isFirstIteration = true;
   if (limit < pageSize) {
     pageSize = limit;
   }
@@ -111,30 +112,34 @@ async function chunkedQuery({
     if (!Array.isArray(data)) {
       throw new Error("Data is always expected to be returned as an Array");
     }
-    n_rows = data.length;
+    nRowsResult = data.length;
 
-    if (first_iteration) {
+    if (isFirstIteration) {
       // Call onStart after we received data for the first time to still allow
       // sending error status codes if query code fails.
       onStart();
-      first_iteration = false;
+      isFirstIteration = false;
     }
 
     // Do something with the data (usually returning it to the user)
-    if (n_rows > 0) {
+    if (nRowsResult > 0) {
       await onData(data, offset);
     }
 
     // Increase the offset in case we will continue
     offset += pageSize;
 
-    if (offset + pageSize > limit) {
-      pageSize = limit - offset;
+    if (offset + pageSize > absoluteLimit) {
+      pageSize = absoluteLimit - offset;
     }
 
     // Check whether we already got all data
     // e.g. we either got an empty result or our result was less than the limit
-  } while (n_rows > 0 && n_rows === pageSize && offset < limit);
+  } while (
+    nRowsResult > 0 &&
+    nRowsResult === pageSize &&
+    offset < absoluteLimit
+  );
 
   onEnd();
 }

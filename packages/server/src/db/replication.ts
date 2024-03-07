@@ -66,17 +66,16 @@ async function fetchTableDataFromSource(
     offset: String(offset),
     ...(lastUpdated && { updated_after: lastUpdated.toISOString() }),
   }).toString();
+  const url = `${config.replication.source}/v1/replication/source/get-table/${tableName}/?${search}`;
 
-  const result = await fetch(
-    `${config.replication.source}/v1/replication/source/get-table/${tableName}/?${search}`,
-    {
-      method: "get",
-      headers: new Headers({
-        ...defaultRequestHeaders,
-        Authorization: `Bearer ${config.replication.sourceApiKey}`,
-      }),
-    },
-  );
+  logger.verbose(url);
+  const result = await fetch(url, {
+    method: "get",
+    headers: new Headers({
+      ...defaultRequestHeaders,
+      Authorization: `Bearer ${config.replication.sourceApiKey}`,
+    }),
+  });
 
   const tableData = await result.json();
 
@@ -139,8 +138,11 @@ async function replicateTable(tableName: string) {
 
 // Perform a full replication update across all supported tables
 async function runReplication() {
+  logger.info("Starting replication");
+
   // Check whether both databases are compatible
   await verifyDatabaseVersion();
+  logger.info("Database versions OK");
 
   const tablesToReplicate = [
     // sequelize.models.Study.tableName,
@@ -157,6 +159,8 @@ async function runReplication() {
   for (const tableName of tablesToReplicate) {
     await replicateTable(tableName);
   }
+
+  logger.info("Finished replication.");
 }
 
 export {

@@ -140,6 +140,19 @@ describe("Replication", () => {
       expect(Object.keys(response.body[0])).toMatchSnapshot();
     });
 
+    it("should support proper chunking of data", async () => {
+      config.database.chunkSize = 2;
+
+      const response = await endpoint
+        .get("/v1/replication/source/get-table/wwl_responses?limit=6&offset=12")
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(6);
+      expect(Object.keys(response.body[0])).toMatchSnapshot();
+    });
+
     it("should fail when not authenticated", async () => {
       const response = await endpoint
         .get(

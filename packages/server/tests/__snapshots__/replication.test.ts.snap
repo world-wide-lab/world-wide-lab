@@ -95,3 +95,14 @@ exports[`Replication API of Replication Source should retrieve a list of partici
   "publicInfo",
 ]
 `;
+
+exports[`Replication API of Replication Source should support proper chunking of data 1`] = `
+[
+  "responseId",
+  "createdAt",
+  "updatedAt",
+  "name",
+  "payload",
+  "sessionId",
+]
+`;
