@@ -293,6 +293,7 @@ routerProtectedWithoutAuthentication.get(
           offset: queryOffset,
           limit: pageSize,
           raw: true,
+          order: [["updatedAt", "ASC"]],
 
           ...(updated_after && {
             where: {
