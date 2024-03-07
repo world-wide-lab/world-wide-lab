@@ -546,7 +546,7 @@ routerPublic.post("/response", async (req: Request, res: Response) => {
 
 /**
  * @openapi
- * /study/{studyId}/count/{countFilter}:
+ * /study/{studyId}/count/{countType}:
  *   get:
  *     summary: Retrieve the number of sessions for a study
  *     description: >

@@ -21,7 +21,7 @@ const routerProtectedWithoutAuthentication = express.Router();
 
 /**
  * @openapi
- * /study/{studyId}/data/{dataType}:
+ * /study/{studyId}/data/{dataType}/{format}:
  *   get:
  *     summary: Download a study's data
  *     description: >
@@ -53,7 +53,7 @@ const routerProtectedWithoutAuthentication = express.Router();
  *         description: >
  *           Which type of data should be downloaded.
  *       - in: path
- *         name: dataType
+ *         name: format
  *         schema:
  *           type: string
  *           enum: [
@@ -233,9 +233,8 @@ routerProtectedWithoutAuthentication.get(
  *         schema:
  *           type: integer
  *         description: The maximum number of records to retrieve
- *       - in: offset
- *         name: limit
- *         default: 0
+ *       - in: query
+ *         name: offset
  *         schema:
  *           type: integer
  *         description: The offset of records to retrieve, typically this should be incremented by the limit for pagination
