@@ -292,6 +292,7 @@ routerProtectedWithoutAuthentication.get(
         return await model.findAll({
           offset: queryOffset,
           limit: pageSize,
+          raw: true,
 
           ...(updated_after && {
             where: {
