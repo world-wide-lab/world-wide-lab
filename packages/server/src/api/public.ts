@@ -260,12 +260,6 @@ routerPublic.get("/study/list", async (req: Request, res: Response) => {
     const studies = await sequelize.models.Study.findAll({
       attributes: ["studyId"],
     });
-    const studies2 = await sequelize.models.Study.findAll({});
-    const studies3 = await sequelize.models.Study.findAll({
-      attributes: ["studyId"],
-      raw: true,
-    });
-    console.warn(studies, studies2, studies3);
     res.json(studies.map((record) => record.toJSON()));
   } catch (error) {
     console.error(error);
