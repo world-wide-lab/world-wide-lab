@@ -296,7 +296,7 @@ routerProtectedWithoutAuthentication.get(
           ...(updated_after && {
             where: {
               updatedAt: {
-                [Sequelize.Op.gt]: updated_after,
+                [Sequelize.Op.gte]: updated_after,
               },
             },
           }),
