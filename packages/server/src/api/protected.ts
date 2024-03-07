@@ -378,12 +378,10 @@ routerProtectedWithoutAuthentication.get(
           // Header has already been sent, we can not return JSON as a type
           res.send("ERROR: Failed to perform replication update.");
         } else {
-          res
-            .status(500)
-            .json({
-              error:
-                "Failed to perform replication update. Check the error message in the server log.",
-            });
+          res.status(500).json({
+            error:
+              "Failed to perform replication update. Check the error message in the server log.",
+          });
         }
       }
     }
