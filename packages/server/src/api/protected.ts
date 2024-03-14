@@ -174,6 +174,9 @@ routerProtectedWithoutAuthentication.get(
           // Stream results
           // @ts-ignore
           await pipeline(stream, res);
+
+          // Return the connection to the pool
+          sequelize.connectionManager.releaseConnection(connection);
           return;
         } else {
           dataQueryFunction = async (offset: number, limit: number) => {
