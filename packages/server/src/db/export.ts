@@ -4,13 +4,12 @@ import { QueryTypes, Sequelize } from "sequelize";
 import config from "../config";
 
 // Export data from the database in chunks
-async function chunkedExport(
+async function paginatedExport(
   res: Response,
   queryData: (offset: number, limit: number) => Promise<object[]>,
   format: "json" | "csv",
   limit: number = Infinity,
   initialOffset = 0,
-  pageSize: number = config.database.chunkSize,
 ) {
   const onStart = () => {
     if (format === "json") {
@@ -70,7 +69,6 @@ async function chunkedExport(
   };
 
   return await chunkedQuery({
-    pageSize,
     queryData,
     onData,
     onStart,
@@ -81,7 +79,6 @@ async function chunkedExport(
 }
 
 async function chunkedQuery({
-  pageSize,
   queryData,
   onData,
   onStart = () => {},
@@ -89,7 +86,6 @@ async function chunkedQuery({
   limit = Infinity,
   initialOffset = 0,
 }: {
-  pageSize: number;
   queryData: (offset: number, limit: number) => Promise<object[]>;
   onData: (data: object[], offset: number) => Promise<void>;
   onStart?: () => void;
@@ -97,6 +93,7 @@ async function chunkedQuery({
   limit?: number;
   initialOffset?: number;
 }) {
+  let pageSize = config.database.chunkSize;
   let offset = initialOffset;
   const absoluteLimit = initialOffset + limit;
 
@@ -198,4 +195,4 @@ async function generateExtractedPayloadQuery(
   `;
 }
 
-export { chunkedExport as paginatedExport, generateExtractedPayloadQuery };
+export { paginatedExport, generateExtractedPayloadQuery };
