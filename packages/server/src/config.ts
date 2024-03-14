@@ -134,6 +134,11 @@ if (config.replication.role !== null) {
         `When REPLICATION_ROLE is set to "destination", REPLICATION_SOURCE and REPLICATION_SOURCE_API_KEY have to be set.`,
       );
     }
+    if (config.database.generateExampleData) {
+      throw new Error(
+        `When REPLICATION_ROLE is set to "destination", GENERATE_EXAMPLE_DATA must be set to 'false'.`,
+      );
+    }
   } else {
     throw new Error(
       `Invalid value for REPLICATION_ROLE: ${config.replication.role}. Only "source" and "destination" are supported.`,
