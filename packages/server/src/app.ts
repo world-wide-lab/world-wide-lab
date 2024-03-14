@@ -18,16 +18,16 @@ app.use(express.json());
 
 // Log all HTTP requests
 if (config.logging.http) {
-  logger.info(`Logging HTTP requests`);
+  logger.info("Logging HTTP requests");
 
   app.use((req, res, next) => {
-    logger.http({
-      method: req.method,
-      url: req.url,
-      query: req.query,
-      params: req.params,
-      body: req.body,
-      headers: req.headers,
+    logger.http(`${req.method} ${req.url} ${JSON.stringify(req.body)}`, {
+      request: {
+        query: req.query,
+        params: req.params,
+        body: req.body,
+        headers: req.headers,
+      },
     });
     next();
   });
