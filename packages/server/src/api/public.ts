@@ -4,6 +4,7 @@ import sequelize from "../db";
 import { getDbVersion } from "../db/replication";
 import {
   CreateSessionParams,
+  ParticipantParams,
   ResponseParams,
   SessionParams,
   StudyParams,
