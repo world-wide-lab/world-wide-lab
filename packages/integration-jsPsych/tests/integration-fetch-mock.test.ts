@@ -310,6 +310,10 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
         linkParticipant: true,
       },
     );
+
+    // Store the current participant ID
+    await jsPsychWorldWideLab.storeParticipantId();
+
     await jsPsychWorldWideLab.setupCompleted();
 
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -376,9 +380,6 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
-
-    // Store the current participant ID
-    jsPsychWorldWideLab.storeParticipantId();
 
     // Reset state
     resetJsPsychWorldWideLab();
