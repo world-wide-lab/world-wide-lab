@@ -6,7 +6,7 @@ import { defineModels } from "./models";
 
 const url = config.database.url;
 const options: SequelizeOptions = {
-  logging: log_sql,
+  ...(config.logging.sql && { logging: log_sql }),
 };
 
 // There is a bug in handling filepaths with spaces when using sqlite via

@@ -78,6 +78,7 @@ const config = {
     // Change to 'verbose' to log SQL queries
     consoleLevel: getValueFromEnv("LOGGING_LEVEL_CONSOLE") || "info",
     http: getBooleanFromEnv("LOGGING_HTTP", true),
+    sql: getBooleanFromEnv("LOGGING_SQL", true),
   },
 
   admin: {
