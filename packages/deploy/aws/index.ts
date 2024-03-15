@@ -99,6 +99,11 @@ const service = new awsx.ecs.FargateService("wwl-server-service", {
           value: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
         },
         { name: "DEFAULT_API_KEY", value: process.env.WWL_DEFAULT_API_KEY },
+        { name: "DATABASE_CHUNK_SIZE", value: "5000" },
+        { name: "LOGGING_HTTP", value: "false" },
+        { name: "LOGGING_SQL", value: "false" },
+        // set to 'verbose' to show SQL & HTTP logs (if enabled)
+        { name: "LOGGING_LEVEL_CONSOLE", value: "info" },
       ],
       logConfiguration: {
         logDriver: "awslogs",
