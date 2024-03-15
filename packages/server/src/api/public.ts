@@ -3,7 +3,10 @@ import config from "../config";
 import sequelize from "../db";
 import { getDbVersion } from "../db/replication";
 import {
+  CreateSessionParams,
+  ResponseParams,
   SessionParams,
+  StudyParams,
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,
@@ -15,6 +18,8 @@ import {
 } from "../schemas";
 
 const routerPublic = express.Router();
+
+const successfulResponsePayload = { success: true };
 
 /**
  * @openapi
@@ -76,9 +81,14 @@ routerPublic.get("/info", async (req: Request, res: Response) => {
 routerPublic.post("/participant", async (req: Request, res: Response) => {
   try {
     const participantParams = participantSchema.validateSync(req.body);
-    const participant =
-      await sequelize.models.Participant.create(participantParams);
-    res.json(participant);
+    const participant = (await sequelize.models.Participant.create(
+      participantParams,
+    )) as any as ParticipantParams;
+    res.json({
+      ...successfulResponsePayload,
+
+      participantId: participant.participantId,
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });
@@ -134,7 +144,7 @@ routerPublic.put(
         where: participantWhere,
       });
       if (updatedRows[0] == 1) {
-        res.status(200).send({ success: true });
+        res.status(200).send(successfulResponsePayload);
       } else {
         res.status(400).json({ error: "Unknown participantId" });
       }
@@ -230,8 +240,14 @@ routerPublic.get(
 routerPublic.post("/study", async (req: Request, res: Response) => {
   try {
     const studyParams = studySchema.validateSync(req.body);
-    const study = await sequelize.models.Study.create(studyParams);
-    res.json(study);
+    const study = (await sequelize.models.Study.create(
+      studyParams,
+    )) as any as StudyParams;
+    res.json({
+      ...successfulResponsePayload,
+
+      studyId: study.studyId,
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });
@@ -303,7 +319,7 @@ routerPublic.get("/study/list", async (req: Request, res: Response) => {
  */
 routerPublic.post("/session", async (req: Request, res: Response) => {
   try {
-    const requestParams: SessionParams & {
+    const requestParams: CreateSessionParams & {
       clientMetadata?: {};
     } = sessionCreationRequestSchema.validateSync(req.body);
 
@@ -316,11 +332,17 @@ routerPublic.post("/session", async (req: Request, res: Response) => {
     };
 
     // Keep only proper fields for the database
-    const sessionParams: SessionParams =
+    const sessionParams: CreateSessionParams =
       sessionSchema.validateSync(requestParams);
-    const session = await sequelize.models.Session.create(sessionParams);
+    const session = (await sequelize.models.Session.create(
+      sessionParams,
+    )) as any as SessionParams;
 
-    res.json(session);
+    res.json({
+      ...successfulResponsePayload,
+
+      sessionId: session.sessionId,
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });
@@ -365,7 +387,7 @@ routerPublic.post("/session/finish", async (req: Request, res: Response) => {
       { where: sessionWhere },
     );
     if (updatedRows[0] == 1) {
-      res.status(200).send({ success: true });
+      res.status(200).send(successfulResponsePayload);
     } else {
       res.status(400).json({ error: "Unknown sessionId" });
     }
@@ -425,7 +447,7 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
       where: sessionWhere,
     });
     if (updatedRows[0] == 1) {
-      res.status(200).send({ success: true });
+      res.status(200).send(successfulResponsePayload);
     } else {
       res.status(400).json({ error: "Unknown sessionId" });
     }
@@ -521,8 +543,14 @@ routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
 routerPublic.post("/response", async (req: Request, res: Response) => {
   try {
     const responseParams = responseSchema.validateSync(req.body);
-    const response = await sequelize.models.Response.create(responseParams);
-    res.json(response);
+    const response = (await sequelize.models.Response.create(
+      responseParams,
+    )) as any as ResponseParams;
+    res.json({
+      ...successfulResponsePayload,
+
+      responseId: response.responseId,
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       res.status(400).json({ error: error.message });

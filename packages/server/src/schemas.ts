@@ -87,9 +87,22 @@ export {
   ValidationError,
 };
 
-type StudyParams = InferType<typeof studySchema>;
-type ParticipantParams = InferType<typeof participantSchema>;
-type SessionParams = InferType<typeof sessionSchema>;
-type ResponseParams = InferType<typeof responseSchema>;
+type CreateStudyParams = InferType<typeof studySchema>;
+type CreateParticipantParams = InferType<typeof participantSchema>;
+type CreateSessionParams = InferType<typeof sessionSchema>;
+type CreateResponseParams = InferType<typeof responseSchema>;
+type StudyParams = InferType<typeof fullStudySchema>;
+type ParticipantParams = InferType<typeof fullParticipantSchema>;
+type SessionParams = InferType<typeof fullSessionSchema>;
+type ResponseParams = InferType<typeof fullResponseSchema>;
 
-export type { StudyParams, ParticipantParams, SessionParams, ResponseParams };
+export type {
+  CreateStudyParams,
+  CreateParticipantParams,
+  CreateSessionParams,
+  CreateResponseParams,
+  StudyParams,
+  ParticipantParams,
+  SessionParams,
+  ResponseParams,
+};

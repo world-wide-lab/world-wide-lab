@@ -17,9 +17,7 @@ exports[`Client should start a new session (without a linked participant) 1`] = 
 
 exports[`Client should store responses 1`] = `
 [
-  "createdAt",
-  "updatedAt",
-  "deletionProtection",
+  "success",
   "studyId",
 ]
 `;

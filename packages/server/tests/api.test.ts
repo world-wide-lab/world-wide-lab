@@ -157,8 +157,6 @@ describe("API Routes", () => {
         .send({ participantId, studyId });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("participantId", participantId);
-      expect(response.body).toHaveProperty("studyId", studyId);
 
       // Set the shared sessionId
       sessionId = response.body.sessionId;
@@ -174,8 +172,6 @@ describe("API Routes", () => {
       });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("participantId", participantId);
-      expect(response.body).toHaveProperty("studyId", studyId);
       expect(response.body).toHaveProperty("sessionId");
 
       const session = await sequelize.models.Session.findOne({
@@ -197,7 +193,6 @@ describe("API Routes", () => {
       const response = await endpoint.post("/v1/session").send({ studyId });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("studyId", studyId);
       expect(response.body).toHaveProperty("sessionId");
     });
 
