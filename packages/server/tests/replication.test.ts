@@ -127,6 +127,17 @@ describe("Replication", () => {
       expect(response.body.length).toBe(18);
     });
 
+    it("should download a raw list of responses, with multiple chunks", async () => {
+      config.database.chunkSize = 2;
+      const response = await endpoint
+        .get("/v1/replication/source/get-table/wwl_responses?limit=25&offset=3")
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(25);
+    });
+
     it("should download a raw list of responses", async () => {
       const response = await endpoint
         .get(

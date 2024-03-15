@@ -104,6 +104,11 @@ async function chunkedQuery({
   }
 
   do {
+    // If we'd overshoot with the next page, reduce the page size to exactly fit the limit
+    if (offset + pageSize > absoluteLimit) {
+      pageSize = absoluteLimit - offset;
+    }
+
     // Retrieve the data
     const data = await queryData(offset, pageSize);
     if (!Array.isArray(data)) {
@@ -125,10 +130,6 @@ async function chunkedQuery({
 
     // Increase the offset in case we will continue
     offset += pageSize;
-
-    if (offset + pageSize > absoluteLimit) {
-      pageSize = absoluteLimit - offset;
-    }
 
     // Check whether we already got all data
     // e.g. we either got an empty result or our result was less than the limit
