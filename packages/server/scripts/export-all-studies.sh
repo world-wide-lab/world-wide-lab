@@ -38,7 +38,7 @@ do
     echo "Exporting $datatype for study $study_id."
     curl -s "$BASE_URL/v1/study/$study_id/data/$datatype/csv" \
       -H "Authorization: Bearer $API_KEY" \
-      -o "data/wwl--$study_id--data--$datatype.csv"
+      | gzip > "data/wwl--$study_id--data--$datatype.csv.gz"
     echo "Done."
   done
 done
