@@ -64,9 +64,8 @@ async function getLatestMigration(includeSuffix: boolean): Promise<string> {
   }
   if (includeSuffix) {
     return latestMigration;
-  } else {
-    return latestMigration.substring(0, latestMigration.lastIndexOf("."));
   }
+  return latestMigration.substring(0, latestMigration.lastIndexOf("."));
 }
 
 if (require.main === module) {

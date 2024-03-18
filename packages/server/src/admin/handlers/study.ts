@@ -85,7 +85,8 @@ async function deleteStudyHandler(
     return {
       record: record.toJSON(currentAdmin),
       notice: {
-        message: `Please disable deletion protection before trying to delete a study. Be warned, that deleting a study will also delete ALL ITS DATA.`,
+        message:
+          "Please disable deletion protection before trying to delete a study. Be warned, that deleting a study will also delete ALL ITS DATA.",
         type: "error",
       },
     };

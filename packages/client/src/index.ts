@@ -84,7 +84,7 @@ export class Client {
     options?: Object,
   ): Promise<any> {
     const slash = endpoint.startsWith("/") ? "" : "/";
-    const url = new URL("v1" + slash + endpoint, this.options.url).toString();
+    const url = new URL(`v1${slash}${endpoint}`, this.options.url).toString();
     const body = data ? JSON.stringify(data) : undefined;
     const fetchOptions: RequestInit = {
       method,
@@ -108,7 +108,7 @@ export class Client {
   async createParticipant(
     participantParams: ClientParticipantOptions = undefined,
   ): Promise<Participant> {
-    const result = await this.call("POST", `/participant/`, participantParams);
+    const result = await this.call("POST", "/participant/", participantParams);
     return new Participant(this, result.participantId);
   }
 
@@ -176,7 +176,7 @@ export class Client {
       sessionData.publicInfo = sessionOptions.publicInfo;
     }
 
-    const result = await this.call("POST", `/session/`, sessionData);
+    const result = await this.call("POST", "/session/", sessionData);
     const session = new Session(this, result.sessionId);
 
     // Link participant
@@ -196,7 +196,7 @@ export class Client {
    * @returns true if the response was created successfully
    */
   async createResponse(opts: ClientResponseOptions): Promise<boolean> {
-    const result = await this.call("POST", `/response/`, opts);
+    const result = await this.call("POST", "/response/", opts);
     return true;
   }
 
@@ -329,7 +329,7 @@ export class Session extends ClientModel {
    * @returns true if the session was finished successfully
    */
   async finish(): Promise<boolean> {
-    const result = await this.clientInstance.call("POST", `/session/finish`, {
+    const result = await this.clientInstance.call("POST", "/session/finish", {
       sessionId: this.sessionId,
     });
     return result.success;
@@ -365,12 +365,11 @@ export class Session extends ClientModel {
   storeParticipantId(): boolean {
     if (this.participant) {
       return this.participant.storeParticipantId();
-    } else {
-      console.error(
-        "Cannot store participantId: No participant set / created. Do you maybe want to set linkParticipant to true?",
-      );
-      return false;
     }
+    console.error(
+      "Cannot store participantId: No participant set / created. Do you maybe want to set linkParticipant to true?",
+    );
+    return false;
   }
 }
 

@@ -1,16 +1,25 @@
 import { DataTypes, Sequelize } from "sequelize";
 
 const columnComments = {
-  studyId: `The unique identifier for each study. This id is used to link sessions with studies. Must be unique across all studies.`,
-  participantId: `The unique identifier for each participant. This id is used to link sessions with participants. Generated automatically.`,
-  sessionId: `The unique identifier for each session. This id is used to identify responses. Generated automatically.`,
-  responseId: `The unique identifier for each response. Generated automatically.`,
+  studyId:
+    "The unique identifier for each study. This id is used to link sessions with studies. Must be unique across all studies.",
+  participantId:
+    "The unique identifier for each participant. This id is used to link sessions with participants. Generated automatically.",
+  sessionId:
+    "The unique identifier for each session. This id is used to identify responses. Generated automatically.",
+  responseId:
+    "The unique identifier for each response. Generated automatically.",
 
-  createdAt: `The timestamp this record has been created. Generated automatically.`,
-  updatedAt: `The timestamp this record has last been updated or changed. Generated automatically.`,
-  privateInfo: `Additional information for this record, stored as a JSON object.`,
-  publicInfo: `Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.`,
-  deletionProtection: `Should the study be protected from deletion? If this is set to true, the study cannot be deleted from the admin interface until this is turned off again. This is useful to prevent accidental deletion of studies that have already been published.`,
+  createdAt:
+    "The timestamp this record has been created. Generated automatically.",
+  updatedAt:
+    "The timestamp this record has last been updated or changed. Generated automatically.",
+  privateInfo:
+    "Additional information for this record, stored as a JSON object.",
+  publicInfo:
+    "Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.",
+  deletionProtection:
+    "Should the study be protected from deletion? If this is set to true, the study cannot be deleted from the admin interface until this is turned off again. This is useful to prevent accidental deletion of studies that have already been published.",
 };
 
 function defineModels(sequelize: Sequelize) {
@@ -130,7 +139,8 @@ function defineModels(sequelize: Sequelize) {
       finished: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
-        comment: `Has this session has been finished? Note, that this field only gets updated when the /session/finish API endpoint is called.`,
+        comment:
+          "Has this session has been finished? Note, that this field only gets updated when the /session/finish API endpoint is called.",
       },
       participantId: {
         type: DataTypes.UUID,

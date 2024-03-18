@@ -33,7 +33,7 @@ const ShowJsonProp = (props: any) => {
   return (
     <Box mb="xl">
       <Label>{property.label}</Label>
-      <CodeHighlightingStyles></CodeHighlightingStyles>
+      <CodeHighlightingStyles />
       <pre>
         <Code>{formattedObject}</Code>
       </pre>

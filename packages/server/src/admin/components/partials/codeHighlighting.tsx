@@ -39,8 +39,8 @@ function refreshHighlighting() {
 function highlightText(searchText: string) {
   const tags = document.getElementsByClassName("hljs-string");
   let foundTag: Element | null = null;
-  for (var i = 0; i < tags.length; i++) {
-    if (tags[i].textContent == searchText) {
+  for (let i = 0; i < tags.length; i++) {
+    if (tags[i].textContent === searchText) {
       foundTag = tags[i];
       break;
     }

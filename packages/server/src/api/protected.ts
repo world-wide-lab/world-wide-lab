@@ -101,7 +101,7 @@ routerProtectedWithoutAuthentication.get(
 
       // Standard data export functions
       let dataQueryFunction;
-      if (dataType == "responses-raw") {
+      if (dataType === "responses-raw") {
         dataQueryFunction = async (offset: number, limit: number) => {
           return await sequelize.models.Response.findAll({
             include: {
@@ -115,7 +115,7 @@ routerProtectedWithoutAuthentication.get(
             limit,
           });
         };
-      } else if (dataType == "sessions-raw") {
+      } else if (dataType === "sessions-raw") {
         dataQueryFunction = async (offset: number, limit: number) => {
           return await sequelize.models.Session.findAll({
             where: { studyId },
@@ -125,7 +125,7 @@ routerProtectedWithoutAuthentication.get(
             limit,
           });
         };
-      } else if (dataType == "participants-raw") {
+      } else if (dataType === "participants-raw") {
         dataQueryFunction = async (offset: number, limit: number) => {
           return await sequelize.models.Participant.findAll({
             include: {
@@ -139,7 +139,7 @@ routerProtectedWithoutAuthentication.get(
             limit,
           });
         };
-      } else if (dataType == "responses-extracted-payload") {
+      } else if (dataType === "responses-extracted-payload") {
         const exportQuery = await generateExtractedPayloadQuery(
           sequelize,
           studyId,
@@ -159,7 +159,7 @@ routerProtectedWithoutAuthentication.get(
                 COPY
                   (${exportQuery.replace(
                     ":studyId",
-                    "'" + sanitizeStudyId(studyId) + "'",
+                    `'${sanitizeStudyId(studyId)}'`,
                   )})
                 TO
                   STDOUT WITH (
@@ -178,17 +178,16 @@ routerProtectedWithoutAuthentication.get(
           // Return the connection to the pool
           sequelize.connectionManager.releaseConnection(connection);
           return;
-        } else {
-          dataQueryFunction = async (offset: number, limit: number) => {
-            return await sequelize.query(
-              exportQuery + ` LIMIT ${limit} OFFSET ${offset}`,
-              {
-                type: Sequelize.QueryTypes.SELECT,
-                replacements: { studyId },
-              },
-            );
-          };
         }
+        dataQueryFunction = async (offset: number, limit: number) => {
+          return await sequelize.query(
+            `${exportQuery} LIMIT ${limit} OFFSET ${offset}`,
+            {
+              type: Sequelize.QueryTypes.SELECT,
+              replacements: { studyId },
+            },
+          );
+        };
       } else {
         throw new Error(`Unknown dataType: ${dataType}`);
       }
@@ -198,7 +197,7 @@ routerProtectedWithoutAuthentication.get(
         // dataQueryFunction to retrieve chunks of data.
         paginatedExport(res, dataQueryFunction, format);
       } else {
-        throw new Error(`Missing dataQueryFunction`);
+        throw new Error("Missing dataQueryFunction");
       }
     } catch (error) {
       console.error(error);

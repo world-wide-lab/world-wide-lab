@@ -163,7 +163,7 @@ export const Dashboard: React.FC = () => {
             <Box>
               <CardLabel>Started / Finished Sessions this Week</CardLabel>
             </Box>
-            <DashboardLineChart data={chartData}></DashboardLineChart>
+            <DashboardLineChart data={chartData} />
           </Card>
         </Box>
         <Box width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">

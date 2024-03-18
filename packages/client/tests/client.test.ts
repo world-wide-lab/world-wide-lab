@@ -82,7 +82,7 @@ describe("Client", () => {
     const studyId = "studyId-check-response-storage";
 
     // Create a new study
-    const createStudyResponseJson = await client.call("POST", `/study/`, {
+    const createStudyResponseJson = await client.call("POST", "/study/", {
       studyId,
     });
     expect(createStudyResponseJson.studyId).toBe(studyId);

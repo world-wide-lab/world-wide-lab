@@ -14,13 +14,12 @@ const options = {
       // modified to also remove any GET parameters e.g. myUrl.php?test=123
       function getUrlOrigin(url: string) {
         if (url) {
-          var parts = url.split("://");
+          const parts = url.split("://");
 
           if (parts.length > 1) {
-            return parts[0] + "://" + parts[1].split(/[?\/]/)[0];
-          } else {
-            return parts[0].split(/[?\/]/)[0];
+            return `${parts[0]}://${parts[1].split(/[?\/]/)[0]}`;
           }
+          return parts[0].split(/[?\/]/)[0];
         }
       }
 

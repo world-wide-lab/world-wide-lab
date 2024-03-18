@@ -212,7 +212,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       name: trial.data_name,
       // TODO: find a more elegant solution here to mark data as already in JSON format, avoiding the back-and forth conversion
       payload:
-        typeof trial.data_string == "string"
+        typeof trial.data_string === "string"
           ? JSON.parse(trial.data_string)
           : trial.data_string,
     });
@@ -220,7 +220,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     display_element.innerHTML = "";
 
     // Return at least some trial data
-    var trial_data = {
+    const trial_data = {
       sessionId: jsPsychWorldWideLab.session.sessionId,
       success,
     };
@@ -243,45 +243,46 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   public static ready = false;
 
   public static async setup(options: SetupOptions): Promise<void> {
-    if (this.ready) {
+    if (jsPsychWorldWideLab.ready) {
       console.warn(
         "JsPsychWorldWideLab.setup() is being called more than once, this is not recommended and can lead to surprising issues.",
       );
       // Reset ready to false in case set
-      this.ready = false;
+      jsPsychWorldWideLab.ready = false;
     }
-    this.client = new Client({
+    jsPsychWorldWideLab.client = new Client({
       url: options.url,
     });
-    this.client._library = "@world-wide-lab/integration-jspsych";
-    this.client._libraryVersion = VERSION;
-    this.studyId = options.studyId;
+    jsPsychWorldWideLab.client._library = "@world-wide-lab/integration-jspsych";
+    jsPsychWorldWideLab.client._libraryVersion = VERSION;
+    jsPsychWorldWideLab.studyId = options.studyId;
 
-    this.session = await this.client.createSession({
-      studyId: this.studyId,
-      linkParticipant: options.linkParticipant,
-      ...options.sessionOptions,
-    });
-    this.ready = true;
-    this.callSetupCompletedListeners();
-    this.sendQueuedResponses();
+    jsPsychWorldWideLab.session =
+      await jsPsychWorldWideLab.client.createSession({
+        studyId: jsPsychWorldWideLab.studyId,
+        linkParticipant: options.linkParticipant,
+        ...options.sessionOptions,
+      });
+    jsPsychWorldWideLab.ready = true;
+    jsPsychWorldWideLab.callSetupCompletedListeners();
+    jsPsychWorldWideLab.sendQueuedResponses();
   }
 
   private static setupCompletedListeners: Array<Function> = [];
   private static callSetupCompletedListeners() {
-    while (this.setupCompletedListeners.length > 0) {
-      const listener = this.setupCompletedListeners.shift();
+    while (jsPsychWorldWideLab.setupCompletedListeners.length > 0) {
+      const listener = jsPsychWorldWideLab.setupCompletedListeners.shift();
       listener();
     }
   }
   public static async setupCompleted(): Promise<void> {
     return new Promise((resolve) => {
       // Register the promise's resolve function as a listener
-      this.setupCompletedListeners.push(resolve);
+      jsPsychWorldWideLab.setupCompletedListeners.push(resolve);
 
       // If already initialized, call listeners
-      if (this.ready) {
-        this.callSetupCompletedListeners();
+      if (jsPsychWorldWideLab.ready) {
+        jsPsychWorldWideLab.callSetupCompletedListeners();
       }
     });
   }
@@ -291,22 +292,22 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     setupOptions: SetupOptions,
   ): JsPsych {
     // Setup the JsPsychWorldWideLab-integration
-    this.setup(setupOptions);
+    jsPsychWorldWideLab.setup(setupOptions);
 
     // Wrap on_trial_finish and on_finish functions to save data
     const originalOnTrialFinish = jsPsychOptions.on_trial_finish;
     jsPsychOptions.on_trial_finish = (data) => {
-      this.save(undefined, data);
+      jsPsychWorldWideLab.save(undefined, data);
 
       // Call the original function (if it exists)
-      return originalOnTrialFinish && originalOnTrialFinish(...arguments);
+      return originalOnTrialFinish?.(...arguments);
     };
     const originalOnFinish = jsPsychOptions.on_finish;
     jsPsychOptions.on_finish = () => {
-      this.onExperimentFinish();
+      jsPsychWorldWideLab.onExperimentFinish();
 
       // Call the original function (if it exists)
-      return originalOnFinish && originalOnFinish(...arguments);
+      return originalOnFinish?.(...arguments);
     };
 
     // Initialize JsPsych
@@ -316,45 +317,45 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   private static responseQueue: SessionResponseOptions[] = [];
   public static async save(trialName: string, data: ObjectWithData) {
     const response: SessionResponseOptions = { name: trialName, payload: data };
-    if (this.ready) {
-      await this._saveResponse(response);
+    if (jsPsychWorldWideLab.ready) {
+      await jsPsychWorldWideLab._saveResponse(response);
     } else {
       // Queue the response until we're ready
-      this.responseQueue.push(response);
+      jsPsychWorldWideLab.responseQueue.push(response);
     }
   }
   private static async sendQueuedResponses() {
-    while (this.responseQueue.length > 0) {
-      const entry = this.responseQueue.shift();
-      await this._saveResponse(entry);
+    while (jsPsychWorldWideLab.responseQueue.length > 0) {
+      const entry = jsPsychWorldWideLab.responseQueue.shift();
+      await jsPsychWorldWideLab._saveResponse(entry);
     }
   }
   private static async _saveResponse(response: SessionResponseOptions) {
-    await this.session.response(response);
+    await jsPsychWorldWideLab.session.response(response);
   }
 
   public static async onExperimentFinish() {
-    await this.session.finish();
+    await jsPsychWorldWideLab.session.finish();
   }
 
   private static checkReady() {
-    if (!this.ready) {
+    if (!jsPsychWorldWideLab.ready) {
       console.error("Client is not yet initialized.");
     }
   }
   public static async storeParticipantId() {
-    await this.setupCompleted();
+    await jsPsychWorldWideLab.setupCompleted();
 
-    return this.session.storeParticipantId();
+    return jsPsychWorldWideLab.session.storeParticipantId();
   }
   public static async deleteStoredParticipantId() {
-    await this.setupCompleted();
+    await jsPsychWorldWideLab.setupCompleted();
 
-    this.client.deleteStoredParticipantId();
+    jsPsychWorldWideLab.client.deleteStoredParticipantId();
   }
   public static hasStoredParticpantId() {
-    this.checkReady();
-    return this.client.getStoredParticipantId() !== undefined;
+    jsPsychWorldWideLab.checkReady();
+    return jsPsychWorldWideLab.client.getStoredParticipantId() !== undefined;
   }
 }
 

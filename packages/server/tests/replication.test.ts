@@ -371,7 +371,7 @@ describe("Replication", () => {
         const matchingEndpoints = Object.keys(MOCK_RESPONSES).filter((k) =>
           endpoint.startsWith(k),
         );
-        if (matchingEndpoints.length != 1) {
+        if (matchingEndpoints.length !== 1) {
           throw new Error(
             `N = ${matchingEndpoints.length} mock responses are matching the provided endpoint: ${endpoint}.`,
           );
@@ -384,7 +384,7 @@ describe("Replication", () => {
         }
 
         let data: Array<object> | object;
-        if (typeof matchingRespone == "function") {
+        if (typeof matchingRespone === "function") {
           // Function => execute it
           data = matchingRespone({ endpoint });
         } else if (Array.isArray(matchingRespone)) {
@@ -407,7 +407,7 @@ describe("Replication", () => {
 
     it("should work as intended", async () => {
       const response = await endpoint
-        .get(`/v1/replication/destination/update`)
+        .get("/v1/replication/destination/update")
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -458,7 +458,7 @@ describe("Replication", () => {
       config.replication.role = null;
 
       const response = await endpoint
-        .get(`/v1/replication/destination/update`)
+        .get("/v1/replication/destination/update")
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 
@@ -468,7 +468,7 @@ describe("Replication", () => {
 
     it("should fail when not authenticated", async () => {
       const response = await endpoint
-        .get(`/v1/replication/destination/update`)
+        .get("/v1/replication/destination/update")
         .send();
 
       expect(response.status).toBe(401);

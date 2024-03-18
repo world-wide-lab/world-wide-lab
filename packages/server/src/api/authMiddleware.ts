@@ -10,11 +10,8 @@ function requireAuthMiddleware(
   res: Response,
   next: Function,
 ): void {
-  const tokenRegexResult =
-    req.headers.authorization &&
-    req.headers.authorization.match(/^Bearer (.*)$/);
-  const token =
-    tokenRegexResult && tokenRegexResult[1] ? tokenRegexResult[1] : undefined;
+  const tokenRegexResult = req.headers.authorization?.match(/^Bearer (.*)$/);
+  const token = tokenRegexResult?.[1] ? tokenRegexResult[1] : undefined;
   if (!token) {
     noAuth(res, "Authentication via API Key required");
     return;
@@ -32,10 +29,9 @@ function requireAuthMiddleware(
   if (token !== config.api.apiKey) {
     noAuth(res, "The provided API Key is invalid.");
     return;
-  } else {
-    // Authenticated
-    next();
   }
+  // Authenticated
+  next();
 }
 
 export { requireAuthMiddleware };

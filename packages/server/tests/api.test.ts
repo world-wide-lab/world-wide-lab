@@ -41,7 +41,7 @@ describe("API Routes", () => {
   describe("PUT /participant/:participantId", () => {
     it("should update an existing participant", async () => {
       const response = await endpoint
-        .put("/v1/participant/" + participantId)
+        .put(`/v1/participant/${participantId}`)
         .send({
           privateInfo: { lorem: "ipsum" },
           publicInfo: { participantHasDoneSomething: true },
@@ -61,7 +61,7 @@ describe("API Routes", () => {
 
     it("should fail when the participant does not exist", async () => {
       const response = await endpoint
-        .put("/v1/participant/" + NON_EXISTENT_UUID)
+        .put(`/v1/participant/${NON_EXISTENT_UUID}`)
         .send({ privateInfo: { lorem: "ipsum" } });
 
       expect(response.status).toBe(400);
@@ -81,18 +81,18 @@ describe("API Routes", () => {
   describe("GET /participant/:participantId", () => {
     it("should retrieve public information about a participant", async () => {
       const response = await endpoint
-        .get("/v1/participant/" + participantId)
+        .get(`/v1/participant/${participantId}`)
         .send();
 
       expect(response.status).toBe(200);
       expect(response.body.participantId).toBe(participantId);
-      delete response.body.participantId;
+      response.body.participantId = "overwritten";
       expect(response.body).toMatchSnapshot();
     });
 
     it("should fail when the participant does not exist", async () => {
       const response = await endpoint
-        .get("/v1/participant/" + NON_EXISTENT_UUID)
+        .get(`/v1/participant/${NON_EXISTENT_UUID}`)
         .send();
 
       expect(response.status).toBe(400);
@@ -121,7 +121,7 @@ describe("API Routes", () => {
 
     it("should create a new study with extra info", async () => {
       const response = await endpoint.post("/v1/study").send({
-        studyId: STUDY_ID + "_extra",
+        studyId: `${STUDY_ID}_extra`,
         privateInfo: { integer: 10 },
         publicInfo: { string: "lorem" },
       });
@@ -133,7 +133,7 @@ describe("API Routes", () => {
     it("should validate extra info", async () => {
       const response = await endpoint
         .post("/v1/study")
-        .send({ studyId: STUDY_ID + "_extra", privateInfo: 10 });
+        .send({ studyId: `${STUDY_ID}_extra`, privateInfo: 10 });
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
@@ -242,7 +242,7 @@ describe("API Routes", () => {
 
   describe("PUT /session/:sessionId", () => {
     it("should update a session", async () => {
-      const response = await endpoint.put("/v1/session/" + sessionId).send({
+      const response = await endpoint.put(`/v1/session/${sessionId}`).send({
         privateInfo: { lorem: "ipsum" },
         publicInfo: { dolor: "sit" },
       });
@@ -259,7 +259,7 @@ describe("API Routes", () => {
 
     it("should fail when the session does not exist", async () => {
       const response = await endpoint
-        .put("/v1/session/" + NON_EXISTENT_UUID)
+        .put(`/v1/session/${NON_EXISTENT_UUID}`)
         .send({ privateInfo: { lorem: "ipsum" } });
 
       expect(response.status).toBe(400);
@@ -278,17 +278,17 @@ describe("API Routes", () => {
 
   describe("GET /session/:sessionId", () => {
     it("should retrieve public information about a session", async () => {
-      const response = await endpoint.get("/v1/session/" + sessionId).send();
+      const response = await endpoint.get(`/v1/session/${sessionId}`).send();
 
       expect(response.status).toBe(200);
       expect(response.body.sessionId).toBe(sessionId);
-      delete response.body.sessionId;
+      response.body.sessionId = "overwritten";
       expect(response.body).toMatchSnapshot();
     });
 
     it("should fail when the session does not exist", async () => {
       const response = await endpoint
-        .get("/v1/session/" + NON_EXISTENT_UUID)
+        .get(`/v1/session/${NON_EXISTENT_UUID}`)
         .send();
 
       expect(response.status).toBe(400);
@@ -425,7 +425,7 @@ describe("API Routes", () => {
 
     it("should fail when the study does not exist", async () => {
       const response = await endpoint
-        .get(`/v1/study/non-existent-study/count/all`)
+        .get("/v1/study/non-existent-study/count/all")
         .send();
 
       expect(response.status).toBe(400);
@@ -555,7 +555,7 @@ describe("API Routes", () => {
     it("should require the correct API KEY", async () => {
       const response = await endpoint
         .get(`/v1/study/${studyId}/data/participants-raw/json`)
-        .set("Authorization", `Bearer wrong-key`)
+        .set("Authorization", "Bearer wrong-key")
         .send();
 
       expect(response.status).toBe(401);
@@ -564,7 +564,7 @@ describe("API Routes", () => {
 
     it("should fail when the study does not exist", async () => {
       const response = await endpoint
-        .get(`/v1/study/non-existent-study/data/participants-raw/json`)
+        .get("/v1/study/non-existent-study/data/participants-raw/json")
         .set("Authorization", `Bearer ${API_KEY}`)
         .send();
 

@@ -30,8 +30,8 @@ const StudyShowAction: React.FC<ActionProps> = (props) => {
   const properties = resource.showProperties;
 
   const studyId = record?.params?.studyId;
-  const escapedStudyId = "'" + studyId + "'";
-  const escapedUrl = "'" + window.location.origin + "'";
+  const escapedStudyId = `'${studyId}'`;
+  const escapedUrl = `'${window.location.origin}'`;
 
   const formatOptions = [
     { value: "jsPsych-integration", label: "Using the jsPsych Integration" },
@@ -149,7 +149,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="View"></Icon> View Sessions in this Study
+          <Icon icon="View" /> View Sessions in this Study
         </Button>
         &nbsp; &nbsp;
         <Button
@@ -158,7 +158,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="Download"></Icon> Download Data from this Study
+          <Icon icon="Download" /> Download Data from this Study
         </Button>
       </Box>
 
@@ -180,7 +180,7 @@ session.finish();
       </Box>
 
       <Box>
-        <CodeHighlightingStyles></CodeHighlightingStyles>
+        <CodeHighlightingStyles />
         <pre>
           <Code>
             {format &&
