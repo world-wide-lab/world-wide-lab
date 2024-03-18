@@ -45,7 +45,7 @@ On the `Studies` page, you should select the Study you just created to open its 
 World-Wide-Lab supports ready-made integrations for popular experimental libraries e.g. jsPsych as well as a general purpose client library to support flexible use cases. Please refer to the detailed guides on the different integrations for more detailed information.
 
 - [jsPsych](/guides/integration-jsPsych)
-- [General Purpose Client](<(/guides/client)>)
+- [General Purpose Client](/guides/client)
 
 With this in place, you are ready to start collecting data. 🎉
 
