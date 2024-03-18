@@ -39,18 +39,22 @@ features:
 ---
 
 <script>
-  import AtroposComponent from 'atropos/element';
-  if(customElements.get('atropos-component') === undefined) {
-    customElements.define('atropos-component', AtroposComponent);
-  }
+  (async function () {
+    if (typeof window !== "undefined" && "HTMLElement" in window) {
+      if(customElements.get('atropos-component') === undefined) {
+        const AtroposComponent = (await import('atropos/element')).default;
+        customElements.define('atropos-component', AtroposComponent);
+      }
+    }
+  })()
 </script>
 
 <style>
   .my-atropos {
     display: block;
     width: 100%;
-    margin: 3rem auto 0;
-    padding: 3rem;
+    margin: 2rem auto 0;
+    padding: 1rem;
     position: relative;
     overflow: hidden;
   }
@@ -68,15 +72,16 @@ features:
     position: absolute;
     bottom: 33%;
     left: 14%;
-    width: 15%;
+    width: 20%;
+    padding: 0 1.5%;
   }
   .floating-name {
     position: absolute;
     bottom: 25%;
     left: 14%;
-    width: 15%;
+    width: 20%;
     text-align: center;
-    font-size: 1.7rem;
+    font-size: 1.5rem;
     color: #4A5568;
   }
 
