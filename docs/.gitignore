@@ -1,1 +1,5 @@
 .vitepress/cache
+
+# Ignore auto-generated references
+reference/**
+!reference/.gitkeep

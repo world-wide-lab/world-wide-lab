@@ -1,3 +1,9 @@
+/**
+ * A helper package making it easy to use World-Wide-Lab in combination with {@link https://www.jspsych.org/ | jsPsych} experiments.
+ *
+ * @packageDocumentation
+ */
+
 import {
   JsPsych,
   JsPsychPlugin,
@@ -7,12 +13,10 @@ import {
   initJsPsych,
 } from "jspsych";
 
-import {
-  Client,
-  Session,
-  SessionResponseOptions,
-} from "@world-wide-lab/client";
+import { Client, Session } from "@world-wide-lab/client";
 import { VERSION } from "./version";
+
+type SessionResponseOptions = Parameters<Session["response"]>[0];
 
 type InitializeParameters = {};
 
@@ -22,7 +26,12 @@ type OnLoadParameters = {};
 
 type OnFinishParameters = {};
 
-interface SetupOptions {
+/**
+ * Options to pass to the {@link jsPsychWorldWideLab.setup} function.
+ *
+ * @public
+ */
+export interface SetupOptions {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
@@ -35,7 +44,7 @@ interface SetupOptions {
    * Whether to link each session with a participant.
    *
    * Note: If you want store identify participants between sessions, you should
-   * use jsPsychWorldWideLab.storeParticipantId().
+   * use {@link jsPsychWorldWideLab.storeParticipantId}.
    */
   linkParticipant?: boolean;
 
@@ -49,44 +58,40 @@ interface SetupOptions {
    * assignments to conditions.
    */
   sessionOptions?: {
-    privateInfo?: ObjectWithData;
-    publicInfo?: ObjectWithData;
+    privateInfo?: object;
+    publicInfo?: object;
   };
 }
 
-// Configure our own JsPsychOptions type, as there is no official one yet
 /**
- * Options which will be passed to initJsPsych().
+ * Options which will be passed to {@link https://www.jspsych.org/7.0/reference/jspsych/#initjspsych | initJsPsych()}.
  * @see {@link https://www.jspsych.org/7.0/reference/jspsych/#initjspsych}
- */
-type JsPsychOptions = {
-  [key: string]: any;
-};
-
-/**
- * A simple object with any data you would like to store.
- * Will be transformed to JSON.
- */
-type ObjectWithData = {
-  [key: string]: any;
-};
-
-/**
- * **JsPsychWorldWideLab**
  *
+ * @public
+ */
+export type JsPsychOptions = {
+  [key: string]: any;
+};
+
+/**
  * A simple integration of World-Wide-Lab for jsPsych.
  * This plugin makes it easy to either automatically store data from any
  * experiment running in jsPsych, which can then be neatly downloaded via the
  * World-Wide-Lab UI.
  *
- * @author Jan Simson
- * @see {@link https://DOCUMENTATION_URL DOCUMENTATION LINK TEXT}
+ * @see {@link https://github.com/world-wide-lab/world-wide-lab}
+ * @public
  */
 class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   // Classic portion of the plugin, a normal jsPsych plugin which will
   // store all previous (or one trial's) data in World-Wide-Lab.
   // Designed to mirror the Pipe-Plugin to allow easy switching between them.
 
+  /**
+   * Information about the integration. Only needed when using the Integration
+   * as a trial.
+   * @internal
+   */
   static info: PluginInfo = {
     name: "world-wide-lab",
     parameters: {
@@ -139,6 +144,13 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
   constructor(private jsPsych: JsPsych) {}
 
+  /**
+   * Trial function, which will automatically be called by JsPsych, when using
+   * the plugin as a trial.
+   * @param display_element - The element to display the trial on.
+   * @param trial - The trial to run.
+   * @internal
+   */
   trial(display_element: HTMLElement, trial: TrialType<PluginInfo>) {
     // Call async function in here
     this.run(display_element, trial);
@@ -237,11 +249,32 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   // Static portion of the plugin, more like a general library and just
   // exported via the plugin class for consistency with the jsPsych ecosystem
 
+  /**
+   * World-Wide-Lab {@link @world-wide-lab/client#Client} instance.
+   */
   public static client: Client;
+  /**
+   * The studyId of the Study in which the data should be stored
+   */
   public static studyId: string;
+  /**
+   * The active {@link @world-wide-lab/client#Session} instance.
+   */
   public static session: Session;
+  /**
+   * Whether the client has finished initializing and creating a
+   * Session to store data.
+   */
   public static ready = false;
 
+  /**
+   * Setup the World-Wide-Lab JsPsych Integration.
+   *
+   * Either this function or {@link jsPsychWorldWideLab.initJsPsych} must be
+   * called before any data can be stored.
+   *
+   * @param options - Options to pass to the setup function.
+   */
   public static async setup(options: SetupOptions): Promise<void> {
     if (jsPsychWorldWideLab.ready) {
       console.warn(
@@ -275,6 +308,16 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       listener();
     }
   }
+
+  /**
+   * Wait for setup to be completed. Note that this function does *not* call
+   * the setup function, it just waits for it.
+   *
+   * @remarks
+   * This function is useful if you want to ensure that  the client is ready
+   * before proceeding.
+   * @returns A promise that resolves when the client is ready.
+   */
   public static async setupCompleted(): Promise<void> {
     return new Promise((resolve) => {
       // Register the promise's resolve function as a listener
@@ -287,6 +330,23 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     });
   }
 
+  /**
+   * Initialize JsPsych with the World-Wide-Lab integration.
+   *
+   * @remarks
+   * This function is a wrapper around
+   * {@link https://www.jspsych.org/7.0/reference/jspsych/#initjspsych | initJsPsych()}.
+   * It sets up the World-Wide-Lab integration and wraps the
+   * on_trial_finish and on_finish functions to automatically save data.
+   *
+   * When using this function, you **must not** call
+   * {@link jsPsychWorldWideLab.setup} separately,
+   * this function already does this for you.
+   *
+   * @param jsPsychOptions - Options to pass to the JsPsych initialization function.
+   * @param setupOptions - Options to pass to the World-Wide-Lab Integration setup function.
+   * @returns The initialized JsPsych instance.
+   */
   public static initJsPsych(
     jsPsychOptions: JsPsychOptions,
     setupOptions: SetupOptions,
@@ -317,7 +377,12 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   }
 
   private static responseQueue: SessionResponseOptions[] = [];
-  public static async save(trialName: string, data: ObjectWithData) {
+  /**
+   * Save a response to World-Wide-Lab.
+   * @param trialName - The name of the trial to store the data under.
+   * @param data - The data to store.
+   */
+  public static async save(trialName: string, data: object) {
     const response: SessionResponseOptions = { name: trialName, payload: data };
     if (jsPsychWorldWideLab.ready) {
       await jsPsychWorldWideLab._saveResponse(response);
@@ -336,6 +401,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     await jsPsychWorldWideLab.session.response(response);
   }
 
+  /**
+   * Finish the experiment and mark the {@link @world-wide-lab/client#Session} as finished.
+   */
   public static async onExperimentFinish() {
     await jsPsychWorldWideLab.session.finish();
   }
@@ -345,16 +413,30 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       console.error("Client is not yet initialized.");
     }
   }
+  /**
+   * Store the participant Id in the participant's browser.
+   * Depending on the browser configuration, this is not always possible.
+   * @see {@link jsPsychWorldWideLab.session.storeParticipantId}
+   * @returns A boolean indicating whether the participant Id was stored.
+   */
   public static async storeParticipantId() {
     await jsPsychWorldWideLab.setupCompleted();
 
     return jsPsychWorldWideLab.session.storeParticipantId();
   }
+  /**
+   * Delete the stored participant Id from the participant's browser
+   * (if there is one).
+   */
   public static async deleteStoredParticipantId() {
     await jsPsychWorldWideLab.setupCompleted();
 
     jsPsychWorldWideLab.client.deleteStoredParticipantId();
   }
+  /**
+   * Check whether the participant Id is stored in the participant's browser.
+   * @returns A boolean if there is a stored participantId.
+   */
   public static hasStoredParticpantId() {
     jsPsychWorldWideLab.checkReady();
     return jsPsychWorldWideLab.client.getStoredParticipantId() !== undefined;

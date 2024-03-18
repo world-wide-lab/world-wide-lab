@@ -1,24 +1,56 @@
+/**
+ * A small package to directly interact with the World-Wide-Lab API.
+ *
+ * @remarks
+ * If you use one of the libraries with a supported integration package,
+ * you may not need this package.
+ *
+ * @packageDocumentation
+ */
+
 import { VERSION } from "./version";
 
-type ClientOptions = {
+/**
+ * Options to create a new Client instance
+ * @public
+ */
+export type ClientOptions = {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
   url: string;
 };
 
-type ExtraInfoOptions = {
-  privateInfo?: ObjectWithData;
-  publicInfo?: ObjectWithData;
+/**
+ * Options to update an existing {@link Participant}.
+ * @public
+ */
+export type ClientParticipantUpdateOptions = {
+  privateInfo?: object;
+  publicInfo?: object;
 };
 
-type ClientParticipantUpdateOptions = ExtraInfoOptions;
-type ClientSessionUpdateOptions = ExtraInfoOptions;
+/**
+ * Options to update an existing {@link Session}.
+ * @public
+ */
+export type ClientSessionUpdateOptions = {
+  privateInfo?: object;
+  publicInfo?: object;
+};
 
+/**
+ * Options to create a new {@link Participant}
+ * @public
+ */
 export type ClientParticipantOptions =
   | ClientParticipantUpdateOptions
   | undefined;
 
+/**
+ * Options to create a new {@link Session}
+ * @public
+ */
 export type ClientSessionOptions = ClientSessionUpdateOptions & {
   /**
    * The id of the study to create a session for. Required.
@@ -36,6 +68,10 @@ export type ClientSessionOptions = ClientSessionUpdateOptions & {
   linkParticipant?: boolean;
 };
 
+/**
+ * Options to create a new Response
+ * @public
+ */
 export type ClientResponseOptions = {
   /**
    * Id of the session this response belongs to
@@ -48,22 +84,47 @@ export type ClientResponseOptions = {
   /**
    * The actual data of this response
    */
-  payload: ObjectWithData;
+  payload: object;
 };
 
+/**
+ * HTTP method to use for a request
+ *
+ * @public
+ */
 export type HTTPMethod = "GET" | "POST" | "PUT";
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID";
 
-type ObjectWithData = {
-  [key: string]: any;
-};
-
+/**
+ * You will need to create an instance of this class to communicate with the
+ * World-Wide-Lab server. You can then use the methods of this class to create
+ * participants, sessions and responses.
+ *
+ * @public
+ */
 export class Client {
+  /**
+   * Which library is being used to make requests to the server.
+   * @internal
+   */
   _library: string;
+  /**
+   * The version of the library being used to make requests to the server.
+   * @internal
+   */
   _libraryVersion?: string;
 
-  constructor(public options: ClientOptions) {
+  /**
+   * Create a new Client instance
+   * @param options - Options to create the client with
+   */
+  constructor(
+    /**
+     * Options the Client was created with
+     */
+    public options: ClientOptions,
+  ) {
     console.log("Initializing Client", options);
 
     this._library = "@world-wide-lab/client";
@@ -71,10 +132,10 @@ export class Client {
 
   /**
    * Call an endpoint at the API server
-   * @param method Which HTTP method to use: GET, POST or PUT
-   * @param endpoint The endpoint to call, e.g. /participant/
-   * @param data The data to send to the server (optional)
-   * @param options Additional options to use
+   * @param method - Which HTTP method to use: GET, POST or PUT
+   * @param endpoint - The endpoint to call, e.g. /participant/
+   * @param data - The data to send to the server (optional)
+   * @param options - Additional options to use
    * @returns The JSON body of the response from the server
    */
   async call(
@@ -104,6 +165,7 @@ export class Client {
    * Create a new participant  from sractch. Use getParticipant() if you want to get an existing participant
    * or store their id. This function will not keep track of a participant's id.
    * @returns A new Participant instance
+   * @see getParticipant
    */
   async createParticipant(
     participantParams: ClientParticipantOptions = undefined,
@@ -114,14 +176,18 @@ export class Client {
 
   /**
    * Start a new Session. If a participant's id is stored, it will be used. see getParticipant().
-   * @param sessionOptions Options to create the session with
+   * @param sessionOptions - Options to create the session with
    * @returns A new Session instance
    */
   async createSession(sessionOptions: ClientSessionOptions): Promise<Session> {
-    const sessionData: ExtraInfoOptions & {
+    const sessionData: {
       studyId: string;
       participantId?: string;
-      clientMetadata: ObjectWithData;
+      privateInfo?: object;
+      publicInfo?: object;
+      clientMetadata: {
+        [key: string]: any;
+      };
     } = {
       studyId: sessionOptions.studyId,
       clientMetadata: {
@@ -188,11 +254,8 @@ export class Client {
   }
 
   /**
-   * Create a new Response. See also Session.response()
-   * @param opts Options to create the response with
-   * @param opts.sessionId Id of the session this response belongs to
-   * @param opts.name Name identifying this trial or response
-   * @param opts.payload The actual data of this response
+   * Create a new Response. See also {@link Session.response}
+   * @param opts - Options to create the response with
    * @returns true if the response was created successfully
    */
   async createResponse(opts: ClientResponseOptions): Promise<boolean> {
@@ -202,7 +265,7 @@ export class Client {
 
   /**
    * Store the participantId of the last person that participated using your website.
-   * @param participantId The participantId to store
+   * @param participantId - The participantId to store
    * @returns true if the id was stored successfully
    */
   storeParticipantId(participantId: string): boolean {
@@ -254,12 +317,28 @@ export class Client {
   }
 }
 
-// Base class that all data model classes inherit from
-class ClientModel {
+/**
+ * The Base class for all data model classes, such as {@link Participant} and {@link Session}.
+ *
+ * @remarks
+ *
+ * This class only contains a link to the client instance that created the
+ * model i.e. if you create a new Participant instance, it will have an
+ * internal link to the client that created it.
+ *
+ * This class should not be used directly.
+ *
+ * @internal
+ */
+export class _ClientModel {
   constructor(public clientInstance: Client) {}
 }
 
-export class Participant extends ClientModel {
+/**
+ * A World-Wide-Lab participant, typically used to link multiple {@link Session}s.
+ * @public
+ */
+export class Participant extends _ClientModel {
   constructor(
     clientInstance: Client,
     public participantId: string,
@@ -269,7 +348,7 @@ export class Participant extends ClientModel {
 
   /**
    * Update the participant's meta-data.
-   * @param data The data to update. Can contain privateInfo and/or publicInfo.
+   * @param data - The data to update. Can contain privateInfo and/or publicInfo.
    *   The publicInfo can be retrieved later on without authentication, the
    *   privateInfo can only be downlaoded later on by the researcher.
    * @returns true if the update was successful
@@ -287,7 +366,7 @@ export class Participant extends ClientModel {
    * Retrieve public meta-data for a participant
    * @returns The participant's publicInfo meta data
    */
-  getPublicInfo(): Promise<{ publicInfo: ObjectWithData }> {
+  getPublicInfo(): Promise<{ publicInfo: object }> {
     return this.clientInstance.call(
       "GET",
       `/participant/${this.participantId}`,
@@ -296,7 +375,7 @@ export class Participant extends ClientModel {
 
   /**
    * Store a participant's participantId, so it can later be re-used via
-   * client.getParticipant().
+   * {@link Client.getParticipant}.
    * @returns true if the participantId was stored successfully
    */
   storeParticipantId(): boolean {
@@ -304,9 +383,13 @@ export class Participant extends ClientModel {
   }
 }
 
-export type SessionResponseOptions = Omit<ClientResponseOptions, "sessionId">;
-
-export class Session extends ClientModel {
+/**
+ * A world-wide-lab session, corresponding to a person's participation in a
+ * study. Use this class to capture responses.
+ *
+ * @public
+ */
+export class Session extends _ClientModel {
   public participant?: Participant;
 
   constructor(
@@ -319,7 +402,7 @@ export class Session extends ClientModel {
   /**
    * Create a new Response.
    */
-  response(opts: SessionResponseOptions): Promise<boolean> {
+  response(opts: Omit<ClientResponseOptions, "sessionId">): Promise<boolean> {
     const createResponseOptions = { sessionId: this.sessionId, ...opts };
     return this.clientInstance.createResponse(createResponseOptions);
   }
@@ -337,7 +420,7 @@ export class Session extends ClientModel {
 
   /**
    * Update the session's meta-data.
-   * @param data The data to update. Can contain privateInfo and/or publicInfo.
+   * @param data - The data to update. Can contain privateInfo and/or publicInfo.
    *   The publicInfo can be retrieved later on without authentication, the
    *   privateInfo can only be downlaoded later on by the researcher.
    */
@@ -354,7 +437,7 @@ export class Session extends ClientModel {
    * Retrieve public meta-data for a session
    * @returns The session's publicInfo meta data
    */
-  getPublicInfo(): Promise<{ publicInfo: ObjectWithData }> {
+  getPublicInfo(): Promise<{ publicInfo: object }> {
     return this.clientInstance.call("GET", `/session/${this.sessionId}`);
   }
 

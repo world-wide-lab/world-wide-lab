@@ -14,8 +14,9 @@ export default defineConfig({
 
     nav: [
       { text: "Home", link: "/" },
-      { text: "About", link: "/guides/what-is-world-wide-lab" },
       { text: "Get Started", link: "/guides/getting-started" },
+      { text: "About", link: "/guides/what-is-world-wide-lab" },
+      { text: "Reference", link: "/reference/" },
     ],
 
     sidebar: [
@@ -58,8 +59,17 @@ export default defineConfig({
     ],
 
     editLink: {
-      pattern:
-        "https://github.com/world-wide-lab/world-wide-lab/edit/main/docs/:path",
+      pattern: ({ filePath }) => {
+        if (filePath.startsWith("reference/")) {
+          const basePath = filePath
+            .replace("reference/", "")
+            .replace("index.md", "")
+            .replace(".md", "")
+            .split(".")[0];
+          return `https://github.com/world-wide-lab/world-wide-lab/edit/main/packages/${basePath}`;
+        }
+        return `https://github.com/world-wide-lab/world-wide-lab/edit/main/docs/${filePath}`;
+      },
       text: "Edit this page on GitHub",
     },
   },
