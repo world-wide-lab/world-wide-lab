@@ -4,13 +4,16 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress",
-    "build": "vitepress build",
-    "preview": "vitepress preview",
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "build": "npm run ref && vitepress build",
+    "preview": "npm run build && vitepress preview",
+    "ref": "npm run ref:extract-client && npm run ref:extract-jsPsych && npm run ref:document",
+    "ref:extract-client": "npm run build --prefix ../packages/client && api-extractor run --local -c ../packages/client/api-extractor.jsonc",
+    "ref:extract-jsPsych": "npm run build --prefix ../packages/integration-jsPsych && api-extractor run --local -c ../packages/integration-jsPsych/api-extractor.jsonc",
+    "ref:document": "api-documenter markdown --input-folder=./temp/ --output-folder=./reference"
   },
   "devDependencies": {
+    "@microsoft/api-documenter": "^7.24.0",
+    "@microsoft/api-extractor": "^7.42.3",
     "vitepress": "1.0.0-rc.45",
     "vue": "^3.4.21"
   },

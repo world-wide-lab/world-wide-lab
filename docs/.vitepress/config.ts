@@ -14,8 +14,9 @@ export default defineConfig({
 
     nav: [
       { text: "Home", link: "/" },
-      { text: "About", link: "/guides/what-is-world-wide-lab" },
       { text: "Get Started", link: "/guides/getting-started" },
+      { text: "About", link: "/guides/what-is-world-wide-lab" },
+      { text: "Reference", link: "/reference/" },
     ],
 
     sidebar: [
