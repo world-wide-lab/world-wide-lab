@@ -300,6 +300,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       jsPsychWorldWideLab.save(undefined, data);
 
       // Call the original function (if it exists)
+      // biome-ignore lint/style/noArguments: we do want to use *all* arguments
       return originalOnTrialFinish?.(...arguments);
     };
     const originalOnFinish = jsPsychOptions.on_finish;
@@ -307,6 +308,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       jsPsychWorldWideLab.onExperimentFinish();
 
       // Call the original function (if it exists)
+      // biome-ignore lint/style/noArguments: we do want to use *all* arguments
       return originalOnFinish?.(...arguments);
     };
 

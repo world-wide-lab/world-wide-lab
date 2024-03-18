@@ -6,6 +6,7 @@ config({ path: ".env.playwright" });
 
 // Remove platform name from snapshots
 // see https://github.com/microsoft/playwright/issues/7575
+// biome-ignore lint/correctness/noEmptyPattern: Using descruturing is forced by playwright
 test.beforeEach(async ({}, testInfo) => {
   testInfo.snapshotPath = (name: string) =>
     `${testInfo.file}-snapshots/${name}`;

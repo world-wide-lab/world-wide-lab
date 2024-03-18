@@ -1,4 +1,4 @@
-import type Server from "http";
+import type { Server as HTTPServer } from "http";
 import app from "./app";
 import config from "./config";
 import sequelize from "./db";
@@ -9,9 +9,9 @@ import { logger } from "./logger";
 import { ensureStudiesExist } from "./db/ensureStudiesExist";
 
 // Export Server type for convenience
-export type Server = Server.Server;
+export type Server = HTTPServer;
 
-async function init(): Promise<Server.Server> {
+async function init(): Promise<HTTPServer> {
   logger.verbose("Initializing with configuration", { config });
 
   // Check the database

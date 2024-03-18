@@ -26,6 +26,7 @@ const ShowJsonProp = (props: any) => {
   // Pretty print the object
   const formattedObject = JSON.stringify(object, undefined, 2);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Automatic detection of dependencies is not correct
   useEffect(() => {
     refreshHighlighting();
   }, [formattedObject]);

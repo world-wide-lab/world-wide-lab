@@ -91,6 +91,7 @@ session.finish();
 `,
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Automatic detection of dependencies is not correct
   useEffect(() => {
     refreshHighlighting();
 
@@ -125,7 +126,7 @@ session.finish();
       {action.layout
         ? action.layout.map((layoutElement, i) => (
             <LayoutElementRenderer
-              // eslint-disable-next-line react/no-array-index-key
+              // biome-ignore lint/suspicious/noArrayIndexKey: Based on AdminJS source code
               key={i}
               layoutElement={layoutElement}
               {...props}
