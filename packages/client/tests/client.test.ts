@@ -120,11 +120,12 @@ describe("Client", () => {
     expect(responseJson.length).toBe(2);
 
     const variyngKeys = ["responseId", "sessionId", "updatedAt", "createdAt"];
-    responseJson.forEach((response: any) => {
-      variyngKeys.forEach((key) => {
+
+    for (const response of responseJson) {
+      for (const key of variyngKeys) {
         response[key] = "overwritten-as-it-varies";
-      });
-    });
+      }
+    }
     expect(responseJson).toMatchSnapshot();
     expect(Object.keys(responseJson)).toMatchSnapshot();
   });

@@ -12,7 +12,6 @@
         "noExplicitAny": "off"
       },
       "complexity": {
-        "noForEach": "off",
         "noBannedTypes": "off"
       }
     }
