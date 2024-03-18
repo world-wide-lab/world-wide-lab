@@ -8,6 +8,7 @@ class AppError extends Error {
     public status: number,
   ) {
     super(message);
+    this.name = "AppError";
   }
 }
 
@@ -17,9 +18,12 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   logger.error(error);
 
   let status = 500;
-  const message = error.message || "Server Error. Please check the server log.";
+  let type = error.name || "ServerError";
+  const message =
+    error.message || "Unspecified Server Error. Please check the server log.";
   if (error instanceof ValidationError) {
     status = 400;
+    type = "ValidationError";
   } else if (error instanceof AppError) {
     status = error.status;
   }
@@ -31,7 +35,10 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     );
     return;
   }
-  res.status(status).json({ error: message });
+  res.status(status).json({
+    type: type,
+    error: message,
+  });
 };
 
 export { AppError, errorHandler };

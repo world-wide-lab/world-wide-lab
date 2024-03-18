@@ -604,7 +604,7 @@ routerPublic.get(
       } else if (countType === "finished") {
         where.finished = true;
       } else {
-        throw new Error(`Unknown countType: ${countType}`);
+        throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
       // TODO: Add caching or even a self-updating table or something to increase efficiency

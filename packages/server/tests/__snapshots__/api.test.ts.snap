@@ -3,12 +3,14 @@
 exports[`API Routes GET /participant/:participantId should fail when the participant does not exist 1`] = `
 {
   "error": "Unknown participantId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes GET /participant/:participantId should fail when the participant is invalid 1`] = `
 {
   "error": "participantId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 
@@ -24,12 +26,14 @@ exports[`API Routes GET /participant/:participantId should retrieve public infor
 exports[`API Routes GET /session/:sessionId should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes GET /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 
@@ -45,12 +49,14 @@ exports[`API Routes GET /session/:sessionId should retrieve public information a
 exports[`API Routes GET /study/:studyId/count/:countType should fail when the countType does not exist 1`] = `
 {
   "error": "Unknown countType: non-existent-type",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes GET /study/:studyId/count/:countType should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",
+  "type": "AppError",
 }
 `;
 
@@ -147,24 +153,28 @@ exports[`API Routes GET /study/list should return a list of studies 1`] = `
 exports[`API Routes POST /response should fail to submit a response when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes POST /response should fail to submit a response when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 
 exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = `
 {
   "error": "payload must be a \`object\` type, but the final value was: \`"this-is-not-json"\`.",
+  "type": "ValidationError",
 }
 `;
 
 exports[`API Routes POST /session missing studyId should lead to an error 1`] = `
 {
   "error": "studyId is a required field",
+  "type": "ValidationError",
 }
 `;
 
@@ -182,18 +192,21 @@ exports[`API Routes POST /session should start a new session with extra info 1`]
 exports[`API Routes POST /session should validate extra info 1`] = `
 {
   "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
+  "type": "ValidationError",
 }
 `;
 
 exports[`API Routes POST /session/finish should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes POST /session/finish should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 
@@ -206,18 +219,21 @@ exports[`API Routes POST /session/finish should mark a session as finished 1`] =
 exports[`API Routes POST /study should validate extra info 1`] = `
 {
   "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
+  "type": "ValidationError",
 }
 `;
 
 exports[`API Routes PUT /participant/:participantId should fail when the participant does not exist 1`] = `
 {
   "error": "Unknown participantId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes PUT /participant/:participantId should fail when the participant is invalid 1`] = `
 {
   "error": "participantId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 
@@ -230,12 +246,14 @@ exports[`API Routes PUT /participant/:participantId should update an existing pa
 exports[`API Routes PUT /session/:sessionId should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
+  "type": "AppError",
 }
 `;
 
 exports[`API Routes PUT /session/:sessionId should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
+  "type": "ValidationError",
 }
 `;
 

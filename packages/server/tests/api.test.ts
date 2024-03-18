@@ -419,7 +419,7 @@ describe("API Routes", () => {
         .get(`/v1/study/${studyId}/count/non-existent-type`)
         .send();
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
 
