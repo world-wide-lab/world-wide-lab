@@ -1,20 +1,17 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import Sequelize from "sequelize";
 
 import { pipeline } from "node:stream/promises";
 import type { Client } from "pg";
 import { to as copyTo } from "pg-copy-streams";
 
-import { ValidationError, date, number, object, string } from "yup";
+import { date, number, object, string } from "yup";
 import config from "../config";
 import sequelize from "../db";
 import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
-import {
-  UnknownTableError,
-  findModelByTableName,
-  runReplication,
-} from "../db/replication";
+import { findModelByTableName, runReplication } from "../db/replication";
 import { sanitizeStudyId } from "../db/util";
+import { AppError } from "../errors";
 import { requireAuthMiddleware } from "./authMiddleware";
 
 const routerProtectedWithoutAuthentication = express.Router();
@@ -75,7 +72,7 @@ const routerProtectedWithoutAuthentication = express.Router();
  */
 routerProtectedWithoutAuthentication.get(
   "/study/:studyId/data/:dataType/:format",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { studyId, dataType, format } = object({
         studyId: string().required(),
@@ -200,8 +197,7 @@ routerProtectedWithoutAuthentication.get(
         throw new Error("Missing dataQueryFunction");
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to retrieve study data" });
+      next(error);
     }
   },
 );
@@ -267,14 +263,13 @@ routerProtectedWithoutAuthentication.get(
  */
 routerProtectedWithoutAuthentication.get(
   "/replication/source/get-table/:table/",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (config.replication.role !== "source") {
-        res.status(418).json({
-          error:
-            "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
-        });
-        return;
+        throw new AppError(
+          "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
+          418,
+        );
       }
 
       const { table } = req.params;
@@ -310,23 +305,7 @@ routerProtectedWithoutAuthentication.get(
       // Do a pagninated (or chunked) export of the data
       await paginatedExport(res, dataQueryFunction, "json", limit, offset);
     } catch (error) {
-      if (error instanceof ValidationError) {
-        res.status(400).json({ error: error.message });
-      } else if (error instanceof UnknownTableError) {
-        res.status(404).json({ error: error.message });
-      } else {
-        console.error(error);
-        if (res.headersSent) {
-          // Header has already been sent, we can not return JSON as a type
-          res.send(
-            "ERROR: Failed to export table for replication after response has been partially constructed.",
-          );
-        } else {
-          res
-            .status(500)
-            .json({ error: "Failed to export table for replication" });
-        }
-      }
+      next(error);
     }
   },
 );
@@ -357,36 +336,20 @@ routerProtectedWithoutAuthentication.get(
  */
 routerProtectedWithoutAuthentication.get(
   "/replication/destination/update",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (config.replication.role !== "destination") {
-        res.status(418).json({
-          error:
-            "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
-        });
-        return;
+        throw new AppError(
+          "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
+          418,
+        );
       }
 
       await runReplication();
 
       res.status(200).json({ message: "Success!" });
     } catch (error) {
-      if (error instanceof ValidationError) {
-        res.status(400).json({ error: error.message });
-      } else if (error instanceof Error && error.name === "UnknownTableError") {
-        res.status(404).json({ error: error.message });
-      } else {
-        console.error(error);
-        if (res.headersSent) {
-          // Header has already been sent, we can not return JSON as a type
-          res.send("ERROR: Failed to perform replication update.");
-        } else {
-          res.status(500).json({
-            error:
-              "Failed to perform replication update. Check the error message in the server log.",
-          });
-        }
-      }
+      next(error);
     }
   },
 );

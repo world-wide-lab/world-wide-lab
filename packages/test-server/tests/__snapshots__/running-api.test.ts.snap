@@ -44,7 +44,7 @@ exports[`API Routes GET /session/:sessionId should retrieve public information a
 
 exports[`API Routes GET /study/:studyId/count/:countType should fail when the countType does not exist 1`] = `
 {
-  "error": "Failed to retrieve study count",
+  "error": "Unknown countType: non-existent-type",
 }
 `;
 
