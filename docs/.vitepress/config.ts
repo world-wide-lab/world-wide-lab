@@ -12,6 +12,10 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     logo: "/img/favicon.png",
 
+    search: {
+      provider: "local",
+    },
+
     nav: [
       { text: "Home", link: "/" },
       { text: "Get Started", link: "/guides/getting-started" },
