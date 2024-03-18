@@ -46,11 +46,12 @@ export const dashboardHandler: PageHandler = async (
     // Get date as YYYY-MM-DD
     const currentDateString = currentDate.toISOString().split("T")[0];
 
-    let entry, entryToAdd;
+    let entry;
+    let entryToAdd;
     if (sessionCounts.length > 0) {
       entry = sessionCounts[0];
     }
-    if (entry && entry.createdAtDate == currentDateString) {
+    if (entry && entry.createdAtDate === currentDateString) {
       entryToAdd = entry;
       // Remove the just added entry from array
       sessionCounts.shift();

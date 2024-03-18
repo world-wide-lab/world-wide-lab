@@ -14,6 +14,7 @@ exports[`API Routes GET /participant/:participantId should fail when the partici
 
 exports[`API Routes GET /participant/:participantId should retrieve public information about a participant 1`] = `
 {
+  "participantId": "overwritten",
   "publicInfo": {
     "participantHasDoneSomething": true,
   },
@@ -37,6 +38,7 @@ exports[`API Routes GET /session/:sessionId should retrieve public information a
   "publicInfo": {
     "dolor": "sit",
   },
+  "sessionId": "overwritten",
 }
 `;
 

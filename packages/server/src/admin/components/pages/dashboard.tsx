@@ -128,6 +128,7 @@ export const Dashboard: React.FC = () => {
 
   // Retrieve data from dashboard handler
   const api = new ApiClient();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit dependencies are required to avoid infinite loop
   useEffect(() => {
     api
       .getDashboard()
@@ -163,7 +164,7 @@ export const Dashboard: React.FC = () => {
             <Box>
               <CardLabel>Started / Finished Sessions this Week</CardLabel>
             </Box>
-            <DashboardLineChart data={chartData}></DashboardLineChart>
+            <DashboardLineChart data={chartData} />
           </Card>
         </Box>
         <Box width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">
@@ -178,7 +179,7 @@ export const Dashboard: React.FC = () => {
           </Card>
         </Box>
         {boxes.map((box, index) => (
-          // eslint-disable-next-line react/no-array-index-key
+          // biome-ignore lint/suspicious/noArrayIndexKey: Box order should never change, else box IDs will need to be added
           <Box key={index} width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">
             <Card
               as="a"
@@ -201,7 +202,11 @@ export const Dashboard: React.FC = () => {
         <Box width={[1, 1, 1 / 2]} p="lg">
           <Card flex>
             <Box flexShrink={0}>
-              <img width="72" src="/static/favicon.png" />
+              <img
+                width="72"
+                src="/static/favicon.png"
+                alt="World-Wide-Lab Logo"
+              />
             </Box>
             <Box ml="xl">
               {isElectron === undefined ? (

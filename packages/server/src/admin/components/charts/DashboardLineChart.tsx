@@ -10,13 +10,11 @@ export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
   const labels: string[] = [];
   const n_total: number[] = [];
   const n_finished: number[] = [];
-  data.forEach(
-    (row: { createdAtDate: string; n_total: number; n_finished: number }) => {
-      labels.push(row.createdAtDate);
-      n_total.push(row.n_total);
-      n_finished.push(row.n_finished);
-    },
-  );
+  for (const row of data) {
+    labels.push(row.createdAtDate);
+    n_total.push(row.n_total);
+    n_finished.push(row.n_finished);
+  }
 
   return (
     <ReactFrappeChart

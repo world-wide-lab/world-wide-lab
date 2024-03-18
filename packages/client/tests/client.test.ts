@@ -82,7 +82,7 @@ describe("Client", () => {
     const studyId = "studyId-check-response-storage";
 
     // Create a new study
-    const createStudyResponseJson = await client.call("POST", `/study/`, {
+    const createStudyResponseJson = await client.call("POST", "/study/", {
       studyId,
     });
     expect(createStudyResponseJson.studyId).toBe(studyId);
@@ -120,11 +120,12 @@ describe("Client", () => {
     expect(responseJson.length).toBe(2);
 
     const variyngKeys = ["responseId", "sessionId", "updatedAt", "createdAt"];
-    responseJson.forEach((response: any) => {
-      variyngKeys.forEach((key) => {
+
+    for (const response of responseJson) {
+      for (const key of variyngKeys) {
         response[key] = "overwritten-as-it-varies";
-      });
-    });
+      }
+    }
     expect(responseJson).toMatchSnapshot();
     expect(Object.keys(responseJson)).toMatchSnapshot();
   });

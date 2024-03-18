@@ -30,8 +30,8 @@ const StudyShowAction: React.FC<ActionProps> = (props) => {
   const properties = resource.showProperties;
 
   const studyId = record?.params?.studyId;
-  const escapedStudyId = "'" + studyId + "'";
-  const escapedUrl = "'" + window.location.origin + "'";
+  const escapedStudyId = `'${studyId}'`;
+  const escapedUrl = `'${window.location.origin}'`;
 
   const formatOptions = [
     { value: "jsPsych-integration", label: "Using the jsPsych Integration" },
@@ -91,6 +91,7 @@ session.finish();
 `,
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Automatic detection of dependencies is not correct
   useEffect(() => {
     refreshHighlighting();
 
@@ -125,7 +126,7 @@ session.finish();
       {action.layout
         ? action.layout.map((layoutElement, i) => (
             <LayoutElementRenderer
-              // eslint-disable-next-line react/no-array-index-key
+              // biome-ignore lint/suspicious/noArrayIndexKey: Based on AdminJS source code
               key={i}
               layoutElement={layoutElement}
               {...props}
@@ -149,7 +150,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="View"></Icon> View Sessions in this Study
+          <Icon icon="View" /> View Sessions in this Study
         </Button>
         &nbsp; &nbsp;
         <Button
@@ -158,7 +159,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="Download"></Icon> Download Data from this Study
+          <Icon icon="Download" /> Download Data from this Study
         </Button>
       </Box>
 
@@ -180,7 +181,7 @@ session.finish();
       </Box>
 
       <Box>
-        <CodeHighlightingStyles></CodeHighlightingStyles>
+        <CodeHighlightingStyles />
         <pre>
           <Code>
             {format &&

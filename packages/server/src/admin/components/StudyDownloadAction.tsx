@@ -35,11 +35,11 @@ const MyNewAction = (props: ActionProps) => {
 
   const filename = useMemo(
     () => `wwl--${studyId}--data--${dataType.value}.${format.value}`,
-    [dataType, format],
+    [studyId, dataType, format],
   );
   const url = useMemo(
     () => `/admin/wwl/study/${studyId}/data/${dataType.value}/${format.value}`,
-    [dataType, format],
+    [studyId, dataType, format],
   );
 
   // do something with the props and render action

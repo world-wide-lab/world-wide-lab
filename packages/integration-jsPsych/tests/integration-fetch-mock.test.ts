@@ -56,11 +56,10 @@ global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
     return Promise.resolve({
       json: () => Promise.resolve(data),
     });
-  } else {
-    const reason = `No mock response for "${endpoint}" "${method}"`;
-    console.warn(reason);
-    return Promise.reject(reason);
   }
+  const reason = `No mock response for "${endpoint}" "${method}"`;
+  console.warn(reason);
+  return Promise.reject(reason);
 }) as jest.MockedFunction<typeof fetch>;
 
 function resetJsPsychWorldWideLab() {

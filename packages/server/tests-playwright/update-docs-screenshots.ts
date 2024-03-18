@@ -10,13 +10,13 @@ async function goAndTakeScreenshot(
   url: string,
   additionalActions: (page: Page) => Promise<void> = async () => {},
 ) {
-  await page.goto("/" + url);
+  await page.goto(`/${url}`);
   await additionalActions(page);
   await takeScreenshot(page, url);
 }
 
 async function takeScreenshot(page: Page, url: string) {
-  const filename = url.replace(/\//g, "_") + ".png";
+  const filename = `${url.replace(/\//g, "_")}.png`;
   await page.screenshot({ path: docsDir + filename });
 }
 

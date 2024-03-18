@@ -1,4 +1,4 @@
-import type Server from "http";
+import type { Server as HTTPServer } from "http";
 import app from "./app";
 import config from "./config";
 import sequelize from "./db";
@@ -9,16 +9,16 @@ import { logger } from "./logger";
 import { ensureStudiesExist } from "./db/ensureStudiesExist";
 
 // Export Server type for convenience
-export type Server = Server.Server;
+export type Server = HTTPServer;
 
-async function init(): Promise<Server.Server> {
-  logger.verbose(`Initializing with configuration`, { config });
+async function init(): Promise<HTTPServer> {
+  logger.verbose("Initializing with configuration", { config });
 
   // Check the database
   try {
-    logger.info(`Checking database connection...`);
+    logger.info("Checking database connection...");
     await sequelize.authenticate();
-    logger.info(`Database connection: OK`);
+    logger.info("Database connection: OK");
   } catch (error) {
     logger.error(
       `Unable to connect to the database: ${(error as Error).message}`,
@@ -26,9 +26,9 @@ async function init(): Promise<Server.Server> {
     process.exit(1);
   }
   try {
-    logger.info(`Checking for migrations...`);
+    logger.info("Checking for migrations...");
     await up();
-    logger.info(`Database migrations: OK`);
+    logger.info("Database migrations: OK");
   } catch (error) {
     logger.error(`Unable to apply migrations: ${(error as Error).message}`);
     process.exit(1);

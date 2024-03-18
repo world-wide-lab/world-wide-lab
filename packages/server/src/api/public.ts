@@ -144,7 +144,7 @@ routerPublic.put(
       const updatedRows = await sequelize.models.Participant.update(newData, {
         where: participantWhere,
       });
-      if (updatedRows[0] == 1) {
+      if (updatedRows[0] === 1) {
         res.status(200).send(successfulResponsePayload);
       } else {
         res.status(400).json({ error: "Unknown participantId" });
@@ -328,7 +328,7 @@ routerPublic.post("/session", async (req: Request, res: Response) => {
     requestParams.metadata = {
       wwl_version: config.version,
       userAgent: req.headers["user-agent"],
-      referer: req.headers["referer"],
+      referer: req.headers.referer,
       client: requestParams.clientMetadata,
     };
 
@@ -387,7 +387,7 @@ routerPublic.post("/session/finish", async (req: Request, res: Response) => {
       { finished: true },
       { where: sessionWhere },
     );
-    if (updatedRows[0] == 1) {
+    if (updatedRows[0] === 1) {
       res.status(200).send(successfulResponsePayload);
     } else {
       res.status(400).json({ error: "Unknown sessionId" });
@@ -447,7 +447,7 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
     const updatedRows = await sequelize.models.Session.update(sessionParams, {
       where: sessionWhere,
     });
-    if (updatedRows[0] == 1) {
+    if (updatedRows[0] === 1) {
       res.status(200).send(successfulResponsePayload);
     } else {
       res.status(400).json({ error: "Unknown sessionId" });

@@ -21,40 +21,39 @@ function initializeRouter(admin: AdminJS) {
     // Don't use authentication
     const adminRouter = AdminJSExpress.buildRouter(admin);
     return adminRouter;
-  } else {
-    // Use authentication
-
-    // Initialize session store
-    const SequelizeStore = connect(session.Store);
-    const sessionStore = new SequelizeStore({
-      db: sequelize,
-      table: "InternalAdminSession",
-    });
-
-    // Initialize router w/ authentication
-    const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
-      admin,
-      {
-        authenticate,
-        cookieName: "adminjs",
-        cookiePassword: config.admin.auth.sessionSecret as string,
-      },
-      null,
-      {
-        store: sessionStore,
-        resave: true,
-        saveUninitialized: true,
-        secret: config.admin.auth.sessionSecret as string,
-        cookie: {
-          httpOnly: process.env.NODE_ENV === "production",
-          secure: false,
-        },
-        proxy: true,
-        name: "adminjs.sid",
-      },
-    );
-    return adminRouter;
   }
+  // Use authentication
+
+  // Initialize session store
+  const SequelizeStore = connect(session.Store);
+  const sessionStore = new SequelizeStore({
+    db: sequelize,
+    table: "InternalAdminSession",
+  });
+
+  // Initialize router w/ authentication
+  const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+    admin,
+    {
+      authenticate,
+      cookieName: "adminjs",
+      cookiePassword: config.admin.auth.sessionSecret as string,
+    },
+    null,
+    {
+      store: sessionStore,
+      resave: true,
+      saveUninitialized: true,
+      secret: config.admin.auth.sessionSecret as string,
+      cookie: {
+        httpOnly: process.env.NODE_ENV === "production",
+        secure: false,
+      },
+      proxy: true,
+      name: "adminjs.sid",
+    },
+  );
+  return adminRouter;
 }
 
 export { initializeRouter };

@@ -5,9 +5,8 @@ function getValueFromEnv(key: string): string | undefined {
   // This catches undefined, null and ""
   if (!value) {
     return undefined;
-  } else {
-    return value;
   }
+  return value;
 }
 
 function getStringFromEnv(key: string): string;
@@ -24,9 +23,8 @@ function getStringFromEnv(
   if (value === undefined) {
     if (defaultValue === undefined) {
       throw new Error(`${key} must not be empty!`);
-    } else {
-      return defaultValue;
     }
+    return defaultValue;
   }
   return value;
 }
@@ -39,13 +37,13 @@ function getBooleanFromEnv(key: string, defaultValue = false): boolean {
   const stringValue = value.toLowerCase();
   if (stringValue === "true") {
     return true;
-  } else if (stringValue === "false") {
-    return false;
-  } else {
-    throw new Error(
-      `Invalid value for ${key}: ${value}. Only "true" and "false" are supported.`,
-    );
   }
+  if (stringValue === "false") {
+    return false;
+  }
+  throw new Error(
+    `Invalid value for ${key}: ${value}. Only "true" and "false" are supported.`,
+  );
 }
 
 function getArrayFromEnv(key: string): string[] {
@@ -155,7 +153,7 @@ if (config.admin.enabled && config.admin.auth.enabled) {
     !config.admin.auth.default_admin_credentials.password
   ) {
     throw new Error(
-      `When authentication for Admin UI is enabled, credentials and session secret have to be set as well.`,
+      "When authentication for Admin UI is enabled, credentials and session secret have to be set as well.",
     );
   }
 }

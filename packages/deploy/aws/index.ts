@@ -19,11 +19,11 @@ const requiredEnvVars = [
   "WWL_ADMIN_AUTH_SESSION_SECRET",
   "WWL_DEFAULT_API_KEY",
 ];
-requiredEnvVars.forEach((envVar) => {
+for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     throw new Error(`Please set ${envVar}`);
   }
-});
+}
 
 // Database
 const db = new aws.rds.Instance("wwl-database", {
