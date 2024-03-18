@@ -128,6 +128,7 @@ export const Dashboard: React.FC = () => {
 
   // Retrieve data from dashboard handler
   const api = new ApiClient();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit dependencies are required to avoid infinite loop
   useEffect(() => {
     api
       .getDashboard()
@@ -142,7 +143,7 @@ export const Dashboard: React.FC = () => {
         // Handle errors here
         console.error("Error retrieving dashboard data", error);
       });
-  });
+  }, []);
 
   return (
     <Box>
