@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
+import { ForeignKeyConstraintError } from "sequelize";
 import config from "../config";
 import sequelize from "../db";
 import { getDbVersion } from "../db/replication";
+import { AppError } from "../errors";
 import {
   CreateSessionParams,
   ParticipantParams,
@@ -33,9 +35,12 @@ const successfulResponsePayload = { success: true };
  *       '200':
  *         description: API is running
  */
-routerPublic.get("/", async (req: Request, res: Response) => {
-  res.type("text").send("World-Wide-Lab API: ✅");
-});
+routerPublic.get(
+  "/",
+  async (req: Request, res: Response, next: NextFunction) => {
+    res.type("text").send("World-Wide-Lab API: ✅");
+  },
+);
 
 /**
  * @openapi
@@ -48,12 +53,19 @@ routerPublic.get("/", async (req: Request, res: Response) => {
  *       '200':
  *         description: Information returned successfully
  */
-routerPublic.get("/info", async (req: Request, res: Response) => {
-  res.type("json").send({
-    version: config.version,
-    db_version: await getDbVersion(),
-  });
-});
+routerPublic.get(
+  "/info",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.type("json").send({
+        version: config.version,
+        db_version: await getDbVersion(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * @openapi
@@ -79,26 +91,24 @@ routerPublic.get("/info", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create participant
  */
-routerPublic.post("/participant", async (req: Request, res: Response) => {
-  try {
-    const participantParams = participantSchema.validateSync(req.body);
-    const participant = (await sequelize.models.Participant.create(
-      participantParams,
-    )) as any as ParticipantParams;
-    res.json({
-      ...successfulResponsePayload,
+routerPublic.post(
+  "/participant",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const participantParams = participantSchema.validateSync(req.body);
+      const participant = (await sequelize.models.Participant.create(
+        participantParams,
+      )) as any as ParticipantParams;
+      res.json({
+        ...successfulResponsePayload,
 
-      participantId: participant.participantId,
-    });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create participant" });
+        participantId: participant.participantId,
+      });
+    } catch (error) {
+      next(error);
     }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -134,7 +144,7 @@ routerPublic.post("/participant", async (req: Request, res: Response) => {
  */
 routerPublic.put(
   "/participant/:participantId",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { participantId } = req.params;
       const newData = participantSchema.validateSync(req.body);
@@ -147,15 +157,10 @@ routerPublic.put(
       if (updatedRows[0] === 1) {
         res.status(200).send(successfulResponsePayload);
       } else {
-        res.status(400).json({ error: "Unknown participantId" });
+        throw new AppError("Unknown participantId", 400);
       }
     } catch (error) {
-      if (error instanceof ValidationError) {
-        res.status(400).json({ error: error.message });
-      } else {
-        console.error(error);
-        res.status(500).json({ error: "Failed to update participant" });
-      }
+      next(error);
     }
   },
 );
@@ -184,7 +189,7 @@ routerPublic.put(
  */
 routerPublic.get(
   "/participant/:participantId",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { participantId } = req.params;
       const participantWhere = fullParticipantSchema
@@ -197,15 +202,10 @@ routerPublic.get(
       if (participant) {
         res.status(200).json(participant.toJSON());
       } else {
-        res.status(400).json({ error: "Unknown participantId" });
+        throw new AppError("Unknown participantId", 400);
       }
     } catch (error) {
-      if (error instanceof ValidationError) {
-        res.status(400).json({ error: error.message });
-      } else {
-        console.error(error);
-        res.status(500).json({ error: "Failed to update participant" });
-      }
+      next(error);
     }
   },
 );
@@ -238,26 +238,24 @@ routerPublic.get(
  *       '500':
  *         description: Failed to create study
  */
-routerPublic.post("/study", async (req: Request, res: Response) => {
-  try {
-    const studyParams = studySchema.validateSync(req.body);
-    const study = (await sequelize.models.Study.create(
-      studyParams,
-    )) as any as StudyParams;
-    res.json({
-      ...successfulResponsePayload,
+routerPublic.post(
+  "/study",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const studyParams = studySchema.validateSync(req.body);
+      const study = (await sequelize.models.Study.create(
+        studyParams,
+      )) as any as StudyParams;
+      res.json({
+        ...successfulResponsePayload,
 
-      studyId: study.studyId,
-    });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create study" });
+        studyId: study.studyId,
+      });
+    } catch (error) {
+      next(error);
     }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -272,17 +270,19 @@ routerPublic.post("/study", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to retrieve study list.
  */
-routerPublic.get("/study/list", async (req: Request, res: Response) => {
-  try {
-    const studies = await sequelize.models.Study.findAll({
-      attributes: ["studyId"],
-    });
-    res.json(studies.map((record) => record.toJSON()));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to retrieve list of studies." });
-  }
-});
+routerPublic.get(
+  "/study/list",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const studies = await sequelize.models.Study.findAll({
+        attributes: ["studyId"],
+      });
+      res.json(studies.map((record) => record.toJSON()));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
  * @openapi
@@ -318,41 +318,39 @@ routerPublic.get("/study/list", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create session
  */
-routerPublic.post("/session", async (req: Request, res: Response) => {
-  try {
-    const requestParams: CreateSessionParams & {
-      clientMetadata?: {};
-    } = sessionCreationRequestSchema.validateSync(req.body);
+routerPublic.post(
+  "/session",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const requestParams: CreateSessionParams & {
+        clientMetadata?: {};
+      } = sessionCreationRequestSchema.validateSync(req.body);
 
-    // Generate metadata
-    requestParams.metadata = {
-      wwl_version: config.version,
-      userAgent: req.headers["user-agent"],
-      referer: req.headers.referer,
-      client: requestParams.clientMetadata,
-    };
+      // Generate metadata
+      requestParams.metadata = {
+        wwl_version: config.version,
+        userAgent: req.headers["user-agent"],
+        referer: req.headers.referer,
+        client: requestParams.clientMetadata,
+      };
 
-    // Keep only proper fields for the database
-    const sessionParams: CreateSessionParams =
-      sessionSchema.validateSync(requestParams);
-    const session = (await sequelize.models.Session.create(
-      sessionParams,
-    )) as any as SessionParams;
+      // Keep only proper fields for the database
+      const sessionParams: CreateSessionParams =
+        sessionSchema.validateSync(requestParams);
+      const session = (await sequelize.models.Session.create(
+        sessionParams,
+      )) as any as SessionParams;
 
-    res.json({
-      ...successfulResponsePayload,
+      res.json({
+        ...successfulResponsePayload,
 
-      sessionId: session.sessionId,
-    });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create session" });
+        sessionId: session.sessionId,
+      });
+    } catch (error) {
+      next(error);
     }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -378,29 +376,27 @@ routerPublic.post("/session", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to update session
  */
-routerPublic.post("/session/finish", async (req: Request, res: Response) => {
-  try {
-    const sessionWhere = fullSessionSchema
-      .pick(["sessionId"])
-      .validateSync(req.body);
-    const updatedRows = await sequelize.models.Session.update(
-      { finished: true },
-      { where: sessionWhere },
-    );
-    if (updatedRows[0] === 1) {
-      res.status(200).send(successfulResponsePayload);
-    } else {
-      res.status(400).json({ error: "Unknown sessionId" });
+routerPublic.post(
+  "/session/finish",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sessionWhere = fullSessionSchema
+        .pick(["sessionId"])
+        .validateSync(req.body);
+      const updatedRows = await sequelize.models.Session.update(
+        { finished: true },
+        { where: sessionWhere },
+      );
+      if (updatedRows[0] === 1) {
+        res.status(200).send(successfulResponsePayload);
+      } else {
+        throw new AppError("Unknown sessionId", 400);
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to update session" });
-    }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -434,33 +430,31 @@ routerPublic.post("/session/finish", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to update session
  */
-routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
-  try {
-    const { sessionId } = req.params;
-    const sessionWhere = fullSessionSchema
-      .pick(["sessionId"])
-      .validateSync({ sessionId });
-    const sessionParams = sessionSchema
-      .omit(["studyId", "participantId"])
-      .validateSync(req.body);
+routerPublic.put(
+  "/session/:sessionId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { sessionId } = req.params;
+      const sessionWhere = fullSessionSchema
+        .pick(["sessionId"])
+        .validateSync({ sessionId });
+      const sessionParams = sessionSchema
+        .omit(["studyId", "participantId"])
+        .validateSync(req.body);
 
-    const updatedRows = await sequelize.models.Session.update(sessionParams, {
-      where: sessionWhere,
-    });
-    if (updatedRows[0] === 1) {
-      res.status(200).send(successfulResponsePayload);
-    } else {
-      res.status(400).json({ error: "Unknown sessionId" });
+      const updatedRows = await sequelize.models.Session.update(sessionParams, {
+        where: sessionWhere,
+      });
+      if (updatedRows[0] === 1) {
+        res.status(200).send(successfulResponsePayload);
+      } else {
+        throw new AppError("Unknown sessionId", 400);
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to update session" });
-    }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -484,30 +478,28 @@ routerPublic.put("/session/:sessionId", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to retrieve session information.
  */
-routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
-  try {
-    const { sessionId } = req.params;
-    const sessionWhere = fullSessionSchema
-      .pick(["sessionId"])
-      .validateSync({ sessionId });
-    const session = await sequelize.models.Session.findOne({
-      where: sessionWhere,
-      attributes: ["sessionId", "publicInfo"],
-    });
-    if (session) {
-      res.status(200).json(session.toJSON());
-    } else {
-      res.status(400).json({ error: "Unknown sessionId" });
+routerPublic.get(
+  "/session/:sessionId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { sessionId } = req.params;
+      const sessionWhere = fullSessionSchema
+        .pick(["sessionId"])
+        .validateSync({ sessionId });
+      const session = await sequelize.models.Session.findOne({
+        where: sessionWhere,
+        attributes: ["sessionId", "publicInfo"],
+      });
+      if (session) {
+        res.status(200).json(session.toJSON());
+      } else {
+        throw new AppError("Unknown sessionId", 400);
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to update session" });
-    }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -541,31 +533,28 @@ routerPublic.get("/session/:sessionId", async (req: Request, res: Response) => {
  *       '500':
  *         description: Failed to create response
  */
-routerPublic.post("/response", async (req: Request, res: Response) => {
-  try {
-    const responseParams = responseSchema.validateSync(req.body);
-    const response = (await sequelize.models.Response.create(
-      responseParams,
-    )) as any as ResponseParams;
-    res.json({
-      ...successfulResponsePayload,
+routerPublic.post(
+  "/response",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const responseParams = responseSchema.validateSync(req.body);
+      const response = (await sequelize.models.Response.create(
+        responseParams,
+      )) as any as ResponseParams;
+      res.json({
+        ...successfulResponsePayload,
 
-      responseId: response.responseId,
-    });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      res.status(400).json({ error: error.message });
-    } else if (
-      error instanceof Error &&
-      error.name === "SequelizeForeignKeyConstraintError"
-    ) {
-      res.status(400).json({ error: "Unknown sessionId" });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create response" });
+        responseId: response.responseId,
+      });
+    } catch (error) {
+      if (error instanceof ForeignKeyConstraintError) {
+        next(new AppError("Unknown sessionId", 400));
+      } else {
+        next(error);
+      }
     }
-  }
-});
+  },
+);
 
 /**
  * @openapi
@@ -604,7 +593,7 @@ routerPublic.post("/response", async (req: Request, res: Response) => {
  */
 routerPublic.get(
   "/study/:studyId/count/:countType",
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const { studyId, countType } = req.params;
 
     try {
@@ -615,7 +604,7 @@ routerPublic.get(
       } else if (countType === "finished") {
         where.finished = true;
       } else {
-        throw new Error(`Unknown countType: ${countType}`);
+        throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
       // TODO: Add caching or even a self-updating table or something to increase efficiency
@@ -629,15 +618,13 @@ routerPublic.get(
           where: { studyId },
         });
         if (!study) {
-          res.status(400).json({ error: "Unknown studyId" });
-          return;
+          throw new AppError("Unknown studyId", 400);
         }
       }
 
       res.status(200).json({ count });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to retrieve study count" });
+      next(error);
     }
   },
 );

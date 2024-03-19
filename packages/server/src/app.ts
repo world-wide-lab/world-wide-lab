@@ -8,6 +8,7 @@ import api from "./api";
 import apiDocs from "./api-docs";
 import { routerProtectedWithoutAuthentication } from "./api/protected";
 import config from "./config";
+import { errorHandler } from "./errors";
 import { logger } from "./logger";
 
 const app = express();
@@ -68,5 +69,8 @@ if (config.admin.enabled) {
 
   app.use(admin.options.rootPath, adminRouter);
 }
+
+// Implement proper error handling
+app.use(errorHandler);
 
 export default app;

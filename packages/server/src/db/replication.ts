@@ -1,6 +1,7 @@
 import type { Model, ModelStatic } from "sequelize";
 import config from "../config";
 import sequelize from "../db";
+import { AppError } from "../errors";
 import { logger } from "../logger";
 import { getLatestMigration } from "./migrate";
 
@@ -8,9 +9,9 @@ const defaultRequestHeaders = {
   "User-Agent": `WWL Replication / ${config.version}`,
 };
 
-class UnknownTableError extends Error {
+class UnknownTableError extends AppError {
   constructor(message: string) {
-    super(message);
+    super(message, 404);
     this.name = "UnknownTableError";
   }
 }
