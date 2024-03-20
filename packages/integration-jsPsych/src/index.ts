@@ -31,7 +31,7 @@ type OnFinishParameters = {};
  *
  * @public
  */
-export interface SetupOptions {
+export type SetupOptions = {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
@@ -61,7 +61,7 @@ export interface SetupOptions {
     privateInfo?: object;
     publicInfo?: object;
   };
-}
+};
 
 /**
  * Options which will be passed to {@link https://www.jspsych.org/7.0/reference/jspsych/#initjspsych | initJsPsych()}.
