@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 Citizen Science Website</title>
+  <link rel="stylesheet" href="styles/bulma.min.css">
+  <link rel="stylesheet" href="styles/website-static.css">
+</head>
+
+<body>
+  <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item" href="index.html">
+          Citizen Science Website
+        </a>
+        <span class="navbar-burger" data-target="navbarMenuHeroA">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+      <div id="navbarMenuHeroA" class="navbar-menu">
+        <div class="navbar-end">
+          <!-- You can add any links you want up here -->
+          <!-- <a class="navbar-item" href="https://worldwidelab.org"> World-Wide-Lab </a> -->
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="study-frame">
+    <!-- iframe will be inserted here -->
+  </div>
+
+  <footer class="main-footer section">
+    <div class="content has-text-centered">
+      <p>
+        Powered by <a href="https://worldwidelab.org">World-Wide-Lab</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var studyUrl = urlParams.get('studyUrl');
+
+    // Validate URL
+    var error;
+    if (!studyUrl) {
+      error = 'No study URL provided. Please provide a study URL as a query parameter.';
+    } else if (studyUrl.startsWith('http') || studyUrl.startsWith('//')) {
+      error = 'Invalid study URL provided. Only links on the same domain are allowed.';
+    }
+
+    // Add to DOM
+    var content;
+    if (error) {
+      content = document.createElement('div');
+      content.classList.add('notification', 'is-danger', 'm-5')
+      content.innerText = error;
+    } else {
+      // Generate proper iframe
+      content = document.createElement('iframe');
+      content.src = studyUrl;
+      content.id = 'study-iframe';
+    }
+    document.getElementById('study-frame').appendChild(content);
+  </script>
+</body>
+
+</html>

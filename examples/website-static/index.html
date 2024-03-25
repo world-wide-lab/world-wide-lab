@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 Citizen Science Website</title>
+  <link rel="stylesheet" href="styles/bulma.min.css">
+  <link rel="stylesheet" href="styles/website-static.css">
+</head>
+
+<body>
+  <section class="hero block is-medium">
+    <div class="hero-background hero-background-1"></div>
+    <div class="hero-background hero-background-2"></div>
+
+    <div class="hero-head">
+      <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="container">
+          <div class="navbar-brand">
+            <span class="navbar-item">
+              Citizen Science Website
+            </span>
+            <span class="navbar-burger" data-target="navbarMenuHeroA">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </div>
+          <div id="navbarMenuHeroA" class="navbar-menu">
+            <div class="navbar-end">
+              <!-- You can add any links you want up here -->
+              <!-- <a class="navbar-item" href="https://worldwidelab.org"> World-Wide-Lab </a> -->
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="hero-body">
+      <div class="container has-text-centered">
+        <p class="title">Welcome to our Citizen Science Website!</p>
+        <p class="subtitle">This is a simple example website that you can use as a landing page for multiple studies.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section is-medium">
+    <div class="container">
+      <h1 class="title">Studies</h1>
+      <h2 class="subtitle">
+        Edit the <a href="config.js">config.js</a> to change the details of the Study and add more studies. Edit this site's <code>HTML</code> to change the other texts.
+      </h2>
+      <div class="fixed-grid has-1-cols-mobile">
+        <div class="grid" id="studies-container">
+          <!-- Studies will be added here -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="main-footer section">
+    <div class="content has-text-centered">
+      <p>
+        Powered by <a href="https://worldwidelab.org">World-Wide-Lab</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script>
+    if (window.studies) {
+      // Function to generate the HTML for a card each study
+      function generateStudiesHTML(studies) {
+        const container = document.getElementById("studies-container")
+
+        studies.forEach((study) => {
+          const cell = document.createElement('div')
+          cell.className = 'cell'
+
+          const link = document.createElement('a')
+          const url = study.useFrame ? `study-frame.html?studyUrl=${study.url}` : study.url
+          link.href = url
+
+          const card = document.createElement('div')
+          card.className = 'card'
+
+          const cardContent = document.createElement('div')
+          cardContent.className = 'card-content'
+
+          const media = document.createElement('div')
+          media.className = 'media'
+
+          // Only create the image elements if an image is provided
+          if (study.image) {
+            const mediaLeft = document.createElement('div')
+            mediaLeft.className = 'media-left'
+
+            const figure = document.createElement('figure')
+            figure.className = 'image is-128x128'
+
+            const img = document.createElement('img')
+            img.src = study.image
+            img.alt = 'Study logo'
+
+            figure.appendChild(img)
+            mediaLeft.appendChild(figure)
+            media.appendChild(mediaLeft)
+          }
+
+          const mediaContent = document.createElement('div')
+          mediaContent.className = 'media-content'
+
+          const title = document.createElement('p')
+          title.className = 'title'
+          title.textContent = study.title
+
+          const subtitle = document.createElement('p')
+          subtitle.className = 'subtitle'
+          subtitle.textContent = study.description
+
+          mediaContent.appendChild(title)
+          mediaContent.appendChild(subtitle)
+
+          media.appendChild(mediaContent)
+          cardContent.appendChild(media)
+
+          const cardFooter = document.createElement('footer')
+          cardFooter.className = 'card-footer'
+
+          // Only create the duration element if a duration is provided
+          if (study.duration) {
+            const footerItem = document.createElement('p')
+            footerItem.className = 'card-footer-item'
+
+            const span = document.createElement('span')
+            span.textContent = `~ ${ study.duration }`
+
+            footerItem.appendChild(span)
+            cardFooter.appendChild(footerItem)
+          }
+
+          card.appendChild(cardContent)
+          if (study.duration) {
+            card.appendChild(cardFooter)
+          }
+
+          link.appendChild(card)
+          cell.appendChild(link)
+
+          // Append the cell to the container
+          container.appendChild(cell)
+        })
+      }
+
+      // Call the function with the studies array
+      generateStudiesHTML(window.studies)
+    }
+  </script>
+</body>
+
+</html>
