@@ -114,9 +114,11 @@
       var correct_trials = trials.filter({ correct: true })
       var accuracy = Math.round(correct_trials.count() / trials.count() * 100)
       var rt = Math.round(correct_trials.select('rt').mean())
+      var sessionId = jsPsychWorldWideLab.ready ? jsPsychWorldWideLab.session.sessionId : 'Error getting SessionId';
 
       return `<p>You responded correctly on ${ accuracy }% of the trials.</p>
           <p>Your average response time was ${ rt }ms.</p>
+          <p>Your World-Wide-Lab Session ID is: ${ sessionId }.</p>
           <p>Press any key to complete the experiment. Thank you!</p>`
 
     }
