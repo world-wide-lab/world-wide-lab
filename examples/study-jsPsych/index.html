@@ -8,16 +8,22 @@
   <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.0.0"></script>
   <script src="https://unpkg.com/@jspsych/plugin-preload@1.0.0"></script>
   <link href="https://unpkg.com/jspsych@7.0.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+  <script src="https://unpkg.com/@world-wide-lab/integration-jspsych@0.3.2"></script>
 </head>
 
 <body></body>
 <script>
 
   /* initialize jsPsych */
-  var jsPsych = initJsPsych({
+  var jsPsych = jsPsychWorldWideLab.initJsPsych({
+    /* jsPsych Options */
     on_finish: function () {
       jsPsych.data.displayData()
     }
+  }, {
+    /* World-Wide-Lab Options (you need to update these to use your server and studyId!) */
+    url: 'http://localhost:8787/',
+    studyId: 'example'
   })
 
   /* create timeline */
