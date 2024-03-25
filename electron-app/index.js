@@ -1,7 +1,7 @@
 // Set environment variables
 require("./set-env");
 
-const { app, BrowserWindow } = require("electron");
+const { app, dialog, BrowserWindow } = require("electron");
 const { init } = require("@world-wide-lab/server/dist/init.js");
 
 // To prevent super slow start up
@@ -31,8 +31,14 @@ function openUrlInWindow() {
 }
 
 app.on("ready", async () => {
-  // Start server
-  await init();
+  try {
+    // Start server
+    await init();
+  } catch (error) {
+    console.error("Unhandled Error during Init: ", error);
+    dialog.showErrorBox("Error", error.message);
+    process.exit(1);
+  }
 
   createWindow(true);
 });
