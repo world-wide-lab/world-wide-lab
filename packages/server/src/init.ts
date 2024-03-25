@@ -23,7 +23,7 @@ async function init(): Promise<HTTPServer> {
     logger.error(
       `Unable to connect to the database: ${(error as Error).message}`,
     );
-    process.exit(1);
+    throw error;
   }
   try {
     logger.info("Checking for migrations...");
@@ -31,7 +31,7 @@ async function init(): Promise<HTTPServer> {
     logger.info("Database migrations: OK");
   } catch (error) {
     logger.error(`Unable to apply migrations: ${(error as Error).message}`);
-    process.exit(1);
+    throw error;
   }
 
   if (config.database.generateExampleData) {
