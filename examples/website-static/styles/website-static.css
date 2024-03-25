@@ -1,0 +1,62 @@
+/* Big hero element at the top of the landing page */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--bulma-border)
+}
+.hero-background {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  background-image: linear-gradient(135deg, #bd34fe, #41d1ff);
+  filter: blur(10vw);
+}
+.hero-background-1 {
+  right: 5%;
+  bottom: 10%;
+  transform: rotate(-15deg);
+}
+.hero-background-2 {
+  top: 15%;
+  left: 5%;
+  transform: rotate(-20deg);
+}
+
+/* Study Cards */
+.card {
+  border-color: var(--bulma-border);
+  border-style: solid;
+  border-width: 1px;
+  transition-duration: var(--bulma-duration);
+  transition-property: border-color, box-shadow, transform;
+}
+.card:hover {
+  --g: 40;
+  --a: 0.05;
+  border-color: #AAA;
+  box-shadow: 0 1em 2em 0 rgba(var(--g), var(--g), var(--g), var(--a)), 0 2em 4em 0 rgba(var(--g), var(--g), var(--g), var(--a));
+  transform: translateY(-.5em);
+}
+
+/* Layouting */
+/* Making sure the site always fills the whole page and the footer is at the bottom */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--bulma-border);
+}
+
+/* Study frame layouting */
+#study-frame {
+  flex-grow: 1;
+}
+#study-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
