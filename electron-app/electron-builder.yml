@@ -1,10 +1,15 @@
 appId: "com.worldwidelab.app"
 productName: "World-Wide-Lab"
 asar: true
+artifactName: "${productName}-${os}-${arch}.${ext}"
 directories:
   buildResources: resources
 mac:
-  target: dmg
+  target:
+    target: dmg
+    arch:
+      - x64
+      - arm64
 win:
   target: portable
 linux:
