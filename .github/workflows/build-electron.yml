@@ -9,7 +9,7 @@ on:
     #   - "v*"
 
 jobs:
-  release:
+  build-electron:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -39,10 +39,10 @@ jobs:
         run: npm run build
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: electron-app-${{ matrix.os }}
           path: |
-            electron-app/dist/*.exe  # For Windows
-            electron-app/dist/*.dmg  # For macOS
-            electron-app/dist/*.AppImage  # For Linux
+            electron-app/dist/*.exe
+            electron-app/dist/*.dmg
+            electron-app/dist/*.AppImage
