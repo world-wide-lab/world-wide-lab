@@ -3,3 +3,12 @@ productName: "World-Wide-Lab"
 asar: true
 directories:
   buildResources: resources
+mac:
+  target: dmg
+win:
+  target: portable
+linux:
+  target: AppImage
+  # There seems to be a bug where executableName
+  # does not default to productName on Linux
+  executableName: "World-Wide-Lab"
