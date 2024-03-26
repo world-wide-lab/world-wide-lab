@@ -1,4 +1,4 @@
-name: Build/release
+name: Create and release Electron App
 
 on:
   # Run manually
@@ -7,8 +7,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - feauture/electron-*
 
 
 jobs:
@@ -53,17 +51,17 @@ jobs:
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v1
         with:
-          name: my-app-linux
+          name: electron-app-linux
           path: dist-linux
 
       - name: Upload Mac Artifacts
         uses: actions/upload-artifact@v1
         with:
-          name: my-app-mac
+          name: electron-app-mac
           path: dist-mac
 
-      - name: Upload Win Artifacts
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v1
         with:
-          name: my-app-win
-          path: dist-win
+          name: electron-app-windows
+          path: dist-windows
