@@ -2,6 +2,11 @@
   "name": "@world-wide-lab/client",
   "version": "0.3.0",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/world-wide-lab/world-wide-lab.git",
+    "directory": "packages/client"
+  },
   "main": "dist/index.js",
   "scripts": {
     "prepack": "npm run build",

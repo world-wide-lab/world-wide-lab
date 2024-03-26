@@ -2,6 +2,11 @@
   "name": "@world-wide-lab/electron-app",
   "version": "0.3.1",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/world-wide-lab/world-wide-lab.git",
+    "directory": "electron-app"
+  },
   "main": "index.js",
   "scripts": {
     "dev": "electron .",

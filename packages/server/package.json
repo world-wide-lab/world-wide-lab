@@ -2,6 +2,11 @@
   "name": "@world-wide-lab/server",
   "version": "0.3.1",
   "description": "World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/world-wide-lab/world-wide-lab.git",
+    "directory": "packages/server"
+  },
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
