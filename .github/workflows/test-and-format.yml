@@ -1,19 +1,26 @@
-name: Run Tests & Build
+name: Run Tests and Check Formatting
 on: push
 jobs:
-  test-and-build:
+  test-and-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
       - name: Install modules
         run: npm ci
+
       - name: Build packages
         run: npm run build
+
       - name: Run tests
         run: npm test
+
       - name: Check code styling
         run: npx @biomejs/biome check .
