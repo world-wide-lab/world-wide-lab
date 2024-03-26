@@ -1,7 +1,7 @@
 // Set environment variables
 require("./set-env");
 
-const { app, dialog, BrowserWindow } = require("electron");
+const { app, dialog, shell, BrowserWindow } = require("electron");
 const { init } = require("@world-wide-lab/server/dist/init.js");
 
 // To prevent super slow start up
@@ -18,6 +18,11 @@ function createWindow(loadUrl = true) {
     autoHideMenuBar: true,
     useContentSize: true,
     resizable: true,
+  });
+  // Open external links (i.e. target="_blank") in the external browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
   });
   if (loadUrl) {
     openUrlInWindow();
