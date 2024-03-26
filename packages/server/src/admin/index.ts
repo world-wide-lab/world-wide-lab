@@ -245,6 +245,35 @@ const admin = new AdminJS({
         loginWelcome:
           "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
       },
+      resources: {
+        wwl_studies: {
+          actions: {
+            new: "Create New Study",
+            show: "Study Info",
+            edit: "Edit Study",
+            delete: "Delete Study",
+          },
+        },
+        wwl_participants: {
+          actions: {
+            show: "Participant Info",
+            edit: "Edit Participant",
+            delete: "Delete Participant",
+          },
+        },
+        wwl_sessions: {
+          actions: {
+            show: "Session Info",
+            edit: "Edit Session",
+            delete: "Delete Session",
+          },
+        },
+        wwl_responses: {
+          actions: {
+            show: "View Response",
+          },
+        },
+      },
     },
   },
 });
