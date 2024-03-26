@@ -5,6 +5,7 @@ import sequelize from "../db";
 import { columnComments } from "../db/models";
 import { Components, componentLoader } from "./components";
 import { dashboardHandler } from "./handlers/dashboard";
+import { viewSessionHandler } from "./handlers/session";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
@@ -146,6 +147,18 @@ const admin = new AdminJS({
           },
           edit: {
             isVisible: false,
+          },
+          show: {
+            isVisible: true,
+          },
+          viewResponses: {
+            actionType: "record",
+            component: false,
+            icon: "View",
+            handler: viewSessionHandler,
+          },
+          delete: {
+            isVIsible: true,
           },
         },
         properties: {
