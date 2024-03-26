@@ -5,9 +5,8 @@ on:
   workflow_dispatch:
   # Run for any new tag starting with "v" e.g. "v1.2.3"
   push:
-    tags:
-      - "v*"
-
+    # tags:
+    #   - "v*"
 
 jobs:
   release:
