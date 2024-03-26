@@ -108,6 +108,11 @@ const admin = new AdminJS({
           name: null,
           icon: "Group",
         },
+        actions: {
+          new: {
+            isAccessible: false,
+          },
+        },
         properties: {
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
@@ -143,22 +148,16 @@ const admin = new AdminJS({
         },
         actions: {
           new: {
-            isVisible: false,
+            isAccessible: false,
           },
           edit: {
-            isVisible: false,
-          },
-          show: {
-            isVisible: true,
+            isAccessible: false,
           },
           viewResponses: {
             actionType: "record",
             component: false,
             icon: "View",
             handler: viewSessionHandler,
-          },
-          delete: {
-            isVIsible: true,
           },
         },
         properties: {
@@ -202,10 +201,10 @@ const admin = new AdminJS({
         },
         actions: {
           new: {
-            isVisible: false,
+            isAccessible: false,
           },
           edit: {
-            isVisible: false,
+            isAccessible: false,
           },
         },
         properties: {
