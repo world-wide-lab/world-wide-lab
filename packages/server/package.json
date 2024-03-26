@@ -1,7 +1,7 @@
 {
   "name": "@world-wide-lab/server",
-  "version": "0.2.9",
-  "description": "",
+  "version": "0.3.0",
+  "description": "World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.",
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
