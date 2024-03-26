@@ -37,24 +37,11 @@ jobs:
         working-directory: ./electron-app
         run: npm run build
 
-      - name: Move Build Artifacts
-        shell: bash
-        run: ./electron-app/scripts/move-artifacts.sh
-
-      - name: Upload Linux Artifacts
-        uses: actions/upload-artifact@v1
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: electron-app-linux
-          path: dist-linux
-
-      - name: Upload Mac Artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: electron-app-mac
-          path: dist-mac
-
-      - name: Upload Windows Artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: electron-app-windows
-          path: dist-windows
+          name: electron-app-${{ matrix.os }}
+          path: |
+            electron-app/dist/*.exe  # For Windows
+            electron-app/dist/*.dmg  # For macOS
+            electron-app/dist/*.AppImage  # For Linux
