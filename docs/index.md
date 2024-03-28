@@ -7,7 +7,7 @@ hero:
   text: "Citizen Science for Everyone"
   tagline: Free and open-source application to collect, store and administer data from online experiments and studies.
   image:
-    src: /img/favicon_hd.png
+    src: /favicon_hd.png
     alt: logo
   actions:
     - theme: brand
@@ -39,14 +39,11 @@ features:
 ---
 
 <script>
-  (async function () {
-    if (typeof window !== "undefined" && "HTMLElement" in window) {
-      if(customElements.get('atropos-component') === undefined) {
-        const AtroposComponent = (await import('atropos/element')).default;
-        customElements.define('atropos-component', AtroposComponent);
-      }
-    }
-  })()
+  if (!import.meta.env.SSR) {
+    import('atropos/element').then((atropos) => {
+      customElements.define('atropos-component', atropos.default);
+    })
+  }
 </script>
 
 <style>
@@ -107,7 +104,7 @@ features:
   <div class="screenshot-container">
     <img src="/img/landing-page/dashboard-no-window.png" />
   </div>
-  <img class="floating-logo" src="/img/favicon_hd.png" data-atropos-offset="5"/>
+  <img class="floating-logo" src="/public/favicon_hd.png" data-atropos-offset="5"/>
   <div class="floating-name" data-atropos-offset="5">World-Wide-Lab</div>
   <div class="floating-support" data-atropos-offset="7">
     With integrated support for

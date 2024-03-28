@@ -7,12 +7,10 @@ export default defineConfig({
     "World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.",
   // Depends on the deployment path
   base: "/world-wide-lab/",
-  head: [
-    ["link", { rel: "icon", href: "/img/favicon.png", type: "image/png" }],
-  ],
+  head: [["link", { rel: "icon", href: "favicon.png", type: "image/png" }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
-    logo: "/img/favicon.png",
+    logo: "favicon.png",
 
     search: {
       provider: "local",
