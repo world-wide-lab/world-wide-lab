@@ -20,7 +20,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "NO_LICENSE_YET",
+  "license": "MIT",
   "dependencies": {
     "@adminjs/express": "^5.1.0",
     "@adminjs/sequelize": "^3.0.0",

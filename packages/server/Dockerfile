@@ -3,7 +3,7 @@ FROM node:18
 # Set meta information
 LABEL org.opencontainers.image.source="https://github.com/world-wide-lab/world-wide-lab"
 LABEL org.opencontainers.image.description="Container image of the World-Wide-Lab server"
-LABEL org.opencontainers.image.licenses="NO_LICENSE_YET"
+LABEL org.opencontainers.image.licenses="MIT"
 
 # Navigate to correct directory
 WORKDIR /usr/src/app

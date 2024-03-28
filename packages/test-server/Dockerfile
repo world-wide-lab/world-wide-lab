@@ -2,7 +2,7 @@ FROM node:18
 
 # Set meta information
 LABEL org.opencontainers.image.description="Container image used to run tests against the World-Wide-Lab server"
-LABEL org.opencontainers.image.licenses="NO_LICENSE_YET"
+LABEL org.opencontainers.image.licenses="MIT"
 
 # Navigate to correct directory
 WORKDIR /usr/src/app
