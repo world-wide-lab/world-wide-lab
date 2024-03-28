@@ -20,7 +20,10 @@ export default defineConfig({
       { text: "Home", link: "/" },
       { text: "About", link: "/guides/what-is-world-wide-lab" },
       { text: "Get Started", link: "/guides/getting-started" },
-      { text: "Community", link: "https://github.com/world-wide-lab/world-wide-lab/discussions" },
+      {
+        text: "Community",
+        link: "https://github.com/world-wide-lab/world-wide-lab/discussions",
+      },
       { text: "Reference", link: "/reference/" },
     ],
 
