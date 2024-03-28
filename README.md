@@ -15,5 +15,6 @@ The project is split up into multiple packages. If you want to just give it a tr
 - Client ([`client`](./packages/client/)): A small package to make it easier to use the World-Wide-Lab API in your own study or to store some custom data in World-Wide-Lab. If you use one of the libraries with a supported integration package, you will most probably not need this package.
 - Deployment Helper ([`deploy`](./packages/deploy/)): A small package to automate deploying World-Wide-Lab to a cloud provider.
 - jsPsych Integration ([`integration-jsPsych`](./packages/integration-jsPsych/)): A helper package making it easy to use World-Wide-Lab in combination with [jsPsych](https://www.jspsych.org/) experiments.
+- Documentation ([`docs`](./docs/)): The website and documentation of World-Wide-Lab.
 - Internal Packages (only used for development)
   - Server Tester ([`test-server`](./packages/test-server/)): Used to test a running World-Wide-Lab server.
