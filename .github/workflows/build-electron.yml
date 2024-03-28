@@ -8,7 +8,7 @@ on:
     tags:
       - "v*"
     branches:
-      - main
+      - feature/electron/*
 
 jobs:
   build-electron:
