@@ -30,7 +30,7 @@
     "directory": "packages/integration-jsPsych"
   },
   "author": "Jan Simson",
-  "license": "NO_LICENSE_YET",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/world-wide-lab/world-wide-lab/issues"
   },
