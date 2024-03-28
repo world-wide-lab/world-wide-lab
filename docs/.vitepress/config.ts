@@ -5,6 +5,8 @@ export default defineConfig({
   title: "World-Wide-Lab",
   description:
     "World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.",
+  // Depends on the deployment path
+  base: "/world-wide-lab/",
   head: [
     ["link", { rel: "icon", href: "/img/favicon.png", type: "image/png" }],
   ],
