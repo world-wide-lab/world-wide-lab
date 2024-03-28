@@ -21,18 +21,18 @@ features:
   - title: Easy to Use
     icon: 🚀
     details: Just download the World-Wide-App Desktop App and you're ready to get started.
+  - title: Currently in Beta
+    icon: β
+    details: Please be aware that World-Wide-Lab is currently in beta, so we're still tweaking a few things here and there.
+  - title: Open Source
+    icon: 📦
+    details: World-Wide-Lab is free and open-source software, so you can use and adapt is as you like.
   - title: Ready for the Web
     icon: 🌐
     details: Once you're ready to launch your studies online, deploy them with the World-Wide-App Server.
   - title: Scalable
     icon: 🔥
     details: Don't lose data when going viral, since you can scale up  performance to accomodate many users at once.
-  - title: Easy Data Exports
-    icon: ⬇️
-    details: Use automatic pre-processing to export your data in a variety of convenient formats ready for analysis.
-  - title: Administration UI
-    icon: 🔐
-    details: See statistics and control World-Wide-Lab using the included administration interface.
   - title: Plug 'n Play
     icon: 🧩
     details: Easily collect data from jsPsych experiments using the jsPsychWorldWideLab-Plugin.
