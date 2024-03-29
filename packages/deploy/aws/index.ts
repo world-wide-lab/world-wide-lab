@@ -1,5 +1,4 @@
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 
 import "dotenv/config";
@@ -7,7 +6,7 @@ import "dotenv/config";
 const config = new pulumi.Config();
 const containerPort = 80; // Default WWL port
 const cpu = config.getNumber("cpu") || 256;
-const memory = config.getNumber("memory") || 256;
+const memory = config.getNumber("memory") || 512;
 const minCapacity = config.getNumber("minCapacity") || 1;
 const maxCapacity = config.getNumber("maxCapacity") || 4;
 
@@ -25,7 +24,7 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
-// Database
+// - Database -
 const db = new aws.rds.Instance("wwl-database", {
   dbName: "wwl_db",
   engine: "postgres",
@@ -51,106 +50,78 @@ if (typeof dbConnectionString === "string") {
   console.log(`REMOVEME: DB Connection String: ${dbConnectionString}`);
 }
 
-// An ALB to serve the container endpoint to the internet
-const loadbalancer = new awsx.lb.ApplicationLoadBalancer(
-  "wwl-loadbalancer",
-  {},
+// - App Runner -
+
+// How should the app auto-scale itself?
+const autoScalingConfig = new aws.apprunner.AutoScalingConfigurationVersion(
+  "autoScalingConfig",
+  {
+    autoScalingConfigurationName: "wwl-server-auto-scaling-config",
+    maxConcurrency: 100,
+    minSize: minCapacity,
+    maxSize: maxCapacity,
+  },
 );
 
-// An ECS cluster to deploy into
-const cluster = new aws.ecs.Cluster("wwl-cluster", {});
+// Allow the apprunner to connect to the database
+const vpcConnector = new aws.apprunner.VpcConnector("wwl-vpc-connector", {
+  vpcConnectorName: "name",
+  // Use all subnets by default
+  subnets: aws.ec2
+    .getSubnets({
+      filters: [],
+    })
+    .then((subnets) => subnets.ids),
+  securityGroups: db.vpcSecurityGroupIds,
+});
 
-// Deploy an ECS Service on Fargate to host the application container
-const service = new awsx.ecs.FargateService("wwl-server-service", {
-  cluster: cluster.arn,
-  assignPublicIp: true,
-  forceNewDeployment: true,
-  taskDefinitionArgs: {
-    container: {
-      name: "wwl-server",
-      image: "ghcr.io/world-wide-lab/server:latest",
-      cpu: cpu,
-      memory: memory,
-      essential: true,
-      portMappings: [
-        {
-          hostPort: containerPort,
-          containerPort: containerPort,
-          targetGroup: loadbalancer.defaultTargetGroup,
-        },
-      ],
-      environment: [
-        { name: "NODE_ENV", value: "production" },
-        { name: "PORT", value: `${containerPort}` },
-        { name: "DATABASE_URL", value: dbConnectionString },
-        { name: "ADMIN_UI", value: "true" },
-        { name: "USE_AUTHENTICATION", value: "true" },
-        { name: "REPLICATION_ROLE", value: "source" },
-        {
-          name: "ADMIN_AUTH_DEFAULT_EMAIL",
-          value: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
-        },
-        {
-          name: "ADMIN_AUTH_DEFAULT_PASSWORD",
-          value: process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
-        },
-        {
-          name: "ADMIN_AUTH_SESSION_SECRET",
-          value: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
-        },
-        { name: "DEFAULT_API_KEY", value: process.env.WWL_DEFAULT_API_KEY },
-        { name: "DATABASE_CHUNK_SIZE", value: "5000" },
-        { name: "LOGGING_HTTP", value: "false" },
-        { name: "LOGGING_SQL", value: "false" },
-        // set to 'verbose' to show SQL & HTTP logs (if enabled)
-        { name: "LOGGING_LEVEL_CONSOLE", value: "info" },
-      ],
-      logConfiguration: {
-        logDriver: "awslogs",
-        options: {
-          "awslogs-group": "/ecs/wwl-server",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "ecs",
-          "awslogs-create-group": "true",
+// Create the App Runner service itself, which runs the app / container
+const appRunnerService = new aws.apprunner.Service("wwl-server-service", {
+  serviceName: "wwl-server-service",
+  sourceConfiguration: {
+    autoDeploymentsEnabled: false,
+    imageRepository: {
+      imageIdentifier: "public.ecr.aws/g0k5o2x2/server:latest",
+      imageRepositoryType: "ECR_PUBLIC",
+      imageConfiguration: {
+        port: containerPort.toString(),
+        runtimeEnvironmentVariables: {
+          NODE_ENV: "production",
+          PORT: `${containerPort}`,
+          DATABASE_URL: dbConnectionString,
+          ADMIN_UI: "true",
+          USE_AUTHENTICATION: "true",
+          REPLICATION_ROLE: "source",
+          ADMIN_AUTH_DEFAULT_EMAIL: process.env
+            .WWL_ADMIN_AUTH_DEFAULT_EMAIL as string,
+          ADMIN_AUTH_DEFAULT_PASSWORD: process.env
+            .WWL_ADMIN_AUTH_DEFAULT_PASSWORD as string,
+          ADMIN_AUTH_SESSION_SECRET: process.env
+            .WWL_ADMIN_AUTH_SESSION_SECRET as string,
+          DEFAULT_API_KEY: process.env.WWL_DEFAULT_API_KEY as string,
+          DATABASE_CHUNK_SIZE: "5000",
+          LOGGING_HTTP: "false",
+          LOGGING_SQL: "false",
+          LOGGING_LEVEL_CONSOLE: "info",
         },
       },
+    },
+  },
+  instanceConfiguration: {
+    cpu: cpu.toString(),
+    memory: memory.toString(),
+  },
+  autoScalingConfigurationArn: autoScalingConfig.arn,
+  networkConfiguration: {
+    egressConfiguration: {
+      egressType: "VPC",
+      vpcConnectorArn: vpcConnector.arn,
     },
   },
 });
 
-// Define an Application Auto Scaling Target. This specifies the ECS service we want to scale.
-const scalingTarget = new aws.appautoscaling.Target(
-  "app-scaling-target",
-  {
-    maxCapacity,
-    minCapacity,
-    resourceId: pulumi.interpolate`service/${cluster.name}/${service.service.name}`, // Format is "service/clusterName/serviceName"
-    scalableDimension: "ecs:service:DesiredCount",
-    serviceNamespace: "ecs",
-  },
-  { dependsOn: [service] },
-);
-
-// Define Application Auto Scaling Policy. This specifies how the Target should be scaled.
-const scalingPolicy = new aws.appautoscaling.Policy(
-  "app-scaling-policy",
-  {
-    policyType: "TargetTrackingScaling",
-    resourceId: scalingTarget.resourceId,
-    scalableDimension: scalingTarget.scalableDimension,
-    serviceNamespace: scalingTarget.serviceNamespace,
-    targetTrackingScalingPolicyConfiguration: {
-      targetValue: 80.0,
-      predefinedMetricSpecification: {
-        predefinedMetricType: "ECSServiceAverageCPUUtilization",
-      },
-    },
-  },
-  { dependsOn: [scalingTarget] },
-);
-
 // The URL at which the container's HTTP endpoint will be available
-const url = pulumi.interpolate`http://${loadbalancer.loadBalancer.dnsName}`;
+const url = pulumi.interpolate`http://${appRunnerService.serviceUrl}`;
 if (typeof url === "string") {
   console.log(`Running at: ${url}`);
 }
