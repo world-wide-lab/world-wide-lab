@@ -29,7 +29,7 @@
     "connect-session-sequelize": "^7.1.7",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "express-formidable": "^1.2.0",
     "express-session": "^1.17.3",
     "frappe-charts": "^1.6.2",
