@@ -17,6 +17,7 @@ export const DashboardLineChart: React.FC<AppProps> = ({ data }: AppProps) => {
   }
 
   return (
+    // @ts-ignore
     <ReactFrappeChart
       type="line"
       colors={["light-green", "green"]}

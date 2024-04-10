@@ -7,6 +7,7 @@
     "url": "https://github.com/world-wide-lab/world-wide-lab.git",
     "directory": "packages/server"
   },
+  "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
@@ -22,10 +23,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@adminjs/express": "^5.1.0",
-    "@adminjs/sequelize": "^3.0.0",
+    "@adminjs/design-system": "^4.1.1",
+    "@adminjs/express": "^6.1.0",
+    "@adminjs/sequelize": "^4.1.1",
     "@types/recharts": "^1.8.24",
-    "adminjs": "^6.8.7",
+    "adminjs": "^7.8.1",
     "connect-session-sequelize": "^7.1.7",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
@@ -63,7 +65,7 @@
     "@types/node": "^20.3.1",
     "@types/pg": "^8.10.8",
     "@types/pg-copy-streams": "^1.2.5",
-    "@types/styled-components": "^5.1.26",
+    "@types/styled-components": "^5.1.34",
     "@types/supertest": "^2.0.12",
     "@types/swagger-jsdoc": "^6.0.1",
     "@types/swagger-ui-express": "^4.1.3",

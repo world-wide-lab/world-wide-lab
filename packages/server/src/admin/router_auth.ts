@@ -3,8 +3,8 @@ import AdminJS from "adminjs";
 import connect from "connect-session-sequelize";
 import session from "express-session";
 
-import config from "../config";
-import sequelize from "../db";
+import config from "../config.js";
+import sequelize from "../db/index.js";
 
 const DEFAULT_ADMIN = config.admin.auth.default_admin_credentials;
 

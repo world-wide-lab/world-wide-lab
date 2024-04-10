@@ -5,7 +5,7 @@ import {
   Code,
   CodeHighlightingStyles,
   refreshHighlighting,
-} from "../partials/codeHighlighting";
+} from "../partials/codeHighlighting.js";
 
 interface GenericObject {
   [key: string]: any;

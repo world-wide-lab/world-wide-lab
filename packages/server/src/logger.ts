@@ -1,6 +1,6 @@
 import path from "path";
 import winston from "winston";
-import config from "./config";
+import config from "./config.js";
 
 const customLevels = {
   error: 0,

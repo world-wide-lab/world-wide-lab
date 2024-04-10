@@ -1,4 +1,4 @@
-import type { Migration } from "../migrate";
+import type { Migration } from "../migrate.js";
 
 import { DataTypes } from "sequelize";
 

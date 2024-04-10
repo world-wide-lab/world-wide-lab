@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import config from "../config";
+import config from "../config.js";
 
 function noAuth(res: Response, message: string): void {
   res.status(401).json({ error: message });

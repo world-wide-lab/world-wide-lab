@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { ValidationError } from "yup";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 class AppError extends Error {
   constructor(

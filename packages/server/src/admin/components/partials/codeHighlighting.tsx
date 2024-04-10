@@ -1,7 +1,7 @@
 import hljs from "highlight.js/lib/core";
 import javascript from "highlight.js/lib/languages/javascript";
 import json from "highlight.js/lib/languages/json";
-import styled from "styled-components";
+import { styled } from "@adminjs/design-system/styled-components";
 
 // Register JS and JSON by default
 hljs.registerLanguage("javascript", javascript);

@@ -1,9 +1,9 @@
 import type { Model, ModelStatic } from "sequelize";
-import config from "../config";
-import sequelize from "../db";
-import { AppError } from "../errors";
-import { logger } from "../logger";
-import { getLatestMigration } from "./migrate";
+import config from "../config.js";
+import sequelize from "../db/index.js";
+import { AppError } from "../errors.js";
+import { logger } from "../logger.js";
+import { getLatestMigration } from "./migrate.js";
 
 const defaultRequestHeaders = {
   "User-Agent": `WWL Replication / ${config.version}`,

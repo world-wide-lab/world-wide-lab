@@ -1,7 +1,7 @@
 import express from "express";
 
-import { routerProtected } from "./protected";
-import { routerPublic } from "./public";
+import { routerProtected } from "./protected.js";
+import { routerPublic } from "./public.js";
 
 const router = express.Router();
 

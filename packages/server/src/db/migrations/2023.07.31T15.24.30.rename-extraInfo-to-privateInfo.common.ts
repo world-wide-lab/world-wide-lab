@@ -1,4 +1,4 @@
-import type { Migration } from "../migrate";
+import type { Migration } from "../migrate.js";
 
 export const up: Migration = async ({ context }) => {
   await context.renameColumn("wwl_participants", "extraInfo", "privateInfo");

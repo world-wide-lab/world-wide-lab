@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { json2csv } from "json-2-csv";
 import { QueryTypes, Sequelize } from "sequelize";
-import config from "../config";
+import config from "../config.js";
 
 // Export data from the database in chunks
 async function paginatedExport(

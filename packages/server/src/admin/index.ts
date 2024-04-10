@@ -1,21 +1,21 @@
-import * as AdminJSSequelize from "@adminjs/sequelize";
+import { Database as SequelizeDatabase, Resource as SequelizeResource } from '@adminjs/sequelize';
 import AdminJS, { AdminPages, AdminPage } from "adminjs";
-import config from "../config";
-import sequelize from "../db";
-import { columnComments } from "../db/models";
-import { Components, componentLoader } from "./components";
-import { dashboardHandler } from "./handlers/dashboard";
-import { viewSessionHandler } from "./handlers/session";
+import config from "../config.js";
+import sequelize from "../db/index.js";
+import { columnComments } from "../db/models/index.js";
+import { Components, componentLoader } from "./components/index.js";
+import { dashboardHandler } from "./handlers/dashboard.js";
+import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
   newStudyHandler,
-} from "./handlers/study";
-import { initializeRouter } from "./router_auth";
+} from "./handlers/study.js";
+import { initializeRouter } from "./router_auth.js";
 
 AdminJS.registerAdapter({
-  Resource: AdminJSSequelize.Resource,
-  Database: AdminJSSequelize.Database,
+  Resource: SequelizeResource,
+  Database: SequelizeDatabase,
 });
 
 const pages: AdminPages = {};

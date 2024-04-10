@@ -8,7 +8,7 @@ import {
   populator,
 } from "adminjs";
 import { QueryTypes } from "sequelize";
-import sequelize from "../../db";
+import sequelize from "../../db/index.js";
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts

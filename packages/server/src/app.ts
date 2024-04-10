@@ -3,13 +3,13 @@ import cors from "cors";
 import express, { Request, Response } from "express";
 import helmet from "helmet";
 
-import { admin, adminRouter } from "./admin";
-import api from "./api";
-import apiDocs from "./api-docs";
-import { routerProtectedWithoutAuthentication } from "./api/protected";
-import config from "./config";
-import { errorHandler } from "./errors";
-import { logger } from "./logger";
+import { admin, adminRouter } from "./admin/index.js";
+import api from "./api/index.js";
+import apiDocs from "./api-docs/index.js";
+import { routerProtectedWithoutAuthentication } from "./api/protected.js";
+import config from "./config.js";
+import { errorHandler } from "./errors.js";
+import { logger } from "./logger.js";
 
 const app = express();
 

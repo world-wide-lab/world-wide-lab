@@ -23,7 +23,7 @@ import {
   CodeHighlightingStyles,
   highlightText,
   refreshHighlighting,
-} from "./partials/codeHighlighting";
+} from "./partials/codeHighlighting.js";
 
 const StudyShowAction: React.FC<ActionProps> = (props) => {
   const { resource, record, action } = props;

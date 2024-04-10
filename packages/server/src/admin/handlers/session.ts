@@ -5,7 +5,7 @@ import {
   NotFoundError,
 } from "adminjs";
 import { QueryTypes } from "sequelize";
-import sequelize from "../../db";
+import sequelize from "../../db/index.js";
 
 async function viewSessionResponsesHandler(
   request: ActionRequest,

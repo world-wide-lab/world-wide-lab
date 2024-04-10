@@ -6,13 +6,13 @@ import type { Client } from "pg";
 import { to as copyTo } from "pg-copy-streams";
 
 import { date, number, object, string } from "yup";
-import config from "../config";
-import sequelize from "../db";
-import { generateExtractedPayloadQuery, paginatedExport } from "../db/export";
-import { findModelByTableName, runReplication } from "../db/replication";
-import { sanitizeStudyId } from "../db/util";
-import { AppError } from "../errors";
-import { requireAuthMiddleware } from "./authMiddleware";
+import config from "../config.js";
+import sequelize from "../db/index.js";
+import { generateExtractedPayloadQuery, paginatedExport } from "../db/export.js";
+import { findModelByTableName, runReplication } from "../db/replication.js";
+import { sanitizeStudyId } from "../db/util.js";
+import { AppError } from "../errors.js";
+import { requireAuthMiddleware } from "./authMiddleware.js";
 
 const routerProtectedWithoutAuthentication = express.Router();
 

@@ -1,8 +1,8 @@
 import pathLib from "path";
 import { SequelizeStorage, Umzug } from "umzug";
 
-import sequelize from ".";
-import { logger } from "../logger";
+import sequelize from "./index.js";
+import { logger } from "../logger.js";
 
 const dialect = sequelize.getDialect();
 

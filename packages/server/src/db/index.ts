@@ -1,8 +1,8 @@
 import { Options as SequelizeOptions, Sequelize } from "sequelize";
 
-import config from "../config";
-import { log_sql } from "../logger";
-import { defineModels } from "./models";
+import config from "../config.js";
+import { log_sql } from "../logger.js";
+import { defineModels } from "./models/index.js";
 
 const url = config.database.url;
 const options: SequelizeOptions = {

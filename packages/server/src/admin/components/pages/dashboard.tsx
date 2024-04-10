@@ -10,8 +10,8 @@ import {
 } from "@adminjs/design-system";
 import { ApiClient } from "adminjs";
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { DashboardLineChart } from "../charts/DashboardLineChart";
+import { styled } from "@adminjs/design-system/styled-components";
+import { DashboardLineChart } from "../charts/DashboardLineChart.js";
 
 const pageHeaderHeight = 284;
 const pageHeaderPaddingY = 74;
@@ -121,17 +121,23 @@ Card.defaultProps = {
   boxShadow: "card",
 };
 
+type DashboardResponse = {
+  electronApp: boolean;
+  studyCount: number;
+  fullSessionCounts: Array<object>;
+};
+
 export const Dashboard: React.FC = () => {
   const [studyCountData, setStudyCountData] = useState("X");
-  const [chartData, setChartData] = useState(null);
-  const [isElectron, setIsElectron] = useState(undefined);
+  const [chartData, setChartData] = useState<any>(null);
+  const [isElectron, setIsElectron] = useState<boolean|undefined>(undefined);
 
   // Retrieve data from dashboard handler
   const api = new ApiClient();
   // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit dependencies are required to avoid infinite loop
   useEffect(() => {
     api
-      .getDashboard()
+      .getDashboard<DashboardResponse>()
       .then((response) => {
         console.log("Retrieved dashboard data", response.data);
 
