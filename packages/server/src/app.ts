@@ -10,6 +10,9 @@ import { routerProtectedWithoutAuthentication } from "./api/protected.js";
 import config from "./config.js";
 import { errorHandler } from "./errors.js";
 import { logger } from "./logger.js";
+import { getDirectory } from "./util.js"
+
+const dirname = getDirectory(import.meta.url);
 
 const app = express();
 
@@ -34,7 +37,7 @@ if (config.logging.http) {
   });
 }
 
-app.use("/static", express.static(path.join(__dirname, "..", "static")));
+app.use("/static", express.static(path.join(dirname, "..", "static")));
 
 app.get("/", async (req: Request, res: Response) => {
   res.send(`
