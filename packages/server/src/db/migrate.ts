@@ -1,11 +1,11 @@
 import pathLib from "path";
 import { SequelizeStorage, Umzug } from "umzug";
 
-import sequelize from "./index.js";
+import { fileURLToPath } from "url";
+import process from "process";
 import { logger } from "../logger.js";
-import { getDirectory } from "../util.js"
-import { fileURLToPath } from 'url';
-import process from 'process';
+import { getDirectory } from "../util.js";
+import sequelize from "./index.js";
 
 const dirname = getDirectory(import.meta.url);
 
@@ -26,11 +26,11 @@ const umzug = new Umzug({
         name: nameWithoutExtension,
         up: async () => {
           const migration = await getMigration();
-          await migration.up({ context })
+          await migration.up({ context });
         },
         down: async () => {
           const migration = await getMigration();
-          await migration.down({ context })
+          await migration.down({ context });
         },
       };
     },

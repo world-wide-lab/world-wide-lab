@@ -8,9 +8,9 @@ import {
   IllustrationProps,
   Text,
 } from "@adminjs/design-system";
+import { styled } from "@adminjs/design-system/styled-components";
 import { ApiClient } from "adminjs";
 import React, { useState, useEffect } from "react";
-import { styled } from "@adminjs/design-system/styled-components";
 import { DashboardLineChart } from "../charts/DashboardLineChart.js";
 
 const pageHeaderHeight = 284;
@@ -130,7 +130,7 @@ type DashboardResponse = {
 export const Dashboard: React.FC = () => {
   const [studyCountData, setStudyCountData] = useState("X");
   const [chartData, setChartData] = useState<any>(null);
-  const [isElectron, setIsElectron] = useState<boolean|undefined>(undefined);
+  const [isElectron, setIsElectron] = useState<boolean | undefined>(undefined);
 
   // Retrieve data from dashboard handler
   const api = new ApiClient();

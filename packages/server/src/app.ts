@@ -4,13 +4,13 @@ import express, { Request, Response } from "express";
 import helmet from "helmet";
 
 import { admin, adminRouter } from "./admin/index.js";
-import api from "./api/index.js";
 import apiDocs from "./api-docs/index.js";
+import api from "./api/index.js";
 import { routerProtectedWithoutAuthentication } from "./api/protected.js";
 import config from "./config.js";
 import { errorHandler } from "./errors.js";
 import { logger } from "./logger.js";
-import { getDirectory } from "./util.js"
+import { getDirectory } from "./util.js";
 
 const dirname = getDirectory(import.meta.url);
 

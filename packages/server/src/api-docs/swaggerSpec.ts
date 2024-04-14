@@ -1,7 +1,7 @@
 import path from "path";
 import swaggerJsdoc from "swagger-jsdoc";
 import config from "../config.js";
-import { getDirectory } from "../util.js"
+import { getDirectory } from "../util.js";
 
 const dirname = getDirectory(import.meta.url);
 
@@ -61,10 +61,7 @@ const options = {
       },
     },
   },
-  apis: [
-    path.join(dirname, "../api/*.ts"),
-    path.join(dirname, "../api/*.js"),
-  ],
+  apis: [path.join(dirname, "../api/*.ts"), path.join(dirname, "../api/*.js")],
 };
 
 const spec = swaggerJsdoc(options);

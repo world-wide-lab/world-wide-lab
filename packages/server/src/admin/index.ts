@@ -1,4 +1,7 @@
-import { Database as SequelizeDatabase, Resource as SequelizeResource } from '@adminjs/sequelize';
+import {
+  Database as SequelizeDatabase,
+  Resource as SequelizeResource,
+} from "@adminjs/sequelize";
 import AdminJS, { AdminPages, AdminPage } from "adminjs";
 import config from "../config.js";
 import sequelize from "../db/index.js";
@@ -237,8 +240,9 @@ const admin = new AdminJS({
       en: {
         components: {
           Login: {
-            welcomeMessage: "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
-          }
+            welcomeMessage:
+              "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
+          },
         },
         labels: {
           wwl_studies: "Studies",
@@ -275,8 +279,7 @@ const admin = new AdminJS({
             },
           },
         },
-      }
-
+      },
     },
   },
 });

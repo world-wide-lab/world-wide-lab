@@ -1,8 +1,8 @@
 import type { Server as HTTPServer } from "http";
 import app from "./app.js";
 import config from "./config.js";
-import sequelize from "./db/index.js";
 import generateExampleData from "./db/exampleData.js";
+import sequelize from "./db/index.js";
 import { up } from "./db/migrate.js";
 import { logger } from "./logger.js";
 
