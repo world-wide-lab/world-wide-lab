@@ -150,7 +150,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="View" /> View Sessions in this Study
+          <Icon icon="Eye" /> View Sessions in this Study
         </Button>
         &nbsp; &nbsp;
         <Button

@@ -58,7 +58,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Rocket",
+          icon: "Star",
         },
         properties: {
           studyId: {
@@ -106,7 +106,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Group",
+          icon: "Users",
         },
         actions: {
           new: {
@@ -156,7 +156,7 @@ const admin = new AdminJS({
           viewResponses: {
             actionType: "record",
             component: false,
-            icon: "View",
+            icon: "Eye",
             handler: viewSessionHandler,
           },
         },
@@ -197,7 +197,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Document",
+          icon: "File",
         },
         actions: {
           new: {
