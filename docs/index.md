@@ -23,7 +23,7 @@ features:
     details: Download the World-Wide-App Desktop App and you're ready to get started.
   - title: Currently in Beta
     icon: β
-    details: World-Wide-Lab is currently in beta --- heads up! We're still tweaking a few things here and there.
+    details: World-Wide-Lab is currently in beta — heads up! We're still tweaking a few things here and there.
   - title: Open Source
     icon: 📦
     details: World-Wide-Lab is free and open-source software, so you can use and adapt it as you like.
