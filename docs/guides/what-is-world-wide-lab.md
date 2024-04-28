@@ -1,5 +1,9 @@
 # What is World-Wide-Lab?
 
+::: warning
+World-Wide-Lab is currently in beta, so we might still be tweaking a few things here and there. Feel free to [reach out to us](mailto:wwl@simson.io) if you want to start using it for a project and we can help you get started!
+:::
+
 World-Wide-Lab is a platform to collect online data at scale, with a special focus on running online citizen science experiments.
 
 World-Wide-Lab sits right in between web experiment libraries and data analysis software in the scope of running an online web study.

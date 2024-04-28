@@ -6,6 +6,9 @@
 
 World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.
 
+> [!NOTE]  
+> World-Wide-Lab is currently in beta, so we might still be tweaking a few things here and there. Feel free to [reach out to us](mailto:wwl@simson.io) if you want to start using it for a project and we can help you get started!
+
 ## Packages
 
 The project is split up into multiple packages. If you want to just give it a try, we suggest downloading the _self-contained app_ to run it on a desktop computer.
