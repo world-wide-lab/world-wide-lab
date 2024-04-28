@@ -6,6 +6,9 @@
 
 World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.
 
+> [!NOTE]  
+> World-Wide-Lab is currently in beta, so we might still be tweaking a few things here and there. Feel free to [reach out to us](mailto:wwl@simson.io) if you want to start using it for a project and we can help you get started!
+
 ## Packages
 
 The project is split up into multiple packages. If you want to just give it a try, we suggest downloading the _self-contained app_ to run it on a desktop computer.
@@ -16,5 +19,6 @@ The project is split up into multiple packages. If you want to just give it a tr
 - Deployment Helper ([`deploy`](./packages/deploy/)): A small package to automate deploying World-Wide-Lab to a cloud provider.
 - jsPsych Integration ([`integration-jsPsych`](./packages/integration-jsPsych/)): A helper package making it easy to use World-Wide-Lab in combination with [jsPsych](https://www.jspsych.org/) experiments.
 - Documentation ([`docs`](./docs/)): The website and documentation of World-Wide-Lab.
+  - Examples ([`examples`](./docs/public/examples/)): The documentation also contains a number of different examples of Studies and whole Websites to help you get started quickly.
 - Internal Packages (only used for development)
   - Server Tester ([`test-server`](./packages/test-server/)): Used to test a running World-Wide-Lab server.
