@@ -54,6 +54,7 @@ global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
     const data = MOCK_RESPONSES[endpoint][method];
 
     return Promise.resolve({
+      status: 200,
       json: () => Promise.resolve(data),
     });
   }
