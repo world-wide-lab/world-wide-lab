@@ -3,7 +3,12 @@ import "./setup_env";
 
 import { version as packageVersion } from "../package.json";
 
-import { Client as DevClient, Participant, Session } from "../src";
+import {
+  Client as DevClient,
+  Participant,
+  Session,
+  WorldWideLabError,
+} from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import { Server, init as initDev } from "@world-wide-lab/server/src/init.ts";
@@ -78,13 +83,21 @@ describe("Client", () => {
     expect(session.participant?.participantId).toBeDefined();
   });
 
+  it("should throw an error when session creation fails", async () => {
+    await expect(async () => {
+      const session = await client.createSession({
+        studyId: "non-existent-study",
+      });
+    }).rejects.toThrow("Failed to initialize Session");
+  });
+
   it("should store responses", async () => {
     const studyId = "studyId-check-response-storage";
 
     // Create a new study
-    const createStudyResponseJson = await client.call("POST", "/study/", {
-      studyId,
-    });
+    const createStudyResponseJson = await (
+      await client.call("POST", "/study/", { studyId })
+    ).json();
     expect(createStudyResponseJson.studyId).toBe(studyId);
     expect(Object.keys(createStudyResponseJson)).toMatchSnapshot();
 
@@ -104,18 +117,20 @@ describe("Client", () => {
     ).toBe(true);
 
     // Download export from database
-    const responseJson = await client.call(
-      "GET",
-      `/study/${studyId}/data/responses-raw/json`,
-      undefined,
-      {
-        // Manually set headers to add authorization one
-        headers: {
-          ContentType: "application/json",
-          Authorization: `Bearer ${API_KEY}`,
+    const responseJson = await (
+      await client.call(
+        "GET",
+        `/study/${studyId}/data/responses-raw/json`,
+        undefined,
+        {
+          // Manually set headers to add authorization one
+          headers: {
+            ContentType: "application/json",
+            Authorization: `Bearer ${API_KEY}`,
+          },
         },
-      },
-    );
+      )
+    ).json();
 
     expect(responseJson.length).toBe(2);
 

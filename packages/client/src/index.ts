@@ -96,6 +96,14 @@ export type HTTPMethod = "GET" | "POST" | "PUT";
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID";
 
+export class WorldWideLabError extends Error {
+  constructor(public message: string) {
+    super(message);
+
+    this.name = "WorldWideLabError";
+  }
+}
+
 /**
  * You will need to create an instance of this class to communicate with the
  * World-Wide-Lab server. You can then use the methods of this class to create
@@ -143,7 +151,7 @@ export class Client {
     endpoint: string,
     data?: Object,
     options?: Object,
-  ): Promise<any> {
+  ): Promise<Response> {
     const slash = endpoint.startsWith("/") ? "" : "/";
     const url = new URL(`v1${slash}${endpoint}`, this.options.url).toString();
     const body = data ? JSON.stringify(data) : undefined;
@@ -158,7 +166,7 @@ export class Client {
     };
 
     const response = await fetch(url, fetchOptions);
-    return response.json();
+    return response;
   }
 
   /**
@@ -171,7 +179,10 @@ export class Client {
     participantParams: ClientParticipantOptions = undefined,
   ): Promise<Participant> {
     const result = await this.call("POST", "/participant/", participantParams);
-    return new Participant(this, result.participantId);
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to create Participant.");
+    }
+    return new Participant(this, (await result.json()).participantId);
   }
 
   /**
@@ -243,7 +254,10 @@ export class Client {
     }
 
     const result = await this.call("POST", "/session/", sessionData);
-    const session = new Session(this, result.sessionId);
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to initialize Session.");
+    }
+    const session = new Session(this, (await result.json()).sessionId);
 
     // Link participant
     if (participant) {
@@ -260,7 +274,7 @@ export class Client {
    */
   async createResponse(opts: ClientResponseOptions): Promise<boolean> {
     const result = await this.call("POST", "/response/", opts);
-    return true;
+    return result.status === 200;
   }
 
   /**
@@ -359,18 +373,20 @@ export class Participant extends _ClientModel {
       `/participant/${this.participantId}`,
       data,
     );
-    return result.success;
+    return (await result.json()).success;
   }
 
   /**
    * Retrieve public meta-data for a participant
    * @returns The participant's publicInfo meta data
    */
-  getPublicInfo(): Promise<{ publicInfo: object }> {
-    return this.clientInstance.call(
-      "GET",
-      `/participant/${this.participantId}`,
-    );
+  async getPublicInfo(): Promise<{ publicInfo: object }> {
+    return (
+      await this.clientInstance.call(
+        "GET",
+        `/participant/${this.participantId}`,
+      )
+    ).json();
   }
 
   /**
@@ -415,7 +431,7 @@ export class Session extends _ClientModel {
     const result = await this.clientInstance.call("POST", "/session/finish", {
       sessionId: this.sessionId,
     });
-    return result.success;
+    return (await result.json()).success;
   }
 
   /**
@@ -430,15 +446,17 @@ export class Session extends _ClientModel {
       `/session/${this.sessionId}`,
       data,
     );
-    return result.success;
+    return (await result.json()).success;
   }
 
   /**
    * Retrieve public meta-data for a session
    * @returns The session's publicInfo meta data
    */
-  getPublicInfo(): Promise<{ publicInfo: object }> {
-    return this.clientInstance.call("GET", `/session/${this.sessionId}`);
+  async getPublicInfo(): Promise<{ publicInfo: object }> {
+    return (
+      await this.clientInstance.call("GET", `/session/${this.sessionId}`)
+    ).json();
   }
 
   /**
