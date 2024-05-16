@@ -11,7 +11,10 @@ import {
 } from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
-import { Server, init as initDev } from "@world-wide-lab/server/src/init.ts";
+import {
+  type Server,
+  init as initDev,
+} from "@world-wide-lab/server/src/init.ts";
 
 const Client = process.env.CLIENT === "build" ? import("../dist") : DevClient;
 
