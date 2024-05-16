@@ -26,6 +26,7 @@
     "@adminjs/sequelize": "^3.0.0",
     "@types/recharts": "^1.8.24",
     "adminjs": "^6.8.7",
+    "cache-manager": "^5.5.2",
     "connect-session-sequelize": "^7.1.7",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
