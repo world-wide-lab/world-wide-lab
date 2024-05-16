@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import type { Sequelize } from "sequelize";
 
 async function ensureStudiesExist(sequelize: Sequelize, studyIds: string[]) {
   await Promise.all(

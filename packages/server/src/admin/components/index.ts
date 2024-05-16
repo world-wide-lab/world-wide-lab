@@ -1,7 +1,7 @@
-import { ComponentLoader, OverridableComponent } from "adminjs";
+import { ComponentLoader, type OverridableComponent } from "adminjs";
 
-import path from "path";
-import * as url from "url";
+import path from "node:path";
+import * as url from "node:url";
 
 export const componentLoader = new ComponentLoader();
 

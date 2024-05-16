@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import swaggerJsdoc from "swagger-jsdoc";
 import config from "../config.js";
 import { getDirectory } from "../util.js";

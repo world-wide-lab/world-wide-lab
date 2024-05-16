@@ -1,4 +1,8 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import Sequelize from "sequelize";
 
 import { pipeline } from "node:stream/promises";

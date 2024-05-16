@@ -2,7 +2,7 @@ import {
   Database as SequelizeDatabase,
   Resource as SequelizeResource,
 } from "@adminjs/sequelize";
-import AdminJS, { AdminPages, AdminPage } from "adminjs";
+import AdminJS, { type AdminPages, type AdminPage } from "adminjs";
 import config from "../config.js";
 import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";

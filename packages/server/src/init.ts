@@ -1,4 +1,4 @@
-import type { Server as HTTPServer } from "http";
+import type { Server as HTTPServer } from "node:http";
 import app from "./app.js";
 import config from "./config.js";
 import generateExampleData from "./db/exampleData.js";

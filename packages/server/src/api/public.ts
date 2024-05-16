@@ -1,4 +1,8 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { ForeignKeyConstraintError } from "sequelize";
 import { number, object } from "yup";
 import { cache } from "../cache.js";
@@ -8,11 +12,11 @@ import { getDbVersion } from "../db/replication.js";
 import { AppError } from "../errors.js";
 
 import {
-  CreateSessionParams,
-  ParticipantParams,
-  ResponseParams,
-  SessionParams,
-  StudyParams,
+  type CreateSessionParams,
+  type ParticipantParams,
+  type ResponseParams,
+  type SessionParams,
+  type StudyParams,
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,

@@ -1,7 +1,7 @@
 // Schemas to power Data Validation for the Data Models
 
 import {
-  InferType,
+  type InferType,
   ValidationError,
   boolean,
   date,

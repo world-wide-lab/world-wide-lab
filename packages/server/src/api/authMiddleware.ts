@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import config from "../config.js";
 
 function noAuth(res: Response, message: string): void {

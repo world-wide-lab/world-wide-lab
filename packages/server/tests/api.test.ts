@@ -417,7 +417,7 @@ describe("API Routes", () => {
 
     it("should fail when the countType does not exist", async () => {
       // Don't pass on console.error message, as it is expected
-      jest.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "error").mockImplementation(() => {});
 
       const response = await endpoint
         .get(`/v1/study/${studyId}/count/non-existent-type`)
@@ -437,15 +437,15 @@ describe("API Routes", () => {
     });
 
     it("should cache counts", async () => {
-      jest.spyOn(sequelize.models.Session, "count");
+      vi.spyOn(sequelize.models.Session, "count");
 
       // Call for the first time, where there should be no cache yet
       const response = await endpoint
         .get(`/v1/study/${studyId}/count/all?cacheFor=300`)
         .send();
-      expect(
-        jest.mocked(sequelize.models.Session.count).mock.calls,
-      ).toHaveLength(1);
+      expect(vi.mocked(sequelize.models.Session.count).mock.calls).toHaveLength(
+        1,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.count).toBe(4);
@@ -454,9 +454,9 @@ describe("API Routes", () => {
       const cachedResponse = await endpoint
         .get(`/v1/study/${studyId}/count/all?cacheFor=300`)
         .send();
-      expect(
-        jest.mocked(sequelize.models.Session.count).mock.calls,
-      ).toHaveLength(1);
+      expect(vi.mocked(sequelize.models.Session.count).mock.calls).toHaveLength(
+        1,
+      );
 
       expect(cachedResponse.status).toBe(200);
       expect(cachedResponse.body.count).toBe(4);

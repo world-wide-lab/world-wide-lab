@@ -5,12 +5,13 @@ import {
   H4,
   H5,
   Illustration,
-  IllustrationProps,
+  type IllustrationProps,
   Text,
 } from "@adminjs/design-system";
 import { styled } from "@adminjs/design-system/styled-components";
 import { ApiClient } from "adminjs";
-import React, { useState, useEffect } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { DashboardLineChart } from "../charts/DashboardLineChart.js";
 
 const pageHeaderHeight = 284;

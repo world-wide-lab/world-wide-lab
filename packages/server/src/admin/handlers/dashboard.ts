@@ -1,4 +1,4 @@
-import { PageContext, PageHandler } from "adminjs";
+import type { PageContext, PageHandler } from "adminjs";
 import { Op } from "sequelize";
 import config from "../../config.js";
 import sequelize from "../../db/index.js";

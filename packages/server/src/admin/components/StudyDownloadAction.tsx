@@ -8,7 +8,7 @@ import {
   Select,
   Text,
 } from "@adminjs/design-system";
-import { ActionProps } from "adminjs";
+import type { ActionProps } from "adminjs";
 import { useMemo, useState } from "react";
 
 const MyNewAction = (props: ActionProps) => {

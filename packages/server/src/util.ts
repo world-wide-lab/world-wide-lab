@@ -1,5 +1,5 @@
-import path from "path";
-import { fileURLToPath } from "url";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // Helper function to get current directory, replacing the missing __dirname
 // Use this like so: getDirectory(import.meta.url)

@@ -1,8 +1,8 @@
-import pathLib from "path";
+import pathLib from "node:path";
 import { SequelizeStorage, Umzug } from "umzug";
 
-import { fileURLToPath } from "url";
-import process from "process";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { logger } from "../logger.js";
 import { getDirectory } from "../util.js";
 import sequelize from "./index.js";

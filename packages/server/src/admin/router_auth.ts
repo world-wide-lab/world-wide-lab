@@ -1,5 +1,5 @@
 import AdminJSExpress from "@adminjs/express";
-import AdminJS from "adminjs";
+import type AdminJS from "adminjs";
 import connect from "connect-session-sequelize";
 import session from "express-session";
 

@@ -1,20 +1,20 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`API Routes GET /participant/:participantId should fail when the participant does not exist 1`] = `
+exports[`API Routes > GET /participant/:participantId > should fail when the participant does not exist 1`] = `
 {
   "error": "Unknown participantId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes GET /participant/:participantId should fail when the participant is invalid 1`] = `
+exports[`API Routes > GET /participant/:participantId > should fail when the participant is invalid 1`] = `
 {
   "error": "participantId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes GET /participant/:participantId should retrieve public information about a participant 1`] = `
+exports[`API Routes > GET /participant/:participantId > should retrieve public information about a participant 1`] = `
 {
   "participantId": "overwritten",
   "publicInfo": {
@@ -23,21 +23,21 @@ exports[`API Routes GET /participant/:participantId should retrieve public infor
 }
 `;
 
-exports[`API Routes GET /session/:sessionId should fail when the session does not exist 1`] = `
+exports[`API Routes > GET /session/:sessionId > should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes GET /session/:sessionId should fail when the sessionId is invalid 1`] = `
+exports[`API Routes > GET /session/:sessionId > should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes GET /session/:sessionId should retrieve public information about a session 1`] = `
+exports[`API Routes > GET /session/:sessionId > should retrieve public information about a session 1`] = `
 {
   "publicInfo": {
     "dolor": "sit",
@@ -46,21 +46,21 @@ exports[`API Routes GET /session/:sessionId should retrieve public information a
 }
 `;
 
-exports[`API Routes GET /study/:studyId/count/:countType should fail when the countType does not exist 1`] = `
+exports[`API Routes > GET /study/:studyId/count/:countType > should fail when the countType does not exist 1`] = `
 {
   "error": "Unknown countType: non-existent-type",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/count/:countType should fail when the study does not exist 1`] = `
+exports[`API Routes > GET /study/:studyId/count/:countType > should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should download a raw list of participant 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download a raw list of participant 1`] = `
 [
   "participantId",
   "createdAt",
@@ -71,7 +71,7 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should download a ra
 ]
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should download a raw list of responses 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download a raw list of responses 1`] = `
 [
   "responseId",
   "createdAt",
@@ -83,7 +83,7 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should download a ra
 ]
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should download a raw list of sessions 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download a raw list of sessions 1`] = `
 [
   "sessionId",
   "createdAt",
@@ -97,9 +97,9 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should download a ra
 ]
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should download an extracted list of responses (in CSV format) 1`] = `"responseId,createdAt,updatedAt,name,sessionId,key_1,key_2"`;
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download an extracted list of responses (in CSV format) 1`] = `"responseId,createdAt,updatedAt,name,sessionId,key_1,key_2"`;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should download an extracted list of responses 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download an extracted list of responses 1`] = `
 [
   "responseId",
   "createdAt",
@@ -111,13 +111,13 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should download an e
 ]
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should fail when the study does not exist 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should fail when the study does not exist 1`] = `
 {
   "error": "Unknown studyId",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should handle studies without payload as well 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should handle studies without payload as well 1`] = `
 [
   "responseId",
   "createdAt",
@@ -127,19 +127,19 @@ exports[`API Routes GET /study/:studyId/data/:dataType/json should handle studie
 ]
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should require authentication 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should require authentication 1`] = `
 {
   "error": "Authentication via API Key required",
 }
 `;
 
-exports[`API Routes GET /study/:studyId/data/:dataType/json should require the correct API KEY 1`] = `
+exports[`API Routes > GET /study/:studyId/data/:dataType/json > should require the correct API KEY 1`] = `
 {
   "error": "The provided API Key is invalid.",
 }
 `;
 
-exports[`API Routes GET /study/list should return a list of studies 1`] = `
+exports[`API Routes > GET /study/list > should return a list of studies 1`] = `
 [
   {
     "studyId": "abc123",
@@ -150,35 +150,35 @@ exports[`API Routes GET /study/list should return a list of studies 1`] = `
 ]
 `;
 
-exports[`API Routes POST /response should fail to submit a response when the session does not exist 1`] = `
+exports[`API Routes > POST /response > should fail to submit a response when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes POST /response should fail to submit a response when the sessionId is invalid 1`] = `
+exports[`API Routes > POST /response > should fail to submit a response when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes POST /response should fail to submit non-JSON payload 1`] = `
+exports[`API Routes > POST /response > should fail to submit non-JSON payload 1`] = `
 {
   "error": "payload must be a \`object\` type, but the final value was: \`"this-is-not-json"\`.",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes POST /session missing studyId should lead to an error 1`] = `
+exports[`API Routes > POST /session > missing studyId should lead to an error 1`] = `
 {
   "error": "studyId is a required field",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes POST /session should start a new session with extra info 1`] = `
+exports[`API Routes > POST /session > should start a new session with extra info 1`] = `
 {
   "client": {
     "queryParameters": {
@@ -190,75 +190,75 @@ exports[`API Routes POST /session should start a new session with extra info 1`]
 }
 `;
 
-exports[`API Routes POST /session should validate extra info 1`] = `
+exports[`API Routes > POST /session > should validate extra info 1`] = `
 {
   "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes POST /session/finish should fail when the session does not exist 1`] = `
+exports[`API Routes > POST /session/finish > should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes POST /session/finish should fail when the sessionId is invalid 1`] = `
+exports[`API Routes > POST /session/finish > should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes POST /session/finish should mark a session as finished 1`] = `
+exports[`API Routes > POST /session/finish > should mark a session as finished 1`] = `
 {
   "success": true,
 }
 `;
 
-exports[`API Routes POST /study should validate extra info 1`] = `
+exports[`API Routes > POST /study > should validate extra info 1`] = `
 {
   "error": "privateInfo must be a \`object\` type, but the final value was: \`10\`.",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes PUT /participant/:participantId should fail when the participant does not exist 1`] = `
+exports[`API Routes > PUT /participant/:participantId > should fail when the participant does not exist 1`] = `
 {
   "error": "Unknown participantId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes PUT /participant/:participantId should fail when the participant is invalid 1`] = `
+exports[`API Routes > PUT /participant/:participantId > should fail when the participant is invalid 1`] = `
 {
   "error": "participantId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes PUT /participant/:participantId should update an existing participant 1`] = `
+exports[`API Routes > PUT /participant/:participantId > should update an existing participant 1`] = `
 {
   "success": true,
 }
 `;
 
-exports[`API Routes PUT /session/:sessionId should fail when the session does not exist 1`] = `
+exports[`API Routes > PUT /session/:sessionId > should fail when the session does not exist 1`] = `
 {
   "error": "Unknown sessionId",
   "type": "AppError",
 }
 `;
 
-exports[`API Routes PUT /session/:sessionId should fail when the sessionId is invalid 1`] = `
+exports[`API Routes > PUT /session/:sessionId > should fail when the sessionId is invalid 1`] = `
 {
   "error": "sessionId must be a valid UUID",
   "type": "ValidationError",
 }
 `;
 
-exports[`API Routes PUT /session/:sessionId should update a session 1`] = `
+exports[`API Routes > PUT /session/:sessionId > should update a session 1`] = `
 {
   "success": true,
 }

@@ -1,6 +1,6 @@
-import path from "path";
+import path from "node:path";
 import cors from "cors";
-import express, { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import helmet from "helmet";
 
 import { admin, adminRouter } from "./admin/index.js";

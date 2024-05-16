@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import type { Sequelize } from "sequelize";
 import { logger } from "../logger.js";
 
 async function generateExampleData(sequelize: Sequelize, studyId = "example") {

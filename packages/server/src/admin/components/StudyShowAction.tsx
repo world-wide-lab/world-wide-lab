@@ -9,11 +9,12 @@ import {
   Select,
   Text,
 } from "@adminjs/design-system";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 import {
   ActionHeader,
-  ActionProps,
+  type ActionProps,
   BasePropertyComponent,
   LayoutElementRenderer,
 } from "adminjs";

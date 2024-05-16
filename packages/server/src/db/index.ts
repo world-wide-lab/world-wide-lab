@@ -1,4 +1,4 @@
-import { Options as SequelizeOptions, Sequelize } from "sequelize";
+import { Sequelize, type Options as SequelizeOptions } from "sequelize";
 
 import config from "../config.js";
 import { log_sql } from "../logger.js";

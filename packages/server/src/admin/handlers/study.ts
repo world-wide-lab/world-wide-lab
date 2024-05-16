@@ -1,7 +1,7 @@
 import {
-  ActionContext,
-  ActionRequest,
-  ActionResponse,
+  type ActionContext,
+  type ActionRequest,
+  type ActionResponse,
   NotFoundError,
   ValidationError,
   paramConverter,
