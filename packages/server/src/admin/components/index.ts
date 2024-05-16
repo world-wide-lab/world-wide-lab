@@ -15,9 +15,9 @@ export const override = (
 ): string => componentLoader.override(componentName, path.join(__dirname, url));
 
 export const Components = {
-  Dashboard: add("Dashboard", "./pages/dashboard.tsx"),
-  ApiDocsPage: add("ApiDocsPage", "./pages/api-docs.tsx"),
-  StudyDownloadAction: add("StudyDownloadAction", "./StudyDownloadAction.tsx"),
-  StudyShowAction: add("StudyShowAction", "./StudyShowAction.tsx"),
-  ShowJsonProp: add("ShowJsonProp", "./properties/ShowJsonProp.tsx"),
+  Dashboard: add("Dashboard", "./pages/dashboard"),
+  ApiDocsPage: add("ApiDocsPage", "./pages/api-docs"),
+  StudyDownloadAction: add("StudyDownloadAction", "./StudyDownloadAction"),
+  StudyShowAction: add("StudyShowAction", "./StudyShowAction"),
+  ShowJsonProp: add("ShowJsonProp", "./properties/ShowJsonProp"),
 };
