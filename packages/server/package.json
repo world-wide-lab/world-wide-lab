@@ -11,6 +11,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "nodemon",
+    "prebuild": "node -p \"'export const VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
     "build": "tsc -p tsconfig-build.json",
     "start": "node dist/index.js",
     "start:build": "npm run build && npm start",
@@ -28,6 +29,7 @@
     "@adminjs/sequelize": "^4.1.1",
     "@types/recharts": "^1.8.24",
     "adminjs": "^7.8.1",
+    "cache-manager": "^5.5.2",
     "connect-session-sequelize": "^7.1.7",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",

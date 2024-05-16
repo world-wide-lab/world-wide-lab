@@ -1,9 +1,12 @@
 import express, { NextFunction, Request, Response } from "express";
 import { ForeignKeyConstraintError } from "sequelize";
+import { number, object } from "yup";
+import { cache } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
 import { getDbVersion } from "../db/replication.js";
 import { AppError } from "../errors.js";
+
 import {
   CreateSessionParams,
   ParticipantParams,
@@ -583,6 +586,12 @@ routerPublic.post(
  *         required: true
  *         description: >
  *           Which type of count should be used?
+ *       - in: query
+ *         name: cacheFor
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Cache the result for this many seconds.
  *     responses:
  *       '200':
  *         description: Successfully retrieved study count.
@@ -595,6 +604,9 @@ routerPublic.get(
   "/study/:studyId/count/:countType",
   async (req: Request, res: Response, next: NextFunction) => {
     const { studyId, countType } = req.params;
+    const { cacheFor } = object({
+      cacheFor: number().integer().optional(),
+    }).validateSync(req.query);
 
     try {
       // Filter by studyId by default
@@ -607,10 +619,15 @@ routerPublic.get(
         throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
-      // TODO: Add caching or even a self-updating table or something to increase efficiency
-      const count = await sequelize.models.Session.count({
-        where,
-      });
+      const getCount = async () =>
+        await sequelize.models.Session.count({
+          where,
+        });
+
+      const count =
+        cacheFor === undefined
+          ? await getCount()
+          : await cache.wrap(req.path, getCount, cacheFor * 1000);
 
       // When the count is 0, check whether it may be due to the study not existing
       if (count === 0) {

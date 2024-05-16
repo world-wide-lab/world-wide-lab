@@ -5,6 +5,8 @@ import request from "supertest";
 import app from "../src/app";
 import sequelize from "../src/db";
 
+import { version } from "../package.json";
+
 const STUDY_ID = "abc123";
 const API_KEY = process.env.DEFAULT_API_KEY;
 
@@ -179,6 +181,8 @@ describe("API Routes", () => {
       });
       // @ts-ignore
       expect(session.metadata).toMatchSnapshot();
+      // @ts-ignore
+      expect(session.metadata.wwl_version).toBe(version);
     });
 
     it("missing studyId should lead to an error", async () => {
@@ -430,6 +434,32 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
+    });
+
+    it("should cache counts", async () => {
+      jest.spyOn(sequelize.models.Session, "count");
+
+      // Call for the first time, where there should be no cache yet
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/all?cacheFor=300`)
+        .send();
+      expect(
+        jest.mocked(sequelize.models.Session.count).mock.calls,
+      ).toHaveLength(1);
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(4);
+
+      // Call for the second time, where where we should hit the cache
+      const cachedResponse = await endpoint
+        .get(`/v1/study/${studyId}/count/all?cacheFor=300`)
+        .send();
+      expect(
+        jest.mocked(sequelize.models.Session.count).mock.calls,
+      ).toHaveLength(1);
+
+      expect(cachedResponse.status).toBe(200);
+      expect(cachedResponse.body.count).toBe(4);
     });
   });
 
