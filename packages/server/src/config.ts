@@ -1,4 +1,5 @@
 import { config as dotenvConfig } from "dotenv";
+import { VERSION } from "./version";
 
 function getValueFromEnv(key: string): string | undefined {
   const value = process.env[key];
@@ -67,7 +68,7 @@ const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",
   port: getValueFromEnv("PORT") || 8787,
 
-  version: process.env.npm_package_version as string,
+  version: VERSION,
 
   electronApp: getBooleanFromEnv("WWL_ELECTRON_APP", false),
 

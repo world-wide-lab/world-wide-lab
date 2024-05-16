@@ -5,6 +5,8 @@ import request from "supertest";
 import app from "../src/app";
 import sequelize from "../src/db";
 
+import { version } from "../package.json";
+
 const STUDY_ID = "abc123";
 const API_KEY = process.env.DEFAULT_API_KEY;
 
@@ -179,6 +181,8 @@ describe("API Routes", () => {
       });
       // @ts-ignore
       expect(session.metadata).toMatchSnapshot();
+      // @ts-ignore
+      expect(session.metadata.wwl_version).toBe(version);
     });
 
     it("missing studyId should lead to an error", async () => {
