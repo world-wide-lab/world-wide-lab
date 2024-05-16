@@ -8,6 +8,7 @@
     "directory": "packages/client"
   },
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "prepack": "npm run build",
     "prebuild": "node -p \"'export const VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
