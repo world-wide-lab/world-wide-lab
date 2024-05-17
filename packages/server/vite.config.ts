@@ -2,7 +2,10 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    exclude: ["tests-playwright/**"],
+    include: [
+      // Explicitly specify where to find tests to not run playwright tests
+      "tests/**/*.{test,spec}.?(c|m)[jt]s?(x)",
+    ],
     globals: true,
   },
 });
