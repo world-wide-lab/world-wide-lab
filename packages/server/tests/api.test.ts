@@ -180,9 +180,11 @@ describe("API Routes", () => {
         where: { sessionId: response.body.sessionId },
       });
       // @ts-ignore
-      expect(session.metadata).toMatchSnapshot();
-      // @ts-ignore
       expect(session.metadata.wwl_version).toBe(version);
+      // @ts-ignore
+      session.metadata.wwl_version = "varying";
+      // @ts-ignore
+      expect(session.metadata).toMatchSnapshot();
     });
 
     it("missing studyId should lead to an error", async () => {
