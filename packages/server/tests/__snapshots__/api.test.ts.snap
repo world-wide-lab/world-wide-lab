@@ -186,7 +186,7 @@ exports[`API Routes > POST /session > should start a new session with extra info
     },
     "version": "1.0",
   },
-  "wwl_version": "0.3.1",
+  "wwl_version": "varying",
 }
 `;
 
