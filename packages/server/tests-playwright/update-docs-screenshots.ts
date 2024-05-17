@@ -31,7 +31,7 @@ test("Update Screenshots for docs", async ({ page }) => {
   await email.fill(process.env.ADMIN_AUTH_DEFAULT_EMAIL as string);
   await password.fill(process.env.ADMIN_AUTH_DEFAULT_PASSWORD as string);
   // Submit
-  await page.getByText("Log in").click();
+  await page.getByText("Login").click();
   // Log in should have been successful
   await expect(page).toHaveURL("/admin");
   await expect(page).not.toHaveURL("/admin/login");
@@ -39,7 +39,7 @@ test("Update Screenshots for docs", async ({ page }) => {
   // - Take Screenshots for documentation -
   // Home Page (wait for chart to load)
   await page.locator(".frappe-chart").waitFor();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   await takeScreenshot(page, "admin");
 
   // List of Studies
