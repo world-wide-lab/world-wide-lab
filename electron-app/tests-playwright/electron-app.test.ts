@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { _electron as electron } from "playwright";
 
-import path from "path";
+import path from "node:path";
 
 const rootDir = path.resolve(__dirname, "..");
 const executablePath = path.resolve(

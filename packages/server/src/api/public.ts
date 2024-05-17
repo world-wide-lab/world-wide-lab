@@ -1,17 +1,22 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { ForeignKeyConstraintError } from "sequelize";
 import { number, object } from "yup";
-import { cache } from "../cache";
-import config from "../config";
-import sequelize from "../db";
-import { getDbVersion } from "../db/replication";
-import { AppError } from "../errors";
+import { cache } from "../cache.js";
+import config from "../config.js";
+import sequelize from "../db/index.js";
+import { getDbVersion } from "../db/replication.js";
+import { AppError } from "../errors.js";
+
 import {
-  CreateSessionParams,
-  ParticipantParams,
-  ResponseParams,
-  SessionParams,
-  StudyParams,
+  type CreateSessionParams,
+  type ParticipantParams,
+  type ResponseParams,
+  type SessionParams,
+  type StudyParams,
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,
@@ -20,7 +25,7 @@ import {
   sessionCreationRequestSchema,
   sessionSchema,
   studySchema,
-} from "../schemas";
+} from "../schemas.js";
 
 const routerPublic = express.Router();
 

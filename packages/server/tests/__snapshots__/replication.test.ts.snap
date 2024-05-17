@@ -1,25 +1,25 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Replication API of Replication Destination should fail when not authenticated 1`] = `
+exports[`Replication > API of Replication Destination > should fail when not authenticated 1`] = `
 {
   "error": "Authentication via API Key required",
 }
 `;
 
-exports[`Replication API of Replication Destination should fail when not configured to act as destination source 1`] = `
+exports[`Replication > API of Replication Destination > should fail when not configured to act as destination source 1`] = `
 {
   "error": "Serving as a replication destination is not enabled. Set REPLICATION_ROLE to 'destination' to enable this feature.",
   "type": "AppError",
 }
 `;
 
-exports[`Replication API of Replication Destination should work as intended 1`] = `
+exports[`Replication > API of Replication Destination > should work as intended 1`] = `
 {
   "message": "Success!",
 }
 `;
 
-exports[`Replication API of Replication Source should download a raw list of responses 1`] = `
+exports[`Replication > API of Replication Source > should download a raw list of responses 1`] = `
 [
   "responseId",
   "createdAt",
@@ -30,7 +30,7 @@ exports[`Replication API of Replication Source should download a raw list of res
 ]
 `;
 
-exports[`Replication API of Replication Source should download a raw list of sessions 1`] = `
+exports[`Replication > API of Replication Source > should download a raw list of sessions 1`] = `
 [
   "sessionId",
   "createdAt",
@@ -44,7 +44,7 @@ exports[`Replication API of Replication Source should download a raw list of ses
 ]
 `;
 
-exports[`Replication API of Replication Source should download a raw list of sessions, honoring offsets 1`] = `
+exports[`Replication > API of Replication Source > should download a raw list of sessions, honoring offsets 1`] = `
 [
   "sessionId",
   "createdAt",
@@ -58,7 +58,7 @@ exports[`Replication API of Replication Source should download a raw list of ses
 ]
 `;
 
-exports[`Replication API of Replication Source should download a raw list of studies 1`] = `
+exports[`Replication > API of Replication Source > should download a raw list of studies 1`] = `
 [
   "studyId",
   "createdAt",
@@ -69,27 +69,27 @@ exports[`Replication API of Replication Source should download a raw list of stu
 ]
 `;
 
-exports[`Replication API of Replication Source should fail when not authenticated 1`] = `
+exports[`Replication > API of Replication Source > should fail when not authenticated 1`] = `
 {
   "error": "Authentication via API Key required",
 }
 `;
 
-exports[`Replication API of Replication Source should fail when not configured to act as replication source 1`] = `
+exports[`Replication > API of Replication Source > should fail when not configured to act as replication source 1`] = `
 {
   "error": "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
   "type": "AppError",
 }
 `;
 
-exports[`Replication API of Replication Source should fail when not configured to act as replication source 2`] = `
+exports[`Replication > API of Replication Source > should fail when not configured to act as replication source 2`] = `
 {
   "error": "Serving as a replication source is not enabled. Set REPLICATION_ROLE to 'source' to enable this feature.",
   "type": "AppError",
 }
 `;
 
-exports[`Replication API of Replication Source should retrieve a list of participants 1`] = `
+exports[`Replication > API of Replication Source > should retrieve a list of participants 1`] = `
 [
   "participantId",
   "createdAt",
@@ -99,7 +99,7 @@ exports[`Replication API of Replication Source should retrieve a list of partici
 ]
 `;
 
-exports[`Replication API of Replication Source should support proper chunking of data 1`] = `
+exports[`Replication > API of Replication Source > should support proper chunking of data 1`] = `
 [
   "responseId",
   "createdAt",

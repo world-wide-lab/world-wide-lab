@@ -1,14 +1,14 @@
 import type { Response } from "express";
 import { json2csv } from "json-2-csv";
-import { QueryTypes, Sequelize } from "sequelize";
-import config from "../config";
+import { QueryTypes, type Sequelize } from "sequelize";
+import config from "../config.js";
 
 // Export data from the database in chunks
 async function paginatedExport(
   res: Response,
   queryData: (offset: number, limit: number) => Promise<object[]>,
   format: "json" | "csv",
-  limit: number = Infinity,
+  limit: number = Number.POSITIVE_INFINITY,
   initialOffset = 0,
 ) {
   const onStart = () => {
@@ -83,7 +83,7 @@ async function chunkedQuery({
   onData,
   onStart = () => {},
   onEnd = () => {},
-  limit = Infinity,
+  limit = Number.POSITIVE_INFINITY,
   initialOffset = 0,
 }: {
   queryData: (offset: number, limit: number) => Promise<object[]>;

@@ -1,10 +1,12 @@
+import { styled } from "@adminjs/design-system/styled-components";
 import React, { useEffect, useState, useRef } from "react";
-import styled from "styled-components";
-import config from "../../../config";
+import config from "../../../config.js";
 
 import { ApiClient } from "adminjs";
 
 const api = new ApiClient();
+
+type ApiDocsPageResponse = { apiKey: string };
 
 function getUrlOrigin(url: string) {
   if (url) {
@@ -55,7 +57,7 @@ const ApiDocsPage = () => {
   }
 
   useEffect(() => {
-    api.getPage({ pageName: "Public API" }).then((res) => {
+    api.getPage<ApiDocsPageResponse>({ pageName: "Public API" }).then((res) => {
       console.log("Received Api Key", res.data);
 
       setApiKey(res.data.apiKey);

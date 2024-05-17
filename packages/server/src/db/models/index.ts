@@ -1,4 +1,4 @@
-import { DataTypes, Sequelize } from "sequelize";
+import { DataTypes, type Sequelize } from "sequelize";
 
 const columnComments = {
   studyId:

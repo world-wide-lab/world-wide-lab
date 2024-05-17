@@ -1,7 +1,7 @@
 // Set up fake environment variables
 import "./setup_env";
 
-import { URL } from "url";
+import { URL } from "node:url";
 import { Op } from "sequelize";
 import request from "supertest";
 import app from "../src/app";
@@ -363,7 +363,7 @@ describe("Replication", () => {
         },
       };
       // @ts-ignore (typescript doesn't recognize the mock function)
-      global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
+      global.fetch = vi.fn((fetchUrl: string, fetchOptions) => {
         // Mock just one option of using fetch
         const method = fetchOptions?.method?.toUpperCase() || "GET";
         const endpoint = fetchUrl.replace(REPLICATION_SOURCE_URL, "");
@@ -390,8 +390,12 @@ describe("Replication", () => {
         } else if (Array.isArray(matchingRespone)) {
           // Array => get slices via limit and offset
           const url = new URL(endpoint, "http://localhost");
-          const limit = parseInt(url.searchParams.get("limit") as string);
-          const offset = parseInt(url.searchParams.get("offset") as string);
+          const limit = Number.parseInt(
+            url.searchParams.get("limit") as string,
+          );
+          const offset = Number.parseInt(
+            url.searchParams.get("offset") as string,
+          );
 
           data = matchingRespone.slice(offset, offset + limit);
         } else {
@@ -402,7 +406,7 @@ describe("Replication", () => {
         return Promise.resolve({
           json: () => Promise.resolve(data),
         });
-      }) as jest.MockedFunction<typeof fetch>;
+      }) as vi.MockedFunction<typeof fetch>;
     });
 
     it("should work as intended", async () => {

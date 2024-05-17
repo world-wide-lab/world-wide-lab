@@ -1,12 +1,12 @@
-import type { Server as HTTPServer } from "http";
-import app from "./app";
-import config from "./config";
-import sequelize from "./db";
-import generateExampleData from "./db/exampleData";
-import { up } from "./db/migrate";
-import { logger } from "./logger";
+import type { Server as HTTPServer } from "node:http";
+import app from "./app.js";
+import config from "./config.js";
+import generateExampleData from "./db/exampleData.js";
+import sequelize from "./db/index.js";
+import { up } from "./db/migrate.js";
+import { logger } from "./logger.js";
 
-import { ensureStudiesExist } from "./db/ensureStudiesExist";
+import { ensureStudiesExist } from "./db/ensureStudiesExist.js";
 
 // Export Server type for convenience
 export type Server = HTTPServer;

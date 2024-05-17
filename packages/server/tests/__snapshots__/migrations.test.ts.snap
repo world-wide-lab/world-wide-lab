@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Database Migrations should always create the same table structures 1`] = `
+exports[`Database Migrations > should always create the same table structures 1`] = `
 [
   {
     "createdAt": {
@@ -253,7 +253,7 @@ exports[`Database Migrations should always create the same table structures 1`] 
 ]
 `;
 
-exports[`Database Migrations should always create the same tables 1`] = `
+exports[`Database Migrations > should always create the same tables 1`] = `
 [
   "wwl_internal_admin_sessions",
   "wwl_internal_migrations",

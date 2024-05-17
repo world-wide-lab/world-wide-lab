@@ -1,5 +1,5 @@
 import { config as dotenvConfig } from "dotenv";
-import { VERSION } from "./version";
+import { VERSION } from "./version.js";
 
 function getValueFromEnv(key: string): string | undefined {
   const value = process.env[key];
@@ -56,7 +56,7 @@ function getArrayFromEnv(key: string): string[] {
 function getIntFromEnv(key: string): number | undefined {
   const strValue = getValueFromEnv(key);
   if (strValue === undefined) return undefined;
-  return parseInt(strValue);
+  return Number.parseInt(strValue);
 }
 
 // Load .env file

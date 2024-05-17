@@ -30,7 +30,7 @@ test("has a working admin UI", async ({ page }) => {
   await email.fill(process.env.ADMIN_AUTH_DEFAULT_EMAIL as string);
   await password.fill(process.env.ADMIN_AUTH_DEFAULT_PASSWORD as string);
   // Submit
-  await page.getByText("Log in").click();
+  await page.getByText("Login").click();
 
   // Log in should have been successful
   await expect(page).toHaveURL("/admin");

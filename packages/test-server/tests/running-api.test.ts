@@ -345,7 +345,7 @@ describe("API Routes", () => {
 
     it("should fail when the countType does not exist", async () => {
       // Don't pass on console.error message, as it is expected
-      jest.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "error").mockImplementation(() => {});
 
       const response = await endpoint
         .get(`/v1/study/${studyId}/count/non-existent-type`)

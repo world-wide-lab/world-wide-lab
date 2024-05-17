@@ -11,7 +11,10 @@ import {
 } from "../src";
 
 // import { init as initProd } from '@world-wide-lab/server/dist/init.js'
-import { Server, init as initDev } from "@world-wide-lab/server/src/init.ts";
+import {
+  type Server,
+  init as initDev,
+} from "@world-wide-lab/server/src/init.ts";
 
 const Client = process.env.CLIENT === "build" ? import("../dist") : DevClient;
 
@@ -26,7 +29,7 @@ describe("Client", () => {
     // @ts-ignore - We know that the server will only be returned after listen() is finished
     client = new Client({ url: `http://localhost:${server.address().port}` });
 
-    global.fetch = jest.fn(fetch);
+    global.fetch = vi.fn(fetch);
   }, 10000);
   afterAll(async () => {
     await new Promise((resolve, reject) => {

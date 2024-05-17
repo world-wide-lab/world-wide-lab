@@ -1,21 +1,24 @@
-import * as AdminJSSequelize from "@adminjs/sequelize";
-import AdminJS, { AdminPages, AdminPage } from "adminjs";
-import config from "../config";
-import sequelize from "../db";
-import { columnComments } from "../db/models";
-import { Components, componentLoader } from "./components";
-import { dashboardHandler } from "./handlers/dashboard";
-import { viewSessionHandler } from "./handlers/session";
+import {
+  Database as SequelizeDatabase,
+  Resource as SequelizeResource,
+} from "@adminjs/sequelize";
+import AdminJS, { type AdminPages, type AdminPage } from "adminjs";
+import config from "../config.js";
+import sequelize from "../db/index.js";
+import { columnComments } from "../db/models/index.js";
+import { Components, componentLoader } from "./components/index.js";
+import { dashboardHandler } from "./handlers/dashboard.js";
+import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
   newStudyHandler,
-} from "./handlers/study";
-import { initializeRouter } from "./router_auth";
+} from "./handlers/study.js";
+import { initializeRouter } from "./router_auth.js";
 
 AdminJS.registerAdapter({
-  Resource: AdminJSSequelize.Resource,
-  Database: AdminJSSequelize.Database,
+  Resource: SequelizeResource,
+  Database: SequelizeDatabase,
 });
 
 const pages: AdminPages = {};
@@ -58,7 +61,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Rocket",
+          icon: "Star",
         },
         properties: {
           studyId: {
@@ -106,7 +109,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Group",
+          icon: "Users",
         },
         actions: {
           new: {
@@ -156,7 +159,7 @@ const admin = new AdminJS({
           viewResponses: {
             actionType: "record",
             component: false,
-            icon: "View",
+            icon: "Eye",
             handler: viewSessionHandler,
           },
         },
@@ -197,7 +200,7 @@ const admin = new AdminJS({
       options: {
         navigation: {
           name: null,
-          icon: "Document",
+          icon: "File",
         },
         actions: {
           new: {
@@ -234,42 +237,46 @@ const admin = new AdminJS({
   locale: {
     language: "en",
     translations: {
-      labels: {
-        wwl_studies: "Studies",
-        wwl_participants: "Participants",
-        wwl_sessions: "Sessions",
-        wwl_responses: "Responses",
-      },
-      messages: {
-        loginWelcome:
-          "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
-      },
-      resources: {
-        wwl_studies: {
-          actions: {
-            new: "Create New Study",
-            show: "Study Info",
-            edit: "Edit Study",
-            delete: "Delete Study",
+      en: {
+        components: {
+          Login: {
+            welcomeMessage:
+              "to World-Wide-Lab, the open-source platform for running online experiments with a focus on large-scale citizen science.",
           },
         },
-        wwl_participants: {
-          actions: {
-            show: "Participant Info",
-            edit: "Edit Participant",
-            delete: "Delete Participant",
-          },
+        labels: {
+          wwl_studies: "Studies",
+          wwl_participants: "Participants",
+          wwl_sessions: "Sessions",
+          wwl_responses: "Responses",
         },
-        wwl_sessions: {
-          actions: {
-            show: "Session Info",
-            edit: "Edit Session",
-            delete: "Delete Session",
+        resources: {
+          wwl_studies: {
+            actions: {
+              new: "Create New Study",
+              show: "Study Info",
+              edit: "Edit Study",
+              delete: "Delete Study",
+            },
           },
-        },
-        wwl_responses: {
-          actions: {
-            show: "View Response",
+          wwl_participants: {
+            actions: {
+              show: "Participant Info",
+              edit: "Edit Participant",
+              delete: "Delete Participant",
+            },
+          },
+          wwl_sessions: {
+            actions: {
+              show: "Session Info",
+              edit: "Edit Session",
+              delete: "Delete Session",
+            },
+          },
+          wwl_responses: {
+            actions: {
+              show: "View Response",
+            },
           },
         },
       },

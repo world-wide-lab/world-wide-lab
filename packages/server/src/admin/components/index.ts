@@ -1,19 +1,23 @@
-import { ComponentLoader } from "adminjs";
+import { ComponentLoader, type OverridableComponent } from "adminjs";
 
-const componentLoader = new ComponentLoader();
+import path from "node:path";
+import * as url from "node:url";
 
-const Components = {
-  Dashboard: componentLoader.add("Dashboard", "./pages/dashboard"),
-  ApiDocsPage: componentLoader.add("ApiDocsPage", "./pages/api-docs"),
-  StudyDownloadAction: componentLoader.add(
-    "StudyDownloadAction",
-    "./StudyDownloadAction",
-  ),
-  StudyShowAction: componentLoader.add("StudyShowAction", "./StudyShowAction"),
-  ShowJsonProp: componentLoader.add(
-    "ShowJsonProp",
-    "./properties/ShowJsonProp",
-  ),
+export const componentLoader = new ComponentLoader();
+
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+export const add = (componentName: string, url: string): string =>
+  componentLoader.add(componentName, path.join(__dirname, url));
+
+export const override = (
+  componentName: OverridableComponent,
+  url: string,
+): string => componentLoader.override(componentName, path.join(__dirname, url));
+
+export const Components = {
+  Dashboard: add("Dashboard", "./pages/dashboard"),
+  ApiDocsPage: add("ApiDocsPage", "./pages/api-docs"),
+  StudyDownloadAction: add("StudyDownloadAction", "./StudyDownloadAction"),
+  StudyShowAction: add("StudyShowAction", "./StudyShowAction"),
+  ShowJsonProp: add("ShowJsonProp", "./properties/ShowJsonProp"),
 };
-
-export { componentLoader, Components };

@@ -1,17 +1,22 @@
-import pathLib from "path";
+import pathLib from "node:path";
 import { SequelizeStorage, Umzug } from "umzug";
 
-import sequelize from ".";
-import { logger } from "../logger";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { logger } from "../logger.js";
+import { getDirectory } from "../util.js";
+import sequelize from "./index.js";
+
+const dirname = getDirectory(import.meta.url);
 
 const dialect = sequelize.getDialect();
 
 const umzug = new Umzug({
   // Support both common and dialect-specific migrations
   migrations: {
-    glob: [`migrations/*.@(common|${dialect}).@(js|ts)`, { cwd: __dirname }],
+    glob: [`migrations/*.@(common|${dialect}).@(js|ts)`, { cwd: dirname }],
     resolve: ({ name, path, context }) => {
-      const migration = require(path as string);
+      const getMigration = async () => import(path as string);
       const nameWithoutExtension = pathLib.parse(path as string).name;
 
       // adjust the parameters Umzug will
@@ -19,8 +24,14 @@ const umzug = new Umzug({
       return {
         // Remove extension of migration names (to avoid double applying between js and ts)
         name: nameWithoutExtension,
-        up: async () => migration.up({ context }),
-        down: async () => migration.down({ context }),
+        up: async () => {
+          const migration = await getMigration();
+          await migration.up({ context });
+        },
+        down: async () => {
+          const migration = await getMigration();
+          await migration.down({ context });
+        },
       };
     },
   },
@@ -68,7 +79,9 @@ async function getLatestMigration(includeSuffix: boolean): Promise<string> {
   return latestMigration.substring(0, latestMigration.lastIndexOf("."));
 }
 
-if (require.main === module) {
+// Detect whether the file is called directly
+// TODO: Find a cleaner solution for this and determine whether we even need this
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // Can be called via e.g.
   // node dist/db/migrate.js create --name migration-name
   // after npm run build, or the following before building

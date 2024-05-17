@@ -5,15 +5,15 @@
  */
 
 import {
-  JsPsych,
-  JsPsychPlugin,
+  type JsPsych,
+  type JsPsychPlugin,
   ParameterType,
-  PluginInfo,
-  TrialType,
+  type PluginInfo,
+  type TrialType,
   initJsPsych,
 } from "jspsych";
 
-import { Client, Session } from "@world-wide-lab/client";
+import { Client, type Session } from "@world-wide-lab/client";
 import { VERSION } from "./version";
 
 type SessionResponseOptions = Parameters<Session["response"]>[0];

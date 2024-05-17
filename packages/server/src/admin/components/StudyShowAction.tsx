@@ -9,11 +9,12 @@ import {
   Select,
   Text,
 } from "@adminjs/design-system";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 import {
   ActionHeader,
-  ActionProps,
+  type ActionProps,
   BasePropertyComponent,
   LayoutElementRenderer,
 } from "adminjs";
@@ -23,7 +24,7 @@ import {
   CodeHighlightingStyles,
   highlightText,
   refreshHighlighting,
-} from "./partials/codeHighlighting";
+} from "./partials/codeHighlighting.js";
 
 const StudyShowAction: React.FC<ActionProps> = (props) => {
   const { resource, record, action } = props;
@@ -150,7 +151,7 @@ session.finish();
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="View" /> View Sessions in this Study
+          <Icon icon="Eye" /> View Sessions in this Study
         </Button>
         &nbsp; &nbsp;
         <Button
