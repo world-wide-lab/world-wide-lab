@@ -1,9 +1,9 @@
 {
   "name": "@world-wide-lab/deploy",
-  "private": true,
+  "main": "dist/index.js",
   "scripts": {
-    "deploy:aws": "pulumi up -C aws",
-    "refresh:aws": "pulumi refresh -C aws"
+    "prepack": "npm run build",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^16.18.91"

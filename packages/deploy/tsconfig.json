@@ -1,16 +1,20 @@
 {
   "compilerOptions": {
-    "strict": true,
-    "outDir": "bin",
+    "strict": false,
+    "outDir": "dist",
     "target": "es2016",
     "module": "commonjs",
     "moduleResolution": "node",
+    "declaration": true,
     "sourceMap": true,
     "experimentalDecorators": true,
     "pretty": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    // Due to type error in Chokidar
+    "skipLibCheck": true,
   },
-  "files": ["aws/index.ts"]
+  "include": ["src/**/*", "tests/**/*"]
 }

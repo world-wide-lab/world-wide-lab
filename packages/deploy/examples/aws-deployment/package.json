@@ -1,0 +1,16 @@
+{
+  "name": "wwl-deployment",
+  "version": "1.0.0",
+  "description": "My package description",
+  "main": "index.ts",
+  "scripts": {
+    "login": "pulumi login --local",
+    "deploy": "pulumi up"
+  },
+  "dependencies": {
+    "@world-wide-lab/deploy": "file:../.."
+  },
+  "author": "Jan Simson",
+  "license": "MIT",
+  "private": true
+}
