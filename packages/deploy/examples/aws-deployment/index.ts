@@ -1,6 +1,6 @@
 import { WwlAwsDeployment } from '@world-wide-lab/deploy';
 
-new WwlAwsDeployment("my-wwl-deployment", {
+new WwlAwsDeployment({
   // secrets: {
     // dbUsername: "",
     // wwlAdminAuthDefaultEmail: "",

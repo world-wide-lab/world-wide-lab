@@ -21,7 +21,7 @@ interface WwlAwsDeploymentConfig {
 };
 
 
-export class WwlAwsDeployment extends pulumi.ComponentResource {
+export class WwlAwsDeployment {
   readonly config: WwlAwsDeploymentConfig;
   readonly url: pulumi.Output<string>;
   readonly dbConnectionString: pulumi.Output<string>;
@@ -36,15 +36,7 @@ export class WwlAwsDeployment extends pulumi.ComponentResource {
    * @param config
    * @param opts A bag of options that control this resource's behavior.
    */
-  constructor(name = "wwl-aws-deployment", config?: Partial<WwlAwsDeploymentConfig>, opts?: pulumi.ResourceOptions) {
-    const inputs: pulumi.Inputs = {
-        options: opts,
-    };
-    super("pulumi-contrib:components:WwlAwsDeployment", name, inputs, opts);
-
-    // Default resource options for this component's child resources.
-    const defaultResourceOptions: pulumi.ResourceOptions = { parent: this };
-
+  constructor(config?: Partial<WwlAwsDeploymentConfig>) {
     // Load environment variables from a .env file
     dotenv.config();
     // Generate the final configuration by merging in defaults
