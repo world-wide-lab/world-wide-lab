@@ -8,7 +8,7 @@
     "deploy": "pulumi up"
   },
   "dependencies": {
-    "@world-wide-lab/deploy": "^0.1.0"
+    "@world-wide-lab/deploy": "file:../.."
   },
   "author": "Jan Simson",
   "license": "MIT",

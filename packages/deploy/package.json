@@ -1,5 +1,6 @@
 {
   "name": "@world-wide-lab/deploy",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "scripts": {
     "prepack": "npm run build",

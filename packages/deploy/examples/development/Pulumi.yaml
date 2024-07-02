@@ -1,0 +1,3 @@
+name: World-Wide-Lab
+description: Deployment of the World-Wode-Lab Server and accompanying database
+runtime: nodejs
