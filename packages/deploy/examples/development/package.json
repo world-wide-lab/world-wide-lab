@@ -10,7 +10,6 @@
   "dependencies": {
     "@world-wide-lab/deploy": "file:../.."
   },
-  "author": "Jan Simson",
   "license": "MIT",
   "private": true
 }
