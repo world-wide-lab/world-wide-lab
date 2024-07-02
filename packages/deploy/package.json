@@ -1,5 +1,6 @@
 {
   "name": "@world-wide-lab/deploy",
+  "description": "Deploy World-Wide-Lab to the cloud.",
   "version": "0.1.0",
   "main": "dist/index.js",
   "scripts": {
