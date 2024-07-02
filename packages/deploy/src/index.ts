@@ -1,7 +1,3 @@
-import {
-  WwlAwsDeployment
-} from "./aws";
+import { WwlAwsDeployment } from "./aws";
 
-export {
-  WwlAwsDeployment
-}
+export { WwlAwsDeployment };

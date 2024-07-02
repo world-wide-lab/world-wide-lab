@@ -1,4 +1,4 @@
-import { WwlAwsDeployment } from '@world-wide-lab/deploy';
+import { WwlAwsDeployment } from "@world-wide-lab/deploy";
 
 new WwlAwsDeployment({
   secrets: {
@@ -11,5 +11,5 @@ new WwlAwsDeployment({
     wwlAdminAuthDefaultPassword: "",
     wwlAdminAuthSessionSecret: "",
     wwlDefaultApiKey: "",
-  }
+  },
 });

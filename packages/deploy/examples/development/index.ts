@@ -1,4 +1,3 @@
-import { WwlAwsDeployment } from '@world-wide-lab/deploy';
+import { WwlAwsDeployment } from "@world-wide-lab/deploy";
 
-new WwlAwsDeployment({
-});
+new WwlAwsDeployment({});

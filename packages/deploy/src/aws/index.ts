@@ -1,25 +1,24 @@
-import dotenv from "dotenv";
 import merge from "deepmerge";
+import dotenv from "dotenv";
 
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
 interface WwlAwsDeploymentConfig {
-  containerPort: number,
-  cpu: number,
-  memory: number,
-  minCapacity: number,
-  maxCapacity: number,
+  containerPort: number;
+  cpu: number;
+  memory: number;
+  minCapacity: number;
+  maxCapacity: number;
   secrets: {
-    dbUsername: string,
-    dbPassword: string,
-    wwlAdminAuthDefaultEmail: string,
-    wwlAdminAuthDefaultPassword: string,
-    wwlAdminAuthSessionSecret: string,
-    wwlDefaultApiKey: string,
-  }
-};
-
+    dbUsername: string;
+    dbPassword: string;
+    wwlAdminAuthDefaultEmail: string;
+    wwlAdminAuthDefaultPassword: string;
+    wwlAdminAuthSessionSecret: string;
+    wwlDefaultApiKey: string;
+  };
+}
 
 export class WwlAwsDeployment {
   readonly config: WwlAwsDeploymentConfig;
@@ -54,10 +53,11 @@ export class WwlAwsDeployment {
           dbUsername: process.env.DB_USERNAME,
           dbPassword: process.env.DB_PASSWORD,
           wwlAdminAuthDefaultEmail: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
-          wwlAdminAuthDefaultPassword: process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
+          wwlAdminAuthDefaultPassword:
+            process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
           wwlAdminAuthSessionSecret: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
           wwlDefaultApiKey: process.env.WWL_DEFAULT_API_KEY,
-        }
+        },
       },
       // @ts-ignore - unsure how to make ts happy here with <Partial> & deepmerge
       config,

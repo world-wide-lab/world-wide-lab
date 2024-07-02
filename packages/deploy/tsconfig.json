@@ -14,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     // Due to type error in Chokidar
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*", "tests/**/*"]
 }
