@@ -1,5 +1,6 @@
 {
   "name": "@world-wide-lab/deploy",
+  "license": "MIT",
   "description": "Deploy World-Wide-Lab to the cloud.",
   "version": "0.1.1",
   "main": "dist/index.js",
