@@ -1,3 +1,5 @@
 .env
 
 Pulumi.*.yaml
+
+examples/**/package-lock.json

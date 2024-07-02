@@ -1,9 +1,12 @@
 {
   "name": "@world-wide-lab/deploy",
-  "private": true,
+  "license": "MIT",
+  "description": "Deploy World-Wide-Lab to the cloud.",
+  "version": "0.1.1",
+  "main": "dist/index.js",
   "scripts": {
-    "deploy:aws": "pulumi up -C aws",
-    "refresh:aws": "pulumi refresh -C aws"
+    "prepack": "npm run build",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^16.18.91"
