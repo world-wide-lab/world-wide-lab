@@ -10,10 +10,6 @@ on:
     branches:
       - feature/docker/*
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: world-wide-lab/server
-
 jobs:
   build-docker:
     runs-on: ubuntu-latest
@@ -27,12 +23,20 @@ jobs:
 
       # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages.
       # Once published, the packages are scoped to the account defined here.
-      - name: Log in to the Container registry
+      - name: Log in to the Github Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to the AWS ECR Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: public.ecr.aws
+          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        env:
+          AWS_REGION: us-east-1
 
       # This step uses docker/metadata-action
       # to extract tags and labels that will be applied to the specified image.
@@ -42,7 +46,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ghcr.io/world-wide-lab/server
+            public.ecr.aws/g0k5o2x2/server
           tags: |
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
