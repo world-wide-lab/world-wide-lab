@@ -42,7 +42,7 @@ aws configure
 
 You can get the credentials as follows:
 
-1. Go to your [account console](console.aws.amazon.com).
+1. Go to your [account console](https://console.aws.amazon.com).
 2. Click on the top-right corner, where youre account name is written.
 3. Click on "Security credentials".
 4. Create a new access key and copy the access key ID and secret access key.
