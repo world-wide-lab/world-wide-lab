@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="The World-Wide-Lab Logo" src="../../img/logo.svg" width="60%">
+  <img alt="The World-Wide-Lab Logo" src="https://raw.githubusercontent.com/world-wide-lab/world-wide-lab/main/img/logo.svg" width="60%">
 </p>
 
 # World-Wide-Lab: Server Tester
