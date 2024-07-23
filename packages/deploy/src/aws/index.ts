@@ -90,6 +90,7 @@ export class WwlAwsDeployment {
       // skipFinalSnapshot: true,
       finalSnapshotIdentifier: "wwl-db-final-snapshot",
       deletionProtection: true,
+      performanceInsightsEnabled: true,
     });
 
     this.dbConnectionString = pulumi
