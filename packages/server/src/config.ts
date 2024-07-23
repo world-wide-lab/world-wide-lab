@@ -135,7 +135,9 @@ if (config.replication.role !== null) {
       );
     }
     if (config.replication.source.endsWith("/")) {
-      console.warn('REPLICATION_SOURCE should not have a trailing slash. This may lead to unexpected errors.');
+      console.warn(
+        "REPLICATION_SOURCE should not have a trailing slash. This may lead to unexpected errors.",
+      );
     }
     if (config.database.generateExampleData) {
       throw new Error(
