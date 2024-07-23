@@ -465,6 +465,28 @@ describe("API Routes", () => {
     });
   });
 
+  describe("GET /study/count-all/:countType", () => {
+    it("should return the correct count (for all sessions)", async () => {
+      const response = await endpoint.get("/v1/study/count-all/all").send();
+
+      expect(response.status).toBe(200);
+      expect(response.body[studyId]).toBe(4);
+
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it("should return the correct count (for finished sessions)", async () => {
+      const response = await endpoint
+        .get("/v1/study/count-all/finished")
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body[studyId]).toBe(1);
+
+      expect(response.body).toMatchSnapshot();
+    });
+  });
+
   describe("GET /study/:studyId/data/:dataType/json", () => {
     it("should download a raw list of responses", async () => {
       const response = await endpoint
