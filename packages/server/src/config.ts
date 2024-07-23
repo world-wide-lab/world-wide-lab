@@ -134,6 +134,9 @@ if (config.replication.role !== null) {
         `When REPLICATION_ROLE is set to "destination", REPLICATION_SOURCE and REPLICATION_SOURCE_API_KEY have to be set.`,
       );
     }
+    if (config.replication.source.endsWith("/")) {
+      console.warn('REPLICATION_SOURCE should not have a trailing slash. This may lead to unexpected errors.');
+    }
     if (config.database.generateExampleData) {
       throw new Error(
         `When REPLICATION_ROLE is set to "destination", GENERATE_EXAMPLE_DATA must be set to 'false'.`,
