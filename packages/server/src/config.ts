@@ -103,6 +103,10 @@ const config = {
   database: {
     url: getStringFromEnv("DATABASE_URL"),
     generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
+    _generateBenchmarkingData: getBooleanFromEnv(
+      "_WWL_INTERNAL_GENERATE_BENCHMARKING_DATA",
+      false,
+    ),
     chunkSize: getIntFromEnv("DATABASE_CHUNK_SIZE") || 10000,
   },
 

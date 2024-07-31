@@ -1,7 +1,10 @@
 import type { Server as HTTPServer } from "node:http";
 import app from "./app.js";
 import config from "./config.js";
-import generateExampleData from "./db/exampleData.js";
+import {
+  generateBenchmarkingData,
+  generateExampleData,
+} from "./db/exampleData.js";
 import sequelize from "./db/index.js";
 import { up } from "./db/migrate.js";
 import { logger } from "./logger.js";
@@ -36,6 +39,9 @@ async function init(): Promise<HTTPServer> {
 
   if (config.database.generateExampleData) {
     await generateExampleData(sequelize);
+  }
+  if (config.database._generateBenchmarkingData) {
+    await generateBenchmarkingData(sequelize);
   }
 
   // Make sure that certain studies are available (based on env vars)
