@@ -1,5 +1,5 @@
-const path = require("node:path");
-const { app } = require("electron");
+import path from "node:path";
+import { app } from "electron";
 
 const BASE_DIR = app.getPath("userData");
 const DATABASE_NAME = "world-wide-lab-database.sqlite";
