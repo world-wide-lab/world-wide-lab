@@ -3,6 +3,7 @@ import {
   Button,
   DrawerContent,
   DrawerFooter,
+  Icon,
   Label,
   Link,
   Select,
@@ -26,6 +27,7 @@ const MyNewAction = (props: ActionProps) => {
     { value: "participants-raw", label: "Participants (unprocessed)" },
   ];
   const [dataType, setDataType] = useState(dataTypeOptions[0]);
+  const [buttonClicked, setButtonClicked] = useState(false);
 
   const formatOptions = [
     { value: "csv", label: "CSV" },
@@ -52,7 +54,10 @@ const MyNewAction = (props: ActionProps) => {
               <Label>Data Type</Label>
               <Select
                 value={dataType}
-                onChange={(selected) => setDataType(selected)}
+                onChange={(selected) => {
+                  setButtonClicked(false);
+                  setDataType(selected);
+                }}
                 options={dataTypeOptions}
               />
             </Box>
@@ -60,7 +65,10 @@ const MyNewAction = (props: ActionProps) => {
               <Label>File Format</Label>
               <Select
                 value={format}
-                onChange={(selected) => setFormat(selected)}
+                onChange={(selected) => {
+                  setButtonClicked(false);
+                  setFormat(selected);
+                }}
                 options={formatOptions}
               />
             </Box>
@@ -85,8 +93,21 @@ const MyNewAction = (props: ActionProps) => {
           href={url}
           download={filename}
           variant="contained"
-          style={{ cursor: "pointer" }}
+          style={
+            buttonClicked
+              ? { opacity: 0.5, cursor: "default" }
+              : { cursor: "pointer" }
+          }
+          disabled={buttonClicked}
+          onClick={(event: Event) => {
+            if (buttonClicked) {
+              event.preventDefault();
+              return;
+            }
+            setButtonClicked(true);
+          }}
         >
+          {buttonClicked && <Icon icon="Loader" spin={true} />}
           Download
         </Button>
       </DrawerFooter>
