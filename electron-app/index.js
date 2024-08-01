@@ -1,8 +1,8 @@
 // Set environment variables
-require("./set-env");
+import "./set-env.js";
 
-const { app, dialog, shell, BrowserWindow } = require("electron");
-const { init } = require("@world-wide-lab/server/dist/init.js");
+import { init } from "@world-wide-lab/server/dist/init.js";
+import { BrowserWindow, app, dialog, shell } from "electron";
 
 // To prevent super slow start up
 // via: https://stackoverflow.com/questions/55726947/electron-why-is-there-a-big-delay-when-loading-the-main-window-through-localho
