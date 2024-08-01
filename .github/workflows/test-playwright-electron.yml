@@ -16,6 +16,15 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
+      # Temporary workaround for #72, till the issue is fixed in sqlite3 package
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install pango dependency
+        run: |
+          brew install pango
+      # End of workaround
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
