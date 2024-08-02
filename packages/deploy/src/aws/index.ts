@@ -17,7 +17,6 @@ export interface WwlAwsDeploymentConfig {
   };
 }
 
-// TODO: Both classes above are very similar. Could be refactored to share common logic.
 export {
   WwlAwsAppRunnerDeployment,
   WwlAwsEcsDeployment,
