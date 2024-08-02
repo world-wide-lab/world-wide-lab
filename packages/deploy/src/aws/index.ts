@@ -1,5 +1,5 @@
-import { WwlAwsAppRunnerDeployment } from "./app-runner";
-import { WwlAwsEcsDeployment } from "./ecs";
+import { WwlAwsAppRunnerDeployment } from "./stacks/app-runner";
+import { WwlAwsEcsDeployment } from "./stacks/ecs";
 
 export interface WwlAwsDeploymentConfig {
   containerPort: number;
