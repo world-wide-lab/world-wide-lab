@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { WwlPulumiDeployment } from "../../deployment";
 import { awsRequirements } from "../requirements";
 
 export interface WwlAwsDeploymentConfig {
@@ -22,7 +23,7 @@ export interface WwlAwsDeploymentConfig {
   };
 }
 
-export abstract class WwlAwsBaseDeployment {
+export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
   public readonly requirements = awsRequirements;
 
   readonly config: WwlAwsDeploymentConfig;
@@ -38,6 +39,8 @@ export abstract class WwlAwsBaseDeployment {
    * @param opts A bag of options that control this resource's behavior.
    */
   constructor(config?: Partial<WwlAwsDeploymentConfig>) {
+    super();
+
     // Load environment variables from a .env file
     dotenv.config();
     // Generate the final configuration by merging in defaults

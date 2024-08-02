@@ -1,5 +1,5 @@
-import { WwlAwsAppRunnerDeployment } from "./stacks/app-runner";
-import { WwlAwsEcsDeployment } from "./stacks/ecs";
+import { WwlAwsAppRunnerDeployment } from "./pulumiDeployments/app-runner";
+import { WwlAwsEcsDeployment } from "./pulumiDeployments/ecs";
 
 export {
   WwlAwsAppRunnerDeployment,
