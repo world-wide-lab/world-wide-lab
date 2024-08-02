@@ -12,7 +12,7 @@ async function viewSessionResponsesHandler(
   response: ActionResponse,
   context: ActionContext,
 ): Promise<ActionResponse> {
-  const { record, resource, currentAdmin, h, translateMessage } = context;
+  const { record, resource, currentAdmin, h } = context;
 
   if (!request.params.recordId || !record) {
     throw new NotFoundError(

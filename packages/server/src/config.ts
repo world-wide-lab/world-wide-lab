@@ -103,6 +103,10 @@ const config = {
   database: {
     url: getStringFromEnv("DATABASE_URL"),
     generateExampleData: getBooleanFromEnv("GENERATE_EXAMPLE_DATA", true),
+    _generateBenchmarkingData: getBooleanFromEnv(
+      "_WWL_INTERNAL_GENERATE_BENCHMARKING_DATA",
+      false,
+    ),
     chunkSize: getIntFromEnv("DATABASE_CHUNK_SIZE") || 10000,
   },
 
@@ -135,7 +139,9 @@ if (config.replication.role !== null) {
       );
     }
     if (config.replication.source.endsWith("/")) {
-      console.warn('REPLICATION_SOURCE should not have a trailing slash. This may lead to unexpected errors.');
+      console.warn(
+        "REPLICATION_SOURCE should not have a trailing slash. This may lead to unexpected errors.",
+      );
     }
     if (config.database.generateExampleData) {
       throw new Error(

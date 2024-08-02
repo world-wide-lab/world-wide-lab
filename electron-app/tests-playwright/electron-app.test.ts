@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { _electron as electron } from "playwright";
 
 import path from "node:path";
+import * as url from "node:url";
 
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 const executablePath = path.resolve(
   __dirname,

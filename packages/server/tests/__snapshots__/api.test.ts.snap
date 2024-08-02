@@ -139,6 +139,20 @@ exports[`API Routes > GET /study/:studyId/data/:dataType/json > should require t
 }
 `;
 
+exports[`API Routes > GET /study/count-all/:countType > should return the correct count (for all sessions) 1`] = `
+{
+  "abc123": 4,
+  "abc123_extra": 0,
+}
+`;
+
+exports[`API Routes > GET /study/count-all/:countType > should return the correct count (for finished sessions) 1`] = `
+{
+  "abc123": 1,
+  "abc123_extra": 0,
+}
+`;
+
 exports[`API Routes > GET /study/list > should return a list of studies 1`] = `
 [
   {

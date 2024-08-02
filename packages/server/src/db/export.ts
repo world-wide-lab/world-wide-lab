@@ -19,6 +19,7 @@ async function paginatedExport(
     } else if (format === "csv") {
       res.status(200).contentType("text/csv");
     }
+    res.write("");
   };
 
   // Process & return each chunk of data
@@ -109,19 +110,19 @@ async function chunkedQuery({
       pageSize = absoluteLimit - offset;
     }
 
-    // Retrieve the data
-    const data = await queryData(offset, pageSize);
-    if (!Array.isArray(data)) {
-      throw new Error("Data is always expected to be returned as an Array");
-    }
-    nRowsResult = data.length;
-
     if (isFirstIteration) {
       // Call onStart after we received data for the first time to still allow
       // sending error status codes if query code fails.
       onStart();
       isFirstIteration = false;
     }
+
+    // Retrieve the data
+    const data = await queryData(offset, pageSize);
+    if (!Array.isArray(data)) {
+      throw new Error("Data is always expected to be returned as an Array");
+    }
+    nRowsResult = data.length;
 
     // Do something with the data (usually returning it to the user)
     if (nRowsResult > 0) {

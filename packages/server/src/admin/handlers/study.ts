@@ -17,7 +17,7 @@ async function newStudyHandler(
   response: ActionResponse,
   context: ActionContext,
 ) {
-  const { resource, h, currentAdmin, translateMessage } = context;
+  const { resource, h, currentAdmin } = context;
   if (request.method === "post") {
     const params = paramConverter.prepareParams(
       request.payload ?? {},
@@ -34,7 +34,6 @@ async function newStudyHandler(
     const returnedParams = await sequelize.models.Study.create(record.params);
     record.storeParams(returnedParams);
     // * End of changes *
-
     const [populatedRecord] = await populator([record], context);
 
     // eslint-disable-next-line no-param-reassign
@@ -46,15 +45,14 @@ async function newStudyHandler(
           resourceId: resource._decorated?.id() || resource.id(),
         }),
         notice: {
-          message: translateMessage("successfullyCreated", resource.id()),
+          message: "successfullyCreated",
           type: "success",
         },
         record: record.toJSON(currentAdmin),
       };
     }
     const baseMessage =
-      populatedRecord.baseError?.message ||
-      translateMessage("thereWereValidationErrors", resource.id());
+      populatedRecord.baseError?.message || "thereWereValidationErrors";
     return {
       record: record.toJSON(currentAdmin),
       notice: {
@@ -63,7 +61,6 @@ async function newStudyHandler(
       },
     };
   }
-
   // TODO: add wrong implementation error
   throw new Error("new action can be invoked only via `post` http method");
 }
@@ -73,7 +70,7 @@ async function deleteStudyHandler(
   response: ActionResponse,
   context: ActionContext,
 ) {
-  const { record, resource, currentAdmin, h, translateMessage } = context;
+  const { record, resource, currentAdmin, h } = context;
   if (!request.params.recordId || !record) {
     throw new NotFoundError(
       ['You have to pass "recordId" to Delete Action'].join("\n"),
@@ -128,8 +125,7 @@ async function deleteStudyHandler(
   } catch (error) {
     if (error instanceof ValidationError) {
       const baseMessage =
-        error.baseError?.message ||
-        translateMessage("thereWereValidationErrors", resource.id());
+        error.baseError?.message || "thereWereValidationErrors";
       return {
         record: record.toJSON(currentAdmin),
         notice: {
@@ -147,7 +143,7 @@ async function deleteStudyHandler(
       resourceId: resource._decorated?.id() || resource.id(),
     }),
     notice: {
-      message: translateMessage("successfullyDeleted", resource.id()),
+      message: "successfullyDeleted",
       type: "success",
     },
   };

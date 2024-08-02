@@ -650,4 +650,86 @@ routerPublic.get(
   },
 );
 
+/**
+ * @openapi
+ * /study/count-all/{countType}:
+ *   get:
+ *     summary: Retrieve the number of sessions for each study
+ *     description: >
+ *       This endpoint is used to count the number of sessions for each study
+ *     tags:
+ *       - main
+ *     parameters:
+ *       - in: path
+ *         name: countType
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             all,
+ *             finished
+ *          ]
+ *         required: true
+ *         description: >
+ *           Which type of count should be used?
+ *       - in: query
+ *         name: cacheFor
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Cache the result for this many seconds.
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved study counts.
+ *       '500':
+ *         description: Failed to retrieve study counts.
+ */
+routerPublic.get(
+  "/study/count-all/:countType",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { countType } = req.params;
+    const { cacheFor } = object({
+      cacheFor: number().integer().optional(),
+    }).validateSync(req.query);
+
+    try {
+      // Filter by studyId by default
+      const where: { [key: string]: any } = {};
+      if (countType === "all") {
+        // Do nothing, retrieve all
+      } else if (countType === "finished") {
+        where.finished = true;
+      } else {
+        throw new AppError(`Unknown countType: ${countType}`, 400);
+      }
+
+      const getCounts = async () => {
+        const rawCounts = await sequelize.models.Session.count({
+          group: ["studyId"],
+          where,
+        });
+        const allStudies = await sequelize.models.Study.findAll({
+          attributes: ["studyId"],
+        });
+        const finalCounts: { [key: string]: number } = {};
+        allStudies.map((study) => {
+          // @ts-ignore
+          const studyId = study.studyId;
+          const count = rawCounts.find((c) => c.studyId === studyId);
+          finalCounts[studyId] = count ? count.count : 0;
+        });
+        return finalCounts;
+      };
+
+      const finalCounts =
+        cacheFor === undefined
+          ? await getCounts()
+          : await cache.wrap(req.path, getCounts, cacheFor * 1000);
+
+      res.status(200).json(finalCounts);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 export { routerPublic };
