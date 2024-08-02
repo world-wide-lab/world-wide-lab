@@ -1,8 +1,8 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
-import type { WwlAwsDeploymentConfig } from "..";
-import { WwlAwsBaseDeployment } from "./_base";
+
+import { WwlAwsBaseDeployment, type WwlAwsDeploymentConfig } from "./_base";
 
 export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
   readonly loadbalancer: awsx.lb.ApplicationLoadBalancer;

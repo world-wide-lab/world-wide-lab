@@ -1,8 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import type { WwlAwsDeploymentConfig } from "..";
-import { WwlAwsBaseDeployment } from "./_base";
+import { WwlAwsBaseDeployment, type WwlAwsDeploymentConfig } from "./_base";
 
 export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
   readonly autoScalingConfig: aws.apprunner.AutoScalingConfigurationVersion;

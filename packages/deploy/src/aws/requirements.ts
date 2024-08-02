@@ -2,11 +2,12 @@ import execa from "execa";
 
 import {
   type Requirement,
+  commonRequirements,
   getFailureResult,
   getSuccessResult,
 } from "../requirements";
 
-export const awsRequirements: Requirement[] = [
+const awsOnlyRequirements: Requirement[] = [
   {
     name: "AWS CLI is installed",
     check: async () => {
@@ -30,3 +31,5 @@ export const awsRequirements: Requirement[] = [
     },
   },
 ];
+
+export const awsRequirements = [...commonRequirements, ...awsOnlyRequirements];

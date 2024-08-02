@@ -4,9 +4,27 @@ import dotenv from "dotenv";
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import type { WwlAwsDeploymentConfig } from "..";
+import { awsRequirements } from "../requirements";
+
+export interface WwlAwsDeploymentConfig {
+  containerPort: number;
+  cpu: number;
+  memory: number;
+  minCapacity: number;
+  maxCapacity: number;
+  secrets: {
+    dbUsername: string;
+    dbPassword: string;
+    wwlAdminAuthDefaultEmail: string;
+    wwlAdminAuthDefaultPassword: string;
+    wwlAdminAuthSessionSecret: string;
+    wwlDefaultApiKey: string;
+  };
+}
 
 export abstract class WwlAwsBaseDeployment {
+  public readonly requirements = awsRequirements;
+
   readonly config: WwlAwsDeploymentConfig;
   readonly dbConnectionString: pulumi.Output<string>;
   readonly db: aws.rds.Instance;
