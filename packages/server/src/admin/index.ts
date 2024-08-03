@@ -8,6 +8,7 @@ import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
+import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
@@ -33,6 +34,98 @@ if (config.apiDocs.enabled) {
     },
   } as AdminPage;
 }
+
+// Deployments (only on electron)
+const deploymentResource =
+  config.electronApp || true
+    ? [
+        {
+          resource: sequelize.models.Deployment,
+          options: {
+            navigation: {
+              name: null,
+              icon: "UploadCloud",
+            },
+            actions: {
+              new: {},
+              show: {
+                component: Components.DeploymentShowAction,
+              },
+              edit: {
+                isAccessible: false,
+              },
+              delete: {
+                isAccessible: false,
+              },
+              deploy: {
+                actionType: "record",
+                component: false,
+                isVisible: false,
+                handler: deployDeploymentHandler,
+              },
+            },
+            properties: {
+              createdAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.createdAt,
+              },
+              updatedAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.updatedAt,
+              },
+              status: {
+                position: 1,
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+              },
+              provider: {
+                position: 2,
+                availableValues: [{ value: "aws", label: "AWS" }],
+              },
+              type: {
+                position: 3,
+                availableValues: [{ value: "appRunner", label: "App Runner" }],
+              },
+              stackConfig: {
+                position: 4,
+                availableValues: [
+                  { value: '{"awsRegion": "us-east-1"}', label: "us-east-1" },
+                ],
+              },
+              deploymentConfig: {
+                position: 5,
+              },
+              privateInfo: {
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                },
+                description: columnComments.privateInfo,
+              },
+            },
+          },
+        },
+      ]
+    : [];
 
 const admin = new AdminJS({
   rootPath: "/admin",
@@ -231,6 +324,8 @@ const admin = new AdminJS({
         },
       },
     },
+
+    ...deploymentResource,
   ],
   pages,
 
@@ -249,6 +344,7 @@ const admin = new AdminJS({
           wwl_participants: "Participants",
           wwl_sessions: "Sessions",
           wwl_responses: "Responses",
+          wwl_deployments: "Deployments",
         },
         resources: {
           wwl_studies: {
@@ -276,6 +372,12 @@ const admin = new AdminJS({
           wwl_responses: {
             actions: {
               show: "View Response",
+            },
+          },
+          wwl_deployments: {
+            actions: {
+              new: "Create New Deployment",
+              show: "Manage Deployment",
             },
           },
         },

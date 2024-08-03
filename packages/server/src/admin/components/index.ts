@@ -19,5 +19,6 @@ export const Components = {
   ApiDocsPage: add("ApiDocsPage", "./pages/api-docs"),
   StudyDownloadAction: add("StudyDownloadAction", "./StudyDownloadAction"),
   StudyShowAction: add("StudyShowAction", "./StudyShowAction"),
+  DeploymentShowAction: add("DeploymentShowAction", "./DeploymentShowAction"),
   ShowJsonProp: add("ShowJsonProp", "./properties/ShowJsonProp"),
 };

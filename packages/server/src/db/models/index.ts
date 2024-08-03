@@ -236,6 +236,72 @@ function defineModels(sequelize: Sequelize) {
       tableName: "wwl_internal_admin_sessions",
     },
   );
+
+  const Deployment = sequelize.define(
+    "Deployment",
+    {
+      deploymentId: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
+        comment: "The unique identifier for each deployment.",
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "undeployed",
+        comment: "The last status of the deployment.",
+      },
+      provider: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        comment: "The cloud provider for this deployment.",
+      },
+      type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        comment:
+          "Which type of deployment, if there are multple for this provider.",
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        comment:
+          "The name of the deployment used to identify the pulumi stack.",
+      },
+      stackConfig: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: "The configuration for the pulumi stack (e.g. AWS region).",
+      },
+      deploymentConfig: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment:
+          "The configuration for the deployment (e.g. env vars, passwords, memory).",
+      },
+      privateInfo: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: columnComments.privateInfo,
+      },
+    },
+    {
+      tableName: "wwl_deployments",
+    },
+  );
 }
 
 export { defineModels, columnComments };
