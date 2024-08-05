@@ -1,30 +1,21 @@
 import { Box, Label } from "@adminjs/design-system";
 import { useEffect } from "react";
 
+import { extractJsonObjectFromRecord } from "../../helpers.js";
 import {
   Code,
   CodeHighlightingStyles,
   refreshHighlighting,
 } from "../partials/codeHighlighting.js";
 
-interface GenericObject {
-  [key: string]: any;
-}
-
 const ShowJsonProp = (props: any) => {
   const { property, record, onChange } = props;
 
-  const object: GenericObject = {};
-  // Iterate over all params in the record and get all the start with "<name>."
-  const prefix = `${property.name}.`;
-  for (const [key, value] of Object.entries(record.params)) {
-    if (key.startsWith(prefix)) {
-      object[key.replace(prefix, "")] = value;
-    }
-  }
+  const object = extractJsonObjectFromRecord(property.name, record);
 
   // Pretty print the object
-  const formattedObject = JSON.stringify(object, undefined, 2);
+  const formattedObject =
+    object !== undefined ? JSON.stringify(object, undefined, 2) : "";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Automatic detection of dependencies is not correct
   useEffect(() => {

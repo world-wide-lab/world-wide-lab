@@ -8,6 +8,7 @@ import {
 import { AutomatedDeployments } from "@world-wide-lab/deploy";
 import type { WwlAutomatedDeployment } from "@world-wide-lab/deploy/dist/deployment.js";
 import { logger } from "../../logger.js";
+import { extractJsonObjectFromRecord } from "../helpers.js";
 
 export async function deployDeploymentHandler(
   request: ActionRequest,
@@ -96,16 +97,24 @@ export async function deployDeploymentHandler(
     }
     responseObject.requirementsList = requirementsList;
     responseObject.requirementsStatus = valid ? "success" : "error";
-    if (!valid) {
-      return responseObject;
-    }
-
     logger.info("Requirements check passed");
+
+    return responseObject;
   }
 
   // Initialize stack
   logger.info("Initializing Pulumi Stack");
-  await deployment.initStack("wwl", record.params.stackName);
+  const stackConfig = extractJsonObjectFromRecord("stackConfig", record);
+  const deploymentConfig = extractJsonObjectFromRecord(
+    "deploymentConfig",
+    record,
+  );
+  await deployment.initStack(
+    "wwl",
+    record.params.name,
+    stackConfig || {},
+    deploymentConfig || {},
+  );
   logger.info("Pulumi Stack initialized");
 
   switch (deploymentAction) {

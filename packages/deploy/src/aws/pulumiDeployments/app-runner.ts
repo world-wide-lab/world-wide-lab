@@ -15,7 +15,7 @@ export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
    * @param opts A bag of options that control this resource's behavior.
    */
   constructor(config?: Partial<WwlAwsDeploymentConfig>) {
-    super();
+    super(config);
 
     // How should the app auto-scale itself?
     this.autoScalingConfig = new aws.apprunner.AutoScalingConfigurationVersion(
@@ -57,13 +57,13 @@ export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
               ADMIN_UI: "true",
               USE_AUTHENTICATION: "true",
               REPLICATION_ROLE: "source",
-              ADMIN_AUTH_DEFAULT_EMAIL: process.env
-                .WWL_ADMIN_AUTH_DEFAULT_EMAIL as string,
-              ADMIN_AUTH_DEFAULT_PASSWORD: process.env
-                .WWL_ADMIN_AUTH_DEFAULT_PASSWORD as string,
-              ADMIN_AUTH_SESSION_SECRET: process.env
-                .WWL_ADMIN_AUTH_SESSION_SECRET as string,
-              DEFAULT_API_KEY: process.env.WWL_DEFAULT_API_KEY as string,
+              ADMIN_AUTH_DEFAULT_EMAIL:
+                this.config.secret_wwlAdminAuthDefaultEmail,
+              ADMIN_AUTH_DEFAULT_PASSWORD:
+                this.config.secret_wwlAdminAuthDefaultPassword,
+              ADMIN_AUTH_SESSION_SECRET:
+                this.config.secret_wwlAdminAuthSessionSecret,
+              DEFAULT_API_KEY: this.config.secret_wwlDefaultApiKey,
               DATABASE_CHUNK_SIZE: "5000",
               LOGGING_HTTP: "false",
               LOGGING_SQL: "false",

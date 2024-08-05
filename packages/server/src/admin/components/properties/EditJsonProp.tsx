@@ -1,7 +1,8 @@
 import { Box, Icon, Label } from "@adminjs/design-system";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Editor, loader } from "@monaco-editor/react";
+import { extractJsonObjectFromRecord } from "../../helpers.js";
 
 // Set up monaco without extra download
 loader.config({
@@ -10,32 +11,19 @@ loader.config({
   },
 });
 
-interface GenericObject {
-  [key: string]: any;
-}
-
 const ShowJsonProp = (props: any) => {
   const { property, record, onChange } = props;
 
-  const object: GenericObject = {};
-  // Iterate over all params in the record and get all the start with "<name>."
-  const prefix = `${property.name}.`;
-  let hasKeys = false;
-  for (const [key, value] of Object.entries(record.params)) {
-    if (key.startsWith(prefix)) {
-      hasKeys = true;
-      object[key.replace(prefix, "")] = value;
-    }
-  }
+  const object = extractJsonObjectFromRecord(property.name, record);
 
   // Pretty print the object
-  const defaultValue = hasKeys
-    ? JSON.stringify(object, undefined, 2)
-    : property.custom.defaultValue || "";
+  const defaultValue =
+    object !== undefined
+      ? JSON.stringify(object, undefined, 2)
+      : property.custom.defaultValue || "";
 
   const [jsonStatus, setJsonStatus] = useState<string>("");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Implementation copied from AdminJS
-  const handleUpdate = useCallback((newValue: string | undefined, ev: any) => {
+  const updateValue = (newValue: string | undefined) => {
     try {
       // @ts-ignore
       const parsedNewValue = JSON.parse(newValue);
@@ -44,6 +32,15 @@ const ShowJsonProp = (props: any) => {
     } catch (err) {
       // Do nothing
       setJsonStatus("error");
+    }
+  };
+  const handleUpdate = useCallback(updateValue, []);
+
+  // Set default value
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (object === undefined && property.custom.defaultValue) {
+      updateValue(defaultValue);
     }
   }, []);
 

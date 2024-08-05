@@ -15,6 +15,7 @@ import {
   downloadStudyDataHandler,
   newStudyHandler,
 } from "./handlers/study.js";
+import { randomString } from "./helpers.js";
 import { initializeRouter } from "./router_auth.js";
 
 AdminJS.registerAdapter({
@@ -120,7 +121,22 @@ const deploymentResource =
               deploymentConfig: {
                 position: 5,
                 custom: {
-                  defaultValue: "{}",
+                  defaultValue: [
+                    "{",
+                    `  "secret_dbUsername": "user_${randomString(6)}",`,
+                    `  "secret_dbPassword": "${randomString(20)}",`,
+                    `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
+                      6,
+                    )}@example.com",`,
+                    `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlAdminAuthSessionSecret": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlDefaultApiKey": "${randomString(20)}"`,
+                    "}",
+                  ].join("\n"),
                 },
                 components: {
                   show: Components.ShowJsonProp,

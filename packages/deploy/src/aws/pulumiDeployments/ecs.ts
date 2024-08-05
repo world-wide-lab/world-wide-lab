@@ -18,7 +18,7 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
    * @param opts A bag of options that control this resource's behavior.
    */
   constructor(config?: Partial<WwlAwsDeploymentConfig>) {
-    super();
+    super(config);
 
     // An ALB to serve the container endpoint to the internet
     this.loadbalancer = new awsx.lb.ApplicationLoadBalancer(
@@ -57,17 +57,20 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
             { name: "REPLICATION_ROLE", value: "source" },
             {
               name: "ADMIN_AUTH_DEFAULT_EMAIL",
-              value: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
+              value: this.config.secret_wwlAdminAuthDefaultEmail,
             },
             {
               name: "ADMIN_AUTH_DEFAULT_PASSWORD",
-              value: process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
+              value: this.config.secret_wwlAdminAuthDefaultPassword,
             },
             {
               name: "ADMIN_AUTH_SESSION_SECRET",
-              value: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
+              value: this.config.secret_wwlAdminAuthSessionSecret,
             },
-            { name: "DEFAULT_API_KEY", value: process.env.WWL_DEFAULT_API_KEY },
+            {
+              name: "DEFAULT_API_KEY",
+              value: this.config.secret_wwlDefaultApiKey,
+            },
             { name: "DATABASE_CHUNK_SIZE", value: "5000" },
             { name: "LOGGING_HTTP", value: "false" },
             { name: "LOGGING_SQL", value: "false" },

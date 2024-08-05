@@ -13,14 +13,13 @@ export interface WwlAwsDeploymentConfig {
   memory: number;
   minCapacity: number;
   maxCapacity: number;
-  secrets: {
-    dbUsername: string;
-    dbPassword: string;
-    wwlAdminAuthDefaultEmail: string;
-    wwlAdminAuthDefaultPassword: string;
-    wwlAdminAuthSessionSecret: string;
-    wwlDefaultApiKey: string;
-  };
+
+  secret_dbUsername: string;
+  secret_dbPassword: string;
+  secret_wwlAdminAuthDefaultEmail: string;
+  secret_wwlAdminAuthDefaultPassword: string;
+  secret_wwlAdminAuthSessionSecret: string;
+  secret_wwlDefaultApiKey: string;
 }
 
 export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
@@ -43,6 +42,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
 
     // Load environment variables from a .env file
     dotenv.config();
+
     // Generate the final configuration by merging in defaults
     this.config = merge(
       {
@@ -54,23 +54,23 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
         maxCapacity: 4,
 
         // More sensitive parts of configuration
-        secrets: {
-          dbUsername: process.env.DB_USERNAME,
-          dbPassword: process.env.DB_PASSWORD,
-          wwlAdminAuthDefaultEmail: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
-          wwlAdminAuthDefaultPassword:
-            process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
-          wwlAdminAuthSessionSecret: process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
-          wwlDefaultApiKey: process.env.WWL_DEFAULT_API_KEY,
-        },
+        secret_dbUsername: process.env.DB_USERNAME,
+        secret_dbPassword: process.env.DB_PASSWORD,
+        secret_wwlAdminAuthDefaultEmail:
+          process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
+        secret_wwlAdminAuthDefaultPassword:
+          process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
+        secret_wwlAdminAuthSessionSecret:
+          process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
+        secret_wwlDefaultApiKey: process.env.WWL_DEFAULT_API_KEY,
       },
       // @ts-ignore - unsure how to make ts happy here with <Partial> & deepmerge
       config,
     );
 
     // Check that no value in secrets is empty
-    for (const [key, value] of Object.entries(this.config.secrets)) {
-      if (!value) {
+    for (const [key, value] of Object.entries(this.config)) {
+      if (key.startsWith("secret_") && !value) {
         throw new Error(`Please provide a value for the secret "${key}"`);
       }
     }
@@ -81,8 +81,8 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
       engine: "postgres",
       engineVersion: "15",
       instanceClass: "db.t3.micro",
-      username: this.config.secrets.dbUsername,
-      password: this.config.secrets.dbPassword,
+      username: this.config.secret_dbUsername,
+      password: this.config.secret_dbPassword,
       allocatedStorage: 20,
       maxAllocatedStorage: 100,
       //  Either one of these two is required
