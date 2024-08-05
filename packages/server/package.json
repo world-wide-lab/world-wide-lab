@@ -10,7 +10,7 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "nodemon",
+    "dev": "NODE_ENV=development nodemon",
     "prebuild": "node -p \"'export const VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
     "build": "tsc -p tsconfig-build.json",
     "start": "node dist/index.js",
