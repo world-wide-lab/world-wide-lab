@@ -97,6 +97,11 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
         setDeploymentOutput(
           `STDOUT:\n${result.stdout}\n\nSTDERR:\n${result.stderr}`,
         );
+      } else if (response.data.notice?.type === "error") {
+        setErrorMessage({
+          type: "Server Error",
+          message: response.data.notice.message,
+        });
       } else {
         setErrorMessage({
           type: "No Result",
@@ -130,7 +135,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
     setRequirementsStatus("");
 
     const response = await sendDeploymentAction("requirements");
-    if (!response || !response.data) {
+    if (!response || !response.data || !response.data.requirementsList) {
       if (!errorMessage) {
         setErrorMessage({
           type: "NoRequirementListReturned",
