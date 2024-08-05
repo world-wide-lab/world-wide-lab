@@ -5,8 +5,9 @@ import {
   NotFoundError,
 } from "adminjs";
 
-import { AutomatedDeployments } from "@world-wide-lab/deploy";
+// @ts-ignore - Only type imported
 import type { WwlAutomatedDeployment } from "@world-wide-lab/deploy/dist/deployment.js";
+
 import { logger } from "../../logger.js";
 import { extractJsonObjectFromRecord } from "../helpers.js";
 
@@ -53,6 +54,8 @@ export async function deployDeploymentHandler(
   // Find correct deployment
   const type = record.params.type;
 
+  // @ts-ignore - This should not be callable if the record is not found
+  const { AutomatedDeployments } = await import("@world-wide-lab/deploy");
   // @ts-ignore
   if (!(type in AutomatedDeployments)) {
     throw new NotFoundError(
