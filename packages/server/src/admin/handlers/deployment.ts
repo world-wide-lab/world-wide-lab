@@ -50,17 +50,10 @@ export async function deployDeploymentHandler(
   };
 
   // Find correct deployment
-  const provider = record.params.provider;
   const type = record.params.type;
 
-  if (!(provider in AutomatedDeployments)) {
-    throw new NotFoundError(
-      "Provider not found in Deployments",
-      "Action#handler",
-    );
-  }
   // @ts-ignore
-  if (!(type in AutomatedDeployments[provider])) {
+  if (!(type in AutomatedDeployments)) {
     throw new NotFoundError(
       "Provider not found in Deployments",
       "Action#handler",
@@ -68,9 +61,7 @@ export async function deployDeploymentHandler(
   }
 
   // @ts-ignore Should be safe after the above checks...
-  const deployment: WwlAutomatedDeployment = new AutomatedDeployments[provider][
-    type
-  ]();
+  const deployment: WwlAutomatedDeployment = new AutomatedDeployments[type]();
 
   // Check requirements
   if (deploymentAction === "requirements") {

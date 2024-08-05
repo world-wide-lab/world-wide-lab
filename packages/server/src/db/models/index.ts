@@ -264,16 +264,10 @@ function defineModels(sequelize: Sequelize) {
         defaultValue: "undeployed",
         comment: "The last status of the deployment.",
       },
-      provider: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        comment: "The cloud provider for this deployment.",
-      },
       type: {
         type: DataTypes.STRING,
         allowNull: false,
-        comment:
-          "Which type of deployment, if there are multple for this provider.",
+        comment: "Which type of deployment / provider.",
       },
       name: {
         type: DataTypes.STRING,

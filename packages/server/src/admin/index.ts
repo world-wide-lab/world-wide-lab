@@ -55,7 +55,7 @@ const deploymentResource =
                 isAccessible: false,
               },
               delete: {
-                isAccessible: false,
+                isAccessible: true,
               },
               deploy: {
                 actionType: "record",
@@ -92,16 +92,14 @@ const deploymentResource =
                   edit: false,
                 },
               },
-              provider: {
-                position: 2,
-                availableValues: [{ value: "aws", label: "AWS" }],
-              },
               type: {
-                position: 3,
-                availableValues: [{ value: "appRunner", label: "App Runner" }],
+                position: 2,
+                availableValues: [
+                  { value: "aws_apprunner", label: "AWS: App Runner" },
+                ],
               },
               stackConfig: {
-                position: 4,
+                position: 3,
                 custom: {
                   defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
                     "\n",
@@ -110,6 +108,13 @@ const deploymentResource =
                 components: {
                   show: Components.ShowJsonProp,
                   edit: Components.EditJsonProp,
+                },
+
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
                 },
               },
               deploymentConfig: {
@@ -120,6 +125,13 @@ const deploymentResource =
                 components: {
                   show: Components.ShowJsonProp,
                   edit: Components.EditJsonProp,
+                },
+
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
                 },
               },
               privateInfo: {
