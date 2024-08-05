@@ -102,20 +102,30 @@ const deploymentResource =
               },
               stackConfig: {
                 position: 4,
-                availableValues: [
-                  { value: '{"awsRegion": "us-east-1"}', label: "us-east-1" },
-                ],
+                custom: {
+                  defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
+                    "\n",
+                  ),
+                },
                 components: {
                   show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
                 },
               },
               deploymentConfig: {
                 position: 5,
+                custom: {
+                  defaultValue: "{}",
+                },
                 components: {
                   show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
                 },
               },
               privateInfo: {
+                custom: {
+                  defaultValue: "{}",
+                },
                 isVisible: {
                   list: false,
                   filter: false,
@@ -124,6 +134,7 @@ const deploymentResource =
                 },
                 components: {
                   show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
                 },
                 description: columnComments.privateInfo,
               },

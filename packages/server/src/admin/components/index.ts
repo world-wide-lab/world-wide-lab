@@ -21,4 +21,5 @@ export const Components = {
   StudyShowAction: add("StudyShowAction", "./StudyShowAction"),
   DeploymentShowAction: add("DeploymentShowAction", "./DeploymentShowAction"),
   ShowJsonProp: add("ShowJsonProp", "./properties/ShowJsonProp"),
+  EditJsonProp: add("EditJsonProp", "./properties/EditJsonProp"),
 };
