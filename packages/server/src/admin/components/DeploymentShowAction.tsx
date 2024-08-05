@@ -54,6 +54,9 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
 
   const deploymentId = record?.params?.deploymentId;
 
+  const [currentActivity, setCurrentActivity] = useState<
+    "none" | "requirements" | "refresh" | "preview" | "deploy" | "destroy"
+  >("none");
   const [errorMessage, setErrorMessage] = useState<
     { type: string; message: string } | undefined
   >(undefined);
@@ -80,6 +83,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   ) {
     // Reset error
     setErrorMessage(undefined);
+    setCurrentActivity(deploymentAction);
 
     try {
       const response = await api.recordAction({
@@ -109,6 +113,8 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
         });
       }
 
+      setCurrentActivity("none");
+
       return response;
 
       // Not the nicest solution typewise, but this can also be an AxiosError with extra info
@@ -125,6 +131,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
       }
 
       setErrorMessage(error);
+      setCurrentActivity("none");
       return;
     }
   }
@@ -306,33 +313,64 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           variant="contained"
           size="lg"
           rounded={true}
-          disabled={requirementsStatus !== "success"}
+          disabled={
+            requirementsStatus !== "success" || currentActivity !== "none"
+          }
           onClick={() => sendDeploymentAction("deploy")}
         >
-          <Icon icon="UploadCloud" /> Deploy
+          {currentActivity === "deploy" ? (
+            <Icon icon="Loader" spin={true} />
+          ) : (
+            <Icon icon="UploadCloud" />
+          )}
+          Deploy
         </Button>
         &nbsp; &nbsp;
         <Button
           variant="contained"
           size="lg"
           rounded={true}
+          disabled={currentActivity !== "none"}
           onClick={() => sendDeploymentAction("preview")}
         >
-          <Icon icon="Eye" /> Preview
-        </Button>
-        &nbsp; &nbsp;
-        <Button variant="outlined" size="lg" rounded={true} onClick={refresh}>
-          <Icon icon="RefreshCw" /> Refresh Info
+          {currentActivity === "preview" ? (
+            <Icon icon="Loader" spin={true} />
+          ) : (
+            <Icon icon="Eye" />
+          )}
+          Preview
         </Button>
         &nbsp; &nbsp;
         <Button
           variant="outlined"
           size="lg"
           rounded={true}
+          onClick={refresh}
+          disabled={currentActivity !== "none"}
+        >
+          {currentActivity === "refresh" ||
+          currentActivity === "requirements" ? (
+            <Icon icon="Loader" spin={true} />
+          ) : (
+            <Icon icon="RefreshCw" />
+          )}
+          Refresh Info
+        </Button>
+        &nbsp; &nbsp;
+        <Button
+          variant="outlined"
+          size="lg"
+          disabled={currentActivity !== "none"}
+          rounded={true}
           color="danger"
           onClick={() => sendDeploymentAction("destroy")}
         >
-          <Icon icon="Trash2" /> Destroy
+          {currentActivity === "destroy" ? (
+            <Icon icon="Loader" spin={true} />
+          ) : (
+            <Icon icon="Trash2" />
+          )}
+          Destroy Deployed Resources
         </Button>
       </Box>
 
