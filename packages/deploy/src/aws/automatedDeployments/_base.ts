@@ -1,6 +1,6 @@
 import type { automation } from "@pulumi/pulumi";
 import { type ExtraFields, WwlAutomatedDeployment } from "../../deployment";
-import { awsRequirements } from "../requirements";
+import { awsRequirements } from "./requirements";
 
 export abstract class WwlAwsBaseAutomatedDeployment extends WwlAutomatedDeployment {
   requirements = awsRequirements;

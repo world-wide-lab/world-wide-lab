@@ -5,7 +5,7 @@ import {
   commonRequirements,
   getFailureResult,
   getSuccessResult,
-} from "../requirements";
+} from "../../requirements";
 
 const awsOnlyRequirements: Requirement[] = [
   {
@@ -15,7 +15,7 @@ const awsOnlyRequirements: Requirement[] = [
         await execa("aws", ["--version"]);
         return getSuccessResult();
       } catch (err) {
-        return getFailureResult("Please Install AWS CLI");
+        return getFailureResult("Please Install the AWS CLI", err.message);
       }
     },
   },
@@ -26,7 +26,10 @@ const awsOnlyRequirements: Requirement[] = [
         await execa("aws", ["sts", "get-caller-identity"]);
         return getSuccessResult();
       } catch (err) {
-        return getFailureResult("Please log into the AWS CLI");
+        return getFailureResult(
+          "Please log into the AWS CLI and check your internet connection",
+          err.message,
+        );
       }
     },
   },

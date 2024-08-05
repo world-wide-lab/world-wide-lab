@@ -58,7 +58,13 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
     { type: string; message: string } | undefined
   >(undefined);
   const [requirementsList, setRequirementsList] = useState<
-    { name: string; status: string; message: string }[]
+    {
+      name: string;
+      status: string;
+      message: string;
+      errorMessage?: string;
+      url?: string;
+    }[]
   >([]);
   const [requirementsStatus, setRequirementsStatus] = useState<string>("");
   const [deploymentOutput, setDeploymentOutput] =
@@ -230,7 +236,20 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
 
                     {requirement.status}
                   </Badge>
+                  {requirement.url && (
+                    <Button
+                      href={requirement.url}
+                      ml="default"
+                      as="a"
+                      size="icon"
+                      variant="text"
+                      title="Learn More"
+                    >
+                      <Icon icon="ExternalLink" />
+                    </Button>
+                  )}
                 </Text>
+
                 {requirement.message && (
                   <MessageBox
                     my="default"
@@ -238,6 +257,10 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
                     message="Problem durring requirements check"
                   >
                     {requirement.message}
+
+                    {requirement.errorMessage && (
+                      <Text>Error Message: {requirement.errorMessage}</Text>
+                    )}
                   </MessageBox>
                 )}
               </li>

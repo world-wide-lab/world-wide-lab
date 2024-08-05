@@ -78,6 +78,7 @@ export async function deployDeploymentHandler(
 
     let valid = true;
     let message = "";
+    let errorMessage = undefined;
     const requirementsList = [];
     for (const requirement of deployment.requirements) {
       const run = valid;
@@ -87,20 +88,19 @@ export async function deployDeploymentHandler(
           valid = result.success;
           if (!result.success) {
             message = result.message;
+            errorMessage = result.errorMessage || undefined;
           }
         } catch (err) {
           valid = false;
-          if (err instanceof Error) {
-            message = err.message;
-          } else {
-            message = `An unknown error occurred: ${err}`;
-          }
+          message = "An unexpected error occurred";
+          errorMessage = (err as Error).message || undefined;
         }
       }
       requirementsList.push({
         name: requirement.name,
         status: run ? (valid ? "success" : "error") : "skipped",
         message: message,
+        errorMessage: errorMessage,
       });
     }
     responseObject.requirementsList = requirementsList;

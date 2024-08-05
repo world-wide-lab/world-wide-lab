@@ -5,7 +5,7 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
 import { WwlPulumiDeployment } from "../../deployment";
-import { awsRequirements } from "../requirements";
+import { awsRequirements } from "../automatedDeployments/requirements";
 
 export interface WwlAwsDeploymentConfig {
   containerPort: number;
