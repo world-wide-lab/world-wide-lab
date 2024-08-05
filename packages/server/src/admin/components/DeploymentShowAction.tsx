@@ -42,12 +42,21 @@ const CircledNumber = styled.span`
   border-radius: 100%;
 `;
 
+const BadgeIcon = styled(Icon)`
+  margin: 0 0.1rem 0 -0.3rem !important;
+  transform: scale(0.8);
+  line-height: 0.7;
+`;
+
 const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   const { resource, record, action } = props;
   const properties = resource.showProperties;
 
   const deploymentId = record?.params?.deploymentId;
 
+  const [errorMessage, setErrorMessage] = useState<
+    { type: string; message: string } | undefined
+  >(undefined);
   const [requirementsList, setRequirementsList] = useState<
     { name: string; status: string; message: string }[]
   >([]);
@@ -56,29 +65,84 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
     useState<string>("No output yet.");
 
   async function sendDeploymentAction(
-    deploymentAction: "refresh" | "deploy" | "destroy",
+    deploymentAction:
+      | "requirements"
+      | "refresh"
+      | "preview"
+      | "deploy"
+      | "destroy",
   ) {
-    return api.recordAction({
-      recordId: record?.id as string,
-      resourceId: resource.id,
-      actionName: "deploy",
-      params: {
-        deploymentAction,
-      },
-    });
+    // Reset error
+    setErrorMessage(undefined);
+
+    try {
+      const response = await api.recordAction({
+        recordId: record?.id as string,
+        resourceId: resource.id,
+        actionName: "deploy",
+        params: {
+          deploymentAction,
+        },
+      });
+
+      // Standard Deployment output
+      if (response.data.result) {
+        const result = response.data.result;
+        setDeploymentOutput(
+          `STDOUT:\n${result.stdout}\n\nSTDERR:\n${result.stderr}`,
+        );
+      } else {
+        setErrorMessage({
+          type: "No Result",
+          message: `No result was returned from the server. Response Data: ${response.data}`,
+        });
+      }
+
+      return response;
+
+      // Not the nicest solution typewise, but this can also be an AxiosError with extra info
+    } catch (err: any) {
+      const error = {
+        type: err.name || "Unknown Error",
+        message: err.message || "An unknown error occurred.",
+      };
+
+      // Server error detected, so use the information from there
+      if (err.response.data.error) {
+        if (err.response.data.type) error.type = err.response.data.type;
+        error.message = err.response.data.error;
+      }
+
+      setErrorMessage(error);
+      return;
+    }
   }
 
-  async function refresh() {
+  async function checkRequirements() {
     // Rest at start of refresh
     setRequirementsList([]);
     setRequirementsStatus("");
 
-    const response = await sendDeploymentAction("refresh");
+    const response = await sendDeploymentAction("requirements");
+    if (!response || !response.data) {
+      if (!errorMessage) {
+        setErrorMessage({
+          type: "NoRequirementListReturned",
+          message: "No requirementsList was returned from the server",
+        });
+      }
+      return;
+    }
 
-    // @ts-ignore
     setRequirementsList(response.data.requirementsList);
-    // @ts-ignore
     setRequirementsStatus(response.data.requirementsStatus);
+  }
+
+  async function refresh() {
+    // First check requirements
+    await checkRequirements();
+    // Then run the pulumi refresh
+    await sendDeploymentAction("refresh");
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -123,6 +187,16 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
         </Section>
       </details>
 
+      {errorMessage && (
+        <MessageBox
+          variant="danger"
+          mt="default"
+          message={`An Error was encountered: ${errorMessage.type}`}
+        >
+          <Text>{errorMessage.message}</Text>
+        </MessageBox>
+      )}
+
       <Box>
         <H3>Requirements</H3>
         {requirementsList.length > 0 ? (
@@ -144,11 +218,25 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
                           : "default"
                     }
                   >
+                    <BadgeIcon
+                      icon={
+                        requirement.status === "error"
+                          ? "XCircle"
+                          : requirement.status === "success"
+                            ? "CheckCircle"
+                            : "Circle"
+                      }
+                    />
+
                     {requirement.status}
                   </Badge>
                 </Text>
                 {requirement.message && (
-                  <MessageBox variant="danger">
+                  <MessageBox
+                    my="default"
+                    variant="warning"
+                    message="Problem durring requirements check"
+                  >
                     {requirement.message}
                   </MessageBox>
                 )}
@@ -194,6 +282,15 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           onClick={() => sendDeploymentAction("deploy")}
         >
           <Icon icon="UploadCloud" /> Deploy
+        </Button>
+        &nbsp; &nbsp;
+        <Button
+          variant="contained"
+          size="lg"
+          rounded={true}
+          onClick={() => sendDeploymentAction("preview")}
+        >
+          <Icon icon="Eye" /> Preview
         </Button>
         &nbsp; &nbsp;
         <Button variant="outlined" size="lg" rounded={true} onClick={refresh}>

@@ -7,6 +7,7 @@ import {
 
 import { AutomatedDeployments } from "@world-wide-lab/deploy";
 import type { WwlAutomatedDeployment } from "@world-wide-lab/deploy/dist/deployment.js";
+import { logger } from "../../logger.js";
 
 export async function deployDeploymentHandler(
   request: ActionRequest,
@@ -22,6 +23,19 @@ export async function deployDeploymentHandler(
     );
   }
   const { deploymentAction } = request.query;
+  const validDeploymentActions = [
+    "requirements",
+    "refresh",
+    "preview",
+    "deploy",
+    "destroy",
+  ];
+  if (!validDeploymentActions.includes(deploymentAction)) {
+    throw new NotFoundError(
+      `Invalid deploymentAction: ${deploymentAction}. Must be one of ${validDeploymentActions}`,
+      "Action#handler",
+    );
+  }
 
   if (!request.params.recordId || !record) {
     throw new NotFoundError(
@@ -32,6 +46,7 @@ export async function deployDeploymentHandler(
 
   const responseObject: { [key: string]: any } = {
     record: record.toJSON(currentAdmin),
+    deploymentAction,
   };
 
   // Find correct deployment
@@ -51,43 +66,70 @@ export async function deployDeploymentHandler(
       "Action#handler",
     );
   }
+
   // @ts-ignore Should be safe after the above checks...
   const deployment: WwlAutomatedDeployment = new AutomatedDeployments[provider][
     type
   ]();
 
-  // Check Requirements
-  let valid = true;
-  let message = "";
-  const requirementsList = [];
-  for (const requirement of deployment.requirements) {
-    const run = valid;
-    if (run) {
-      try {
-        const result = await requirement.check();
-        valid = result.success;
-        if (!result.success) {
-          message = result.message;
-        }
-      } catch (err) {
-        valid = false;
-        if (err instanceof Error) {
-          message = err.message;
-        } else {
-          message = `An unknown error occurred: ${err}`;
+  // Check requirements
+  if (deploymentAction === "requirements") {
+    logger.info("Checking requirements");
+
+    let valid = true;
+    let message = "";
+    const requirementsList = [];
+    for (const requirement of deployment.requirements) {
+      const run = valid;
+      if (run) {
+        try {
+          const result = await requirement.check();
+          valid = result.success;
+          if (!result.success) {
+            message = result.message;
+          }
+        } catch (err) {
+          valid = false;
+          if (err instanceof Error) {
+            message = err.message;
+          } else {
+            message = `An unknown error occurred: ${err}`;
+          }
         }
       }
+      requirementsList.push({
+        name: requirement.name,
+        status: run ? (valid ? "success" : "error") : "skipped",
+        message: message,
+      });
     }
-    requirementsList.push({
-      name: requirement.name,
-      status: run ? (valid ? "success" : "error") : "skipped",
-      message: message,
-    });
+    responseObject.requirementsList = requirementsList;
+    responseObject.requirementsStatus = valid ? "success" : "error";
+    if (!valid) {
+      return responseObject;
+    }
+
+    logger.info("Requirements check passed");
   }
-  responseObject.requirementsList = requirementsList;
-  responseObject.requirementsStatus = valid ? "success" : "error";
-  if (!valid) {
-    return responseObject;
+
+  // Initialize stack
+  logger.info("Initializing Pulumi Stack");
+  await deployment.initStack("wwl", record.params.stackName);
+  logger.info("Pulumi Stack initialized");
+
+  switch (deploymentAction) {
+    case "refresh": {
+      logger.info("Refreshing Deployment");
+      const result = await deployment.refresh();
+      responseObject.result = result;
+      break;
+    }
+    case "preview": {
+      logger.info("Previewing Deployment");
+      const result = await deployment.preview();
+      responseObject.result = result;
+      break;
+    }
   }
 
   return responseObject;

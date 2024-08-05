@@ -105,9 +105,15 @@ const deploymentResource =
                 availableValues: [
                   { value: '{"awsRegion": "us-east-1"}', label: "us-east-1" },
                 ],
+                components: {
+                  show: Components.ShowJsonProp,
+                },
               },
               deploymentConfig: {
                 position: 5,
+                components: {
+                  show: Components.ShowJsonProp,
+                },
               },
               privateInfo: {
                 isVisible: {

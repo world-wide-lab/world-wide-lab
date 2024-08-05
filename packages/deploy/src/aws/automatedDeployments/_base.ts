@@ -8,7 +8,7 @@ export abstract class WwlAwsBaseAutomatedDeployment extends WwlAutomatedDeployme
   extraFields = ["awsRegion"];
 
   async onInitPulumiStack(pulumiStack: automation.Stack): Promise<void> {
-    await pulumiStack.workspace.installPlugin("aws", "v3.6.1");
+    await pulumiStack.workspace.installPlugin("aws", "v6.47.0");
     await pulumiStack.setConfig("aws:region", { value: "us-west-2" });
   }
 }

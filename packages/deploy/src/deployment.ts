@@ -15,22 +15,22 @@ export abstract class WwlAutomatedDeployment {
   abstract onInitPulumiStack(pulumiStack: automation.Stack): Promise<void>;
   extraFields: ExtraFields[] = [];
 
-  stackName: string;
-  projectName: string;
-
-  constructor(stackName: string, projectName: string) {
-    this.stackName = stackName;
-    this.projectName = projectName;
-  }
-
   // Initialize the Pulumi stack
   private pulumiStack: automation.Stack;
-  async initStack() {
-    const pulumiStack = await automation.LocalWorkspace.createOrSelectStack({
-      stackName: this.stackName,
-      projectName: this.projectName,
-      program: async () => await new this.PulumiDeployment(),
-    });
+  async initStack(projectName: string, stackName: string) {
+    const pulumiStack = await automation.LocalWorkspace.createOrSelectStack(
+      {
+        projectName,
+        stackName,
+        program: async () => await new this.PulumiDeployment(),
+      },
+      {
+        envVars: {
+          // TODO: Make this configurable?
+          PULUMI_CONFIG_PASSPHRASE: "",
+        },
+      },
+    );
     this.pulumiStack = pulumiStack;
 
     // Check whether the deployment itself has any special requirements
@@ -41,12 +41,17 @@ export abstract class WwlAutomatedDeployment {
     return await this.pulumiStack.refresh();
   }
 
+  async preview() {
+    return await this.pulumiStack.preview();
+  }
+
   async deploy() {
     return await this.pulumiStack.up();
   }
 
   async remove() {
+    const name = this.pulumiStack.name;
     await this.pulumiStack.destroy();
-    await this.pulumiStack.workspace.removeStack(this.stackName);
+    await this.pulumiStack.workspace.removeStack(name);
   }
 }
