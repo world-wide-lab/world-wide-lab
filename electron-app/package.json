@@ -27,6 +27,7 @@
     "playwright": "^1.42.1"
   },
   "dependencies": {
+    "@world-wide-lab/deploy": "file:../packages/deploy",
     "@world-wide-lab/server": "file:../packages/server"
   }
 }
