@@ -1,5 +1,5 @@
-import { Box, Label } from "@adminjs/design-system";
-import { useCallback } from "react";
+import { Box, Icon, Label } from "@adminjs/design-system";
+import { useCallback, useState } from "react";
 
 import { Editor, loader } from "@monaco-editor/react";
 
@@ -33,14 +33,43 @@ const ShowJsonProp = (props: any) => {
     ? JSON.stringify(object, undefined, 2)
     : property.custom.defaultValue || "";
 
+  const [jsonStatus, setJsonStatus] = useState<string>("");
   // biome-ignore lint/correctness/useExhaustiveDependencies: Implementation copied from AdminJS
   const handleUpdate = useCallback((newValue: string | undefined, ev: any) => {
-    onChange(property.path, newValue);
+    try {
+      // @ts-ignore
+      const parsedNewValue = JSON.parse(newValue);
+      onChange(property.path, parsedNewValue);
+      setJsonStatus("success");
+    } catch (err) {
+      // Do nothing
+      setJsonStatus("error");
+    }
   }, []);
 
   return (
     <Box mb="xl">
-      <Label>{property.label}</Label>
+      <Label>
+        {property.label}
+        &nbsp;
+        <Icon
+          icon={
+            jsonStatus === "error"
+              ? "XCircle"
+              : jsonStatus === "success"
+                ? "CheckCircle"
+                : "Circle"
+          }
+          title={
+            jsonStatus === "error"
+              ? "Error: Invalid JSON."
+              : jsonStatus === "success"
+                ? "JSON saved successfully."
+                : "This circle indicates whether the JSON was saved successfully."
+          }
+          style={{ opacity: 0.5 }}
+        />
+      </Label>
       <Editor
         options={{ minimap: { enabled: false } }}
         onChange={handleUpdate}
