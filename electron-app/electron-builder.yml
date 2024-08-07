@@ -5,6 +5,9 @@ artifactName: "${productName}-${os}-${arch}.${ext}"
 directories:
   buildResources: resources
 mac:
+  hardenedRuntime: true
+  entitlements: "build/entitlements.mac.plist"
+  entitlementsInherit: "build/entitlements.mac.plist"
   target:
     target: dmg
     arch:
