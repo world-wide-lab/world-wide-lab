@@ -13,6 +13,7 @@ process.env.USE_AUTHENTICATION = "false";
 export const loggingDir = path.join(BASE_DIR, "logs");
 process.env.LOGGING_DIR = loggingDir;
 
+// Important: This directory will be completely wiped, so it should always be a full path
 export const adminJsTmpDir = path.join(BASE_DIR, "adminjs-tmp");
 process.env.ADMIN_JS_TMP_DIR = adminJsTmpDir;
 

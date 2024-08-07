@@ -1,8 +1,10 @@
 // Set environment variables
-import {loggingDir, adminJsTmpDir, dbUrl} from "./set-env.js";
+import { adminJsTmpDir, dbUrl, loggingDir } from "./set-env.js";
 
 import { init } from "@world-wide-lab/server/dist/init.js";
 import { BrowserWindow, app, dialog, shell } from "electron";
+
+import { existsSync, rmSync } from "node:fs";
 
 // To prevent super slow start up
 // via: https://stackoverflow.com/questions/55726947/electron-why-is-there-a-big-delay-when-loading-the-main-window-through-localho
@@ -13,6 +15,11 @@ app.commandLine.appendSwitch("no-proxy-server");
 console.log(`Logs Directory: "${loggingDir}"`);
 console.log(`AdminJS Temp Directory: "${adminJsTmpDir}"`);
 console.log(`Database URL: "${dbUrl}"`);
+
+if (existsSync(adminJsTmpDir)) {
+  console.log("Clearing AdminJS Temp Directory");
+  rmSync(adminJsTmpDir, { recursive: true });
+}
 
 // Make sure that mainWindow isn't garbage collected
 let mainWindow;
