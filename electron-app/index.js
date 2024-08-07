@@ -6,6 +6,8 @@ import { BrowserWindow, app, dialog, shell } from "electron";
 
 import { existsSync, rmSync } from "node:fs";
 
+import "./menu.js";
+
 // To prevent super slow start up
 // via: https://stackoverflow.com/questions/55726947/electron-why-is-there-a-big-delay-when-loading-the-main-window-through-localho
 app.commandLine.appendSwitch("auto-detect", "false");

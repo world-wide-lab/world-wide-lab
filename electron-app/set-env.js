@@ -1,7 +1,7 @@
 import path from "node:path";
 import { app } from "electron";
 
-const BASE_DIR = app.getPath("userData");
+export const BASE_DIR = app.getPath("userData");
 const DATABASE_NAME = "world-wide-lab-database.sqlite";
 
 // Set environment variables manually via JS
