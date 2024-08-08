@@ -57,6 +57,16 @@ export default defineConfig({
           { text: "Deploying to the Cloud", link: "/guides/deployment" },
         ],
       },
+      {
+        text: "Troubleshooting",
+        items: [
+          { text: "Frequently Asked Questions", link: "/guides/faq" },
+          {
+            text: "File an Issue",
+            link: "https://github.com/world-wide-lab/world-wide-lab/issues/new",
+          },
+        ],
+      },
     ],
 
     socialLinks: [
