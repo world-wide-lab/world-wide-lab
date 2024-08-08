@@ -1,13 +1,19 @@
 // Set environment variables
-import "./set-env.js";
+import { dbUrl, loggingDir } from "./set-env.js";
 
 import { init } from "@world-wide-lab/server/dist/init.js";
 import { BrowserWindow, app, dialog, shell } from "electron";
+
+import "./menu.js";
 
 // To prevent super slow start up
 // via: https://stackoverflow.com/questions/55726947/electron-why-is-there-a-big-delay-when-loading-the-main-window-through-localho
 app.commandLine.appendSwitch("auto-detect", "false");
 app.commandLine.appendSwitch("no-proxy-server");
+
+// Output important directory paths
+console.log(`Logs Directory: "${loggingDir}"`);
+console.log(`Database URL: "${dbUrl}"`);
 
 // Make sure that mainWindow isn't garbage collected
 let mainWindow;
