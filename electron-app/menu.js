@@ -1,6 +1,6 @@
 import { Menu, app, shell } from "electron";
 
-import { BASE_DIR } from "./set-env.js";
+import { BASE_DIR, loggingDir } from "./set-env.js";
 
 const isMac = process.platform === "darwin";
 
@@ -33,6 +33,12 @@ const template = [
         label: "Open Data Directory",
         click: async () => {
           await shell.openPath(BASE_DIR);
+        },
+      },
+      {
+        label: "Open Logs Directory",
+        click: async () => {
+          await shell.openPath(loggingDir);
         },
       },
     ],
