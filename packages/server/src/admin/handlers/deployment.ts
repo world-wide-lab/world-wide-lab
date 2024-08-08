@@ -72,10 +72,10 @@ export async function deployDeploymentHandler(
     logger.info("Checking requirements");
 
     let valid = true;
-    let message = "";
-    let errorMessage = undefined;
     const requirementsList = [];
     for (const requirement of deployment.requirements) {
+      let message = "";
+      let errorMessage = undefined;
       const run = valid;
       if (run) {
         try {
