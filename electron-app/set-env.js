@@ -11,11 +11,11 @@ process.env.WWL_ELECTRON_APP = "true";
 process.env.ADMIN_UI = "true";
 process.env.USE_AUTHENTICATION = "false";
 
-export const loggingDir = app.getPath("logs");;
+const loggingDir = path.join(BASE_DIR, "logs");
 process.env.LOGGING_DIR = loggingDir;
 
 // Don't try to bundle adminjs
-process.env.ADMIN_JS_SKIP_BUNDLE = "true"
+process.env.ADMIN_JS_SKIP_BUNDLE = "true";
 
 export const dbUrl = `sqlite:${path.join(BASE_DIR, DATABASE_NAME)}`;
 process.env.DATABASE_URL = dbUrl;
