@@ -34,6 +34,11 @@ if (config.apiDocs.enabled) {
   } as AdminPage;
 }
 
+const electronOnlySettings = {
+  // Use pre-built adminjs assets in electron app
+  assetsCDN: `${config.root}:${config.port}/static/adminjs/`,
+}
+
 const admin = new AdminJS({
   rootPath: "/admin",
 
@@ -282,6 +287,9 @@ const admin = new AdminJS({
       },
     },
   },
+
+  // Merge in electron settings
+  ...(config.electronApp ? electronOnlySettings : {})
 });
 
 const adminRouter = initializeRouter(admin);

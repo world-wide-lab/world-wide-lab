@@ -13,7 +13,7 @@
     "dev": "electron .",
     "build": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
-    "build:wwl": "npm run build --prefix ../packages/server/",
+    "build:wwl": "npm run build --prefix ../packages/server/ && npm run bundle:adminjs --prefix ../packages/server/",
     "package": "electron-builder",
     "package:dev": "electron-builder --dir",
     "test:playwright": "npm run build:wwl && npx playwright test"

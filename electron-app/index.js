@@ -1,10 +1,8 @@
 // Set environment variables
-import { adminJsTmpDir, dbUrl, loggingDir } from "./set-env.js";
+import { dbUrl, loggingDir } from "./set-env.js";
 
 import { init } from "@world-wide-lab/server/dist/init.js";
 import { BrowserWindow, app, dialog, shell } from "electron";
-
-import { existsSync, rmSync } from "node:fs";
 
 import "./menu.js";
 
@@ -15,13 +13,7 @@ app.commandLine.appendSwitch("no-proxy-server");
 
 // Output important directory paths
 console.log(`Logs Directory: "${loggingDir}"`);
-console.log(`AdminJS Temp Directory: "${adminJsTmpDir}"`);
 console.log(`Database URL: "${dbUrl}"`);
-
-if (existsSync(adminJsTmpDir)) {
-  console.log("Clearing AdminJS Temp Directory");
-  rmSync(adminJsTmpDir, { recursive: true });
-}
 
 // Make sure that mainWindow isn't garbage collected
 let mainWindow;

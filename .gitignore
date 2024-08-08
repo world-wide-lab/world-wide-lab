@@ -18,6 +18,7 @@ temp/
 
 # Ignore generated adminjs folder
 .adminjs/
+packages/server/static/adminjs/
 
 # Ignore logs
 logs/
