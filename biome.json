@@ -1,6 +1,11 @@
 {
   "files": {
-    "ignore": ["dist/**", "docs/.vitepress/cache/**", ".adminjs/**"]
+    "ignore": [
+      "dist/**",
+      "docs/.vitepress/cache/**",
+      ".adminjs/**",
+      "packages/server/static/adminjs/**"
+    ]
   },
   "formatter": {
     "indentStyle": "space"

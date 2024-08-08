@@ -1,7 +1,8 @@
 import path from "node:path";
 import { app } from "electron";
 
-const BASE_DIR = app.getPath("userData");
+export const BASE_DIR = app.getPath("userData");
+export const TEMP_DIR = app.getPath("temp");
 const DATABASE_NAME = "world-wide-lab-database.sqlite";
 
 // Set environment variables manually via JS
@@ -10,17 +11,14 @@ process.env.WWL_ELECTRON_APP = "true";
 process.env.ADMIN_UI = "true";
 process.env.USE_AUTHENTICATION = "false";
 
-const loggingDir = path.join(BASE_DIR, "logs");
+export const loggingDir = path.join(BASE_DIR, "logs");
 process.env.LOGGING_DIR = loggingDir;
-console.log(`Logs Directory: ${loggingDir}`);
 
-const adminJsTmpDir = path.join(BASE_DIR, "adminjs-tmp");
-process.env.ADMIN_JS_TMP_DIR = adminJsTmpDir;
-console.log(`AdminJS Temp Directory: ${adminJsTmpDir}`);
+// Don't try to bundle adminjs
+process.env.ADMIN_JS_SKIP_BUNDLE = "true";
 
-const dbUrl = `sqlite:${path.join(BASE_DIR, DATABASE_NAME)}`;
+export const dbUrl = `sqlite:${path.join(BASE_DIR, DATABASE_NAME)}`;
 process.env.DATABASE_URL = dbUrl;
-console.log(`Database URL: ${dbUrl}`);
 
 // Manually set package version, which is normally set by npm
 process.env.npm_package_version = app.getVersion();
