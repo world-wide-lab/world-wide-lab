@@ -11,7 +11,7 @@ process.env.WWL_ELECTRON_APP = "true";
 process.env.ADMIN_UI = "true";
 process.env.USE_AUTHENTICATION = "false";
 
-const loggingDir = path.join(BASE_DIR, "logs");
+export const loggingDir = path.join(BASE_DIR, "logs");
 process.env.LOGGING_DIR = loggingDir;
 
 // Don't try to bundle adminjs

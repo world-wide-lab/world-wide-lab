@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/electron-app",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "description": "",
   "repository": {
     "type": "git",
@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "dev": "electron .",
+    "prebuild": "node -p \" if (require('./package.json').version !== require('../packages/server/package.json').version) throw 'App-Server Version Mismatch';\"",
     "build": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
     "build:wwl": "npm run build --prefix ../packages/server/ && npm run bundle:adminjs --prefix ../packages/server/",
