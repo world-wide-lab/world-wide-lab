@@ -8,12 +8,14 @@ import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
+import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
   newStudyHandler,
 } from "./handlers/study.js";
+import { randomString } from "./helpers.js";
 import { initializeRouter } from "./router_auth.js";
 
 AdminJS.registerAdapter({
@@ -33,6 +35,141 @@ if (config.apiDocs.enabled) {
     },
   } as AdminPage;
 }
+
+// Deployments (only on electron)
+const deploymentResource = config.electronApp
+  ? [
+      {
+        resource: sequelize.models.Deployment,
+        options: {
+          navigation: {
+            name: null,
+            icon: "UploadCloud",
+          },
+          actions: {
+            new: {},
+            show: {
+              component: Components.DeploymentShowAction,
+            },
+            edit: {
+              isAccessible: false,
+            },
+            delete: {
+              isAccessible: true,
+            },
+            deploy: {
+              actionType: "record",
+              component: false,
+              isVisible: false,
+              handler: deployDeploymentHandler,
+            },
+          },
+          properties: {
+            createdAt: {
+              isVisible: {
+                list: true,
+                filter: true,
+                show: true,
+                edit: false,
+              },
+              description: columnComments.createdAt,
+            },
+            updatedAt: {
+              isVisible: {
+                list: true,
+                filter: true,
+                show: true,
+                edit: false,
+              },
+              description: columnComments.updatedAt,
+            },
+            status: {
+              position: 1,
+              isVisible: {
+                list: true,
+                filter: true,
+                show: true,
+                edit: false,
+              },
+            },
+            type: {
+              position: 2,
+              availableValues: [
+                { value: "aws_apprunner", label: "AWS: App Runner" },
+              ],
+            },
+            stackConfig: {
+              position: 3,
+              custom: {
+                defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
+                  "\n",
+                ),
+              },
+              components: {
+                show: Components.ShowJsonProp,
+                edit: Components.EditJsonProp,
+              },
+
+              isVisible: {
+                list: false,
+                filter: false,
+                show: true,
+                edit: true,
+              },
+            },
+            deploymentConfig: {
+              position: 5,
+              custom: {
+                defaultValue: [
+                  "{",
+                  `  "secret_dbUsername": "user_${randomString(6)}",`,
+                  `  "secret_dbPassword": "${randomString(20)}",`,
+                  `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
+                    6,
+                  )}@example.com",`,
+                  `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
+                    20,
+                  )}",`,
+                  `  "secret_wwlAdminAuthSessionSecret": "${randomString(
+                    20,
+                  )}",`,
+                  `  "secret_wwlDefaultApiKey": "${randomString(20)}"`,
+                  "}",
+                ].join("\n"),
+              },
+              components: {
+                show: Components.ShowJsonProp,
+                edit: Components.EditJsonProp,
+              },
+
+              isVisible: {
+                list: false,
+                filter: false,
+                show: true,
+                edit: true,
+              },
+            },
+            privateInfo: {
+              custom: {
+                defaultValue: "{}",
+              },
+              isVisible: {
+                list: false,
+                filter: false,
+                show: true,
+                edit: true,
+              },
+              components: {
+                show: Components.ShowJsonProp,
+                edit: Components.EditJsonProp,
+              },
+              description: columnComments.privateInfo,
+            },
+          },
+        },
+      },
+    ]
+  : [];
 
 const electronOnlySettings = {
   // Use pre-built adminjs assets in electron app
@@ -236,6 +373,8 @@ const admin = new AdminJS({
         },
       },
     },
+
+    ...deploymentResource,
   ],
   pages,
 
@@ -254,6 +393,7 @@ const admin = new AdminJS({
           wwl_participants: "Participants",
           wwl_sessions: "Sessions",
           wwl_responses: "Responses",
+          wwl_deployments: "Deployments",
         },
         resources: {
           wwl_studies: {
@@ -281,6 +421,12 @@ const admin = new AdminJS({
           wwl_responses: {
             actions: {
               show: "View Response",
+            },
+          },
+          wwl_deployments: {
+            actions: {
+              new: "Create New Deployment",
+              show: "Manage Deployment",
             },
           },
         },

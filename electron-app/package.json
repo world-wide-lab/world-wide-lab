@@ -14,7 +14,7 @@
     "prebuild": "node -p \" if (require('./package.json').version !== require('../packages/server/package.json').version) throw 'App-Server Version Mismatch';\"",
     "build": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
-    "build:wwl": "npm run build --prefix ../packages/server/ && npm run bundle:adminjs --prefix ../packages/server/",
+    "build:wwl": "npm run build --prefix ../packages/deploy/ && npm run build --prefix ../packages/server/ && npm run bundle:adminjs --prefix ../packages/server/",
     "package": "electron-builder",
     "package:dev": "electron-builder --dir",
     "test:playwright": "npm run build:wwl && npx playwright test"
@@ -28,6 +28,7 @@
     "playwright": "^1.42.1"
   },
   "dependencies": {
+    "@world-wide-lab/deploy": "file:../packages/deploy",
     "@world-wide-lab/server": "file:../packages/server"
   }
 }
