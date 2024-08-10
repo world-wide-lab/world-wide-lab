@@ -9,12 +9,12 @@ export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
   readonly appRunnerService: aws.apprunner.Service;
 
   /**
-   * Creates a new static website hosted on AWS.
+   * Create a new deployment of WWL on AWS App Runner.
    * @param name The _unique_ name of the resource.
-   * @param config
+   * @param config The configuration for this deployment.
    * @param opts A bag of options that control this resource's behavior.
    */
-  constructor(config?: Partial<WwlAwsDeploymentConfig>) {
+  constructor(config?: WwlAwsDeploymentConfig) {
     super(config);
 
     // How should the app auto-scale itself?

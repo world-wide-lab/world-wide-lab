@@ -8,21 +8,75 @@ import { WwlPulumiDeployment } from "../../deployment";
 import { awsRequirements } from "../automatedDeployments/requirements";
 
 export interface WwlAwsDeploymentConfig {
-  containerPort: number;
-  cpu: number;
-  memory: number;
-  minCapacity: number;
-  maxCapacity: number;
-
-  dbDeletionProtection: boolean;
-
+  /**
+   * The username for the database connection.
+   */
   secret_dbUsername: string;
+
+  /**
+   * The password for the database connection.
+   */
   secret_dbPassword: string;
+
+  /**
+   * The default email for the WWL admin authentication.
+   */
   secret_wwlAdminAuthDefaultEmail: string;
+
+  /**
+   * The default password for the WWL admin authentication.
+   */
   secret_wwlAdminAuthDefaultPassword: string;
+
+  /**
+   * The session secret for the WWL admin authentication.
+   */
   secret_wwlAdminAuthSessionSecret: string;
+
+  /**
+   * The default API key for the WWL application.
+   */
   secret_wwlDefaultApiKey: string;
+
+  /**
+   * Whether to enable deletion protection for the database.
+   */
+  dbDeletionProtection?: boolean;
+
+  /**
+   * The port on which the container will listen.
+   */
+  containerPort?: number;
+
+  /**
+   * The number of CPU units to allocate for the app.
+   */
+  cpu?: number;
+
+  /**
+   * The amount of memory (in MiB) to allocate for the app.
+   */
+  memory?: number;
+
+  /**
+   * The minimum number of instances to run (for autoscaling).
+   */
+  minCapacity?: number;
+
+  /**
+   * The maximum number of instances to run (for autoscaling).
+   */
+  maxCapacity?: number;
 }
+
+type OptionalKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
+}[keyof T];
+
+type FlipOptional<T> = Required<Pick<T, OptionalKeys<T>>> &
+  Partial<Omit<T, OptionalKeys<T>>> extends infer O
+  ? { [K in keyof O]: O[K] }
+  : never;
 
 export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
   public readonly requirements = awsRequirements;
@@ -34,43 +88,41 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
   url: pulumi.Output<string>;
 
   /**
-   * Creates a new static website hosted on AWS.
+   * Base class for WWL AWS deployments via Pulumi.
    * @param name The _unique_ name of the resource.
-   * @param config
+   * @param config The configuration for this deployment.
    * @param opts A bag of options that control this resource's behavior.
    */
-  constructor(config?: Partial<WwlAwsDeploymentConfig>) {
+  constructor(config?: WwlAwsDeploymentConfig) {
     super();
 
     // Load environment variables from a .env file
+    // TODO: Should this be moved somewhere else?
     dotenv.config();
 
     // Generate the final configuration by merging in defaults
-    this.config = merge(
-      {
-        // Deployment Configuration
-        containerPort: 80,
-        cpu: 256,
-        memory: 512,
-        minCapacity: 1,
-        maxCapacity: 4,
+    const defaultConfig: FlipOptional<WwlAwsDeploymentConfig> = {
+      // Deployment Configuration
+      containerPort: 80,
+      cpu: 256,
+      memory: 512,
+      minCapacity: 1,
+      maxCapacity: 4,
 
-        dbDeletionProtection: true,
+      dbDeletionProtection: true,
 
-        // More sensitive parts of configuration
-        secret_dbUsername: process.env.DB_USERNAME,
-        secret_dbPassword: process.env.DB_PASSWORD,
-        secret_wwlAdminAuthDefaultEmail:
-          process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
-        secret_wwlAdminAuthDefaultPassword:
-          process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
-        secret_wwlAdminAuthSessionSecret:
-          process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
-        secret_wwlDefaultApiKey: process.env.WWL_DEFAULT_API_KEY,
-      },
-      // @ts-ignore - unsure how to make ts happy here with <Partial> & deepmerge
-      config,
-    );
+      // More sensitive parts of configuration
+      secret_dbUsername: process.env.DB_USERNAME,
+      secret_dbPassword: process.env.DB_PASSWORD,
+      secret_wwlAdminAuthDefaultEmail: process.env.WWL_ADMIN_AUTH_DEFAULT_EMAIL,
+      secret_wwlAdminAuthDefaultPassword:
+        process.env.WWL_ADMIN_AUTH_DEFAULT_PASSWORD,
+      secret_wwlAdminAuthSessionSecret:
+        process.env.WWL_ADMIN_AUTH_SESSION_SECRET,
+      secret_wwlDefaultApiKey: process.env.WWL_DEFAULT_API_KEY,
+    };
+
+    this.config = merge(defaultConfig, config);
 
     // Check that no value in secrets is empty
     for (const [key, value] of Object.entries(this.config)) {
