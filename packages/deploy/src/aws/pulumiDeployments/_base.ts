@@ -14,6 +14,8 @@ export interface WwlAwsDeploymentConfig {
   minCapacity: number;
   maxCapacity: number;
 
+  dbDeletionProtection: boolean;
+
   secret_dbUsername: string;
   secret_dbPassword: string;
   secret_wwlAdminAuthDefaultEmail: string;
@@ -53,6 +55,8 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
         minCapacity: 1,
         maxCapacity: 4,
 
+        dbDeletionProtection: true,
+
         // More sensitive parts of configuration
         secret_dbUsername: process.env.DB_USERNAME,
         secret_dbPassword: process.env.DB_PASSWORD,
@@ -88,7 +92,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
       //  Either one of these two is required
       // skipFinalSnapshot: true,
       finalSnapshotIdentifier: "wwl-db-final-snapshot",
-      deletionProtection: true,
+      deletionProtection: this.config.dbDeletionProtection,
     });
 
     this.dbConnectionString = pulumi
