@@ -104,7 +104,14 @@ export abstract class WwlAutomatedDeployment {
     await this.pulumiStack.refresh();
 
     const name = this.pulumiStack.name;
-    await this.pulumiStack.destroy();
+    const result = await this.pulumiStack.destroy();
     await this.pulumiStack.workspace.removeStack(name);
+
+    if (result.stdout.includes("pulumi stack rm")) {
+      result.stdout +=
+        "\n\nHistory and configuration of this stack have also been deleted.";
+    }
+
+    return result;
   }
 }
