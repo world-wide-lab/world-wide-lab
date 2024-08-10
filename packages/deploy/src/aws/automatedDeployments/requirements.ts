@@ -15,7 +15,7 @@ const awsOnlyRequirements: Requirement[] = [
         await execa("aws", ["--version"]);
         return getSuccessResult();
       } catch (err) {
-        return getFailureResult("Please Install the AWS CLI", err.message);
+        return getFailureResult("Please Install the AWS CLI", err);
       }
     },
   },
@@ -28,7 +28,7 @@ const awsOnlyRequirements: Requirement[] = [
       } catch (err) {
         return getFailureResult(
           "Please log into the AWS CLI and check your internet connection",
-          err.message,
+          err,
         );
       }
     },

@@ -83,12 +83,12 @@ export async function deployDeploymentHandler(
           valid = result.success;
           if (!result.success) {
             message = result.message;
-            errorMessage = result.errorMessage || undefined;
+            errorMessage = result.error?.toString() || undefined;
           }
         } catch (err) {
           valid = false;
           message = "An unexpected error occurred";
-          errorMessage = (err as Error).message || undefined;
+          errorMessage = (err as Error)?.toString() || undefined;
         }
       }
       requirementsList.push({

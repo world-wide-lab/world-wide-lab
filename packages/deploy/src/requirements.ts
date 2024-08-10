@@ -11,8 +11,8 @@ export type RequirementsResult =
       success: false;
       // Message of what went wrong
       message: string;
-      // Optional detailed error message
-      errorMessage?: string;
+      // Optional: Pass along the error
+      error?: Error;
     };
 
 export function getSuccessResult(): RequirementsResult {
@@ -23,12 +23,12 @@ export function getSuccessResult(): RequirementsResult {
 
 export function getFailureResult(
   message: string,
-  errorMessage?: string,
+  error?: Error,
 ): RequirementsResult {
   return {
     success: false,
     message,
-    errorMessage,
+    error,
   };
 }
 
@@ -52,7 +52,7 @@ export const commonRequirements: Requirement[] = [
         return getSuccessResult();
       } catch (err) {
         if (err instanceof CommandError) {
-          return getFailureResult("Please Install Pulumi CLI");
+          return getFailureResult("Please Install Pulumi CLI", err);
         }
         throw err;
       }
