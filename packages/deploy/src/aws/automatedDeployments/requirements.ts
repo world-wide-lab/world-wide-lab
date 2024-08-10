@@ -12,7 +12,7 @@ const awsOnlyRequirements: Requirement[] = [
     name: "AWS CLI is installed",
     check: async () => {
       try {
-        await execa("aws", ["--version"], {shell : true});
+        await execa("aws", ["--version"]);
         return getSuccessResult();
       } catch (err) {
         return getFailureResult("Please Install the AWS CLI", err.message);
@@ -23,7 +23,7 @@ const awsOnlyRequirements: Requirement[] = [
     name: "AWS CLI is configured",
     check: async () => {
       try {
-        await execa("aws", ["sts", "get-caller-identity"], {shell : true});
+        await execa("aws", ["sts", "get-caller-identity"]);
         return getSuccessResult();
       } catch (err) {
         return getFailureResult(
