@@ -37,139 +37,140 @@ if (config.apiDocs.enabled) {
 }
 
 // Deployments (only on electron)
-const deploymentResource = config.electronApp
-  ? [
-      {
-        resource: sequelize.models.Deployment,
-        options: {
-          navigation: {
-            name: null,
-            icon: "UploadCloud",
-          },
-          actions: {
-            new: {},
-            show: {
-              component: Components.DeploymentShowAction,
+const deploymentResource =
+  config.electronApp || process.env.NODE_ENV === "development"
+    ? [
+        {
+          resource: sequelize.models.Deployment,
+          options: {
+            navigation: {
+              name: null,
+              icon: "UploadCloud",
             },
-            edit: {
-              isAccessible: false,
-            },
-            delete: {
-              isAccessible: true,
-            },
-            deploy: {
-              actionType: "record",
-              component: false,
-              isVisible: false,
-              handler: deployDeploymentHandler,
-            },
-          },
-          properties: {
-            createdAt: {
-              isVisible: {
-                list: true,
-                filter: true,
-                show: true,
-                edit: false,
+            actions: {
+              new: {},
+              show: {
+                component: Components.DeploymentShowAction,
               },
-              description: columnComments.createdAt,
-            },
-            updatedAt: {
-              isVisible: {
-                list: true,
-                filter: true,
-                show: true,
-                edit: false,
+              edit: {
+                isAccessible: false,
               },
-              description: columnComments.updatedAt,
-            },
-            status: {
-              position: 1,
-              isVisible: {
-                list: true,
-                filter: true,
-                show: true,
-                edit: false,
+              delete: {
+                isAccessible: true,
+              },
+              deploy: {
+                actionType: "record",
+                component: false,
+                isVisible: false,
+                handler: deployDeploymentHandler,
               },
             },
-            type: {
-              position: 2,
-              availableValues: [
-                { value: "aws_apprunner", label: "AWS: App Runner" },
-              ],
-            },
-            stackConfig: {
-              position: 3,
-              custom: {
-                defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
-                  "\n",
-                ),
+            properties: {
+              createdAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.createdAt,
               },
-              components: {
-                show: Components.ShowJsonProp,
-                edit: Components.EditJsonProp,
+              updatedAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.updatedAt,
               },
+              status: {
+                position: 1,
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+              },
+              type: {
+                position: 2,
+                availableValues: [
+                  { value: "aws_apprunner", label: "AWS: App Runner" },
+                ],
+              },
+              stackConfig: {
+                position: 3,
+                custom: {
+                  defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
+                    "\n",
+                  ),
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
 
-              isVisible: {
-                list: false,
-                filter: false,
-                show: true,
-                edit: true,
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
               },
-            },
-            deploymentConfig: {
-              position: 5,
-              custom: {
-                defaultValue: [
-                  "{",
-                  `  "secret_dbUsername": "user_${randomString(6)}",`,
-                  `  "secret_dbPassword": "${randomString(20)}",`,
-                  `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
-                    6,
-                  )}@example.com",`,
-                  `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
-                    20,
-                  )}",`,
-                  `  "secret_wwlAdminAuthSessionSecret": "${randomString(
-                    20,
-                  )}",`,
-                  `  "secret_wwlDefaultApiKey": "${randomString(20)}"`,
-                  "}",
-                ].join("\n"),
-              },
-              components: {
-                show: Components.ShowJsonProp,
-                edit: Components.EditJsonProp,
-              },
+              deploymentConfig: {
+                position: 5,
+                custom: {
+                  defaultValue: [
+                    "{",
+                    `  "secret_dbUsername": "user_${randomString(6)}",`,
+                    `  "secret_dbPassword": "${randomString(20)}",`,
+                    `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
+                      6,
+                    )}@example.com",`,
+                    `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlAdminAuthSessionSecret": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlDefaultApiKey": "${randomString(20)}"`,
+                    "}",
+                  ].join("\n"),
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
 
-              isVisible: {
-                list: false,
-                filter: false,
-                show: true,
-                edit: true,
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
               },
-            },
-            privateInfo: {
-              custom: {
-                defaultValue: "{}",
+              privateInfo: {
+                custom: {
+                  defaultValue: "{}",
+                },
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
+                description: columnComments.privateInfo,
               },
-              isVisible: {
-                list: false,
-                filter: false,
-                show: true,
-                edit: true,
-              },
-              components: {
-                show: Components.ShowJsonProp,
-                edit: Components.EditJsonProp,
-              },
-              description: columnComments.privateInfo,
             },
           },
         },
-      },
-    ]
-  : [];
+      ]
+    : [];
 
 const electronOnlySettings = {
   // Use pre-built adminjs assets in electron app

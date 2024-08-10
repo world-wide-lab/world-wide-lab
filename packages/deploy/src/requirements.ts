@@ -46,13 +46,17 @@ export type Requirement = {
 export const commonRequirements: Requirement[] = [
   {
     name: "Pulumi CLI is installed",
+    url: "https://www.pulumi.com/docs/install/",
     check: async () => {
       try {
         await PulumiCommand.get();
         return getSuccessResult();
       } catch (err) {
         if (err instanceof CommandError) {
-          return getFailureResult("Please Install Pulumi CLI", err);
+          return getFailureResult(
+            "Please install the Pulumi CLI and make sure it is findable by World-Wide-Lab.",
+            err,
+          );
         }
         throw err;
       }

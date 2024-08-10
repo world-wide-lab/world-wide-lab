@@ -6,6 +6,7 @@ import {
   H3,
   Icon,
   Label,
+  Link,
   Loader,
   MessageBox,
   Section,
@@ -25,7 +26,7 @@ import {
 
 import { ApiClient } from "adminjs";
 
-import { Code } from "./partials/codeHighlighting.js";
+import { Code, refreshHighlighting } from "./partials/codeHighlighting.js";
 
 const api = new ApiClient();
 
@@ -106,7 +107,8 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           type: "Server Error",
           message: response.data.notice.message,
         });
-      } else {
+      } else if (deploymentAction !== "requirements") {
+        // Only return an error for actions, that are expected to return a result
         setErrorMessage({
           type: "No Result",
           message: `No result was returned from the server. Response Data: ${response.data}`,
@@ -159,57 +161,68 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   async function refresh() {
     // First check requirements
     await checkRequirements();
+
     // Then run the pulumi refresh
-    await sendDeploymentAction("refresh");
+    if (requirementsStatus && requirementsStatus !== "error") {
+      await sendDeploymentAction("refresh");
+    }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
     refresh();
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+    refreshHighlighting();
+  }, [currentActivity, deploymentOutput]);
+
   return (
     <DrawerContent>
       <H3>Deployment Data</H3>
-      <details>
-        <Button
-          as="summary"
-          variant="outlined"
-          style={{ marginBottom: "1rem" }}
-        >
-          Show Deployment Data
-        </Button>
 
-        <Section>
-          {action?.showInDrawer ? <ActionHeader {...props} /> : null}
+      <Box my="default">
+        <details>
+          <Button
+            as="summary"
+            variant="outlined"
+            style={{ marginBottom: "1rem" }}
+          >
+            Show Deployment Data
+          </Button>
 
-          {action.layout
-            ? action.layout.map((layoutElement, i) => (
-                <LayoutElementRenderer
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Based on AdminJS source code
-                  key={i}
-                  layoutElement={layoutElement}
-                  {...props}
-                  where="show"
-                />
-              ))
-            : properties.map((property) => (
-                <BasePropertyComponent
-                  key={property.propertyPath}
-                  where="show"
-                  property={property}
-                  resource={resource}
-                  record={record}
-                />
-              ))}
-        </Section>
-      </details>
+          <Section>
+            {action?.showInDrawer ? <ActionHeader {...props} /> : null}
+
+            {action.layout
+              ? action.layout.map((layoutElement, i) => (
+                  <LayoutElementRenderer
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Based on AdminJS source code
+                    key={i}
+                    layoutElement={layoutElement}
+                    {...props}
+                    where="show"
+                  />
+                ))
+              : properties.map((property) => (
+                  <BasePropertyComponent
+                    key={property.propertyPath}
+                    where="show"
+                    property={property}
+                    resource={resource}
+                    record={record}
+                  />
+                ))}
+          </Section>
+        </details>
+      </Box>
 
       {errorMessage && (
         <MessageBox
           variant="danger"
           mt="default"
-          message={`An Error was encountered: ${errorMessage.type}`}
+          message={`An Error was Encountered: ${errorMessage.type}`}
         >
           <Text>{errorMessage.message}</Text>
         </MessageBox>
@@ -217,6 +230,19 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
 
       <Box>
         <H3>Requirements</H3>
+        <Box my="default">
+          <Text>
+            We recommend reading the official page on{" "}
+            <Link
+              href="https://worldwidelab.org/guides/deployment"
+              target="_blank"
+            >
+              Deployments
+            </Link>{" "}
+            in the World-Wide-Lab documentation before proceeding.
+          </Text>
+        </Box>
+
         {requirementsList.length > 0 ? (
           <ul>
             {requirementsList.map((requirement, index) => (
@@ -256,6 +282,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
                       size="icon"
                       variant="text"
                       title="Learn More"
+                      target="_blank"
                     >
                       <Icon icon="ExternalLink" />
                     </Button>
@@ -266,12 +293,15 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
                   <MessageBox
                     my="default"
                     variant="warning"
-                    message="Problem durring requirements check"
+                    message="Problem During Requirements Check"
                   >
                     {requirement.message}
 
                     {requirement.errorMessage && (
-                      <Text>Error Message: {requirement.errorMessage}</Text>
+                      <details>
+                        <summary>Error Message</summary>
+                        <Text>{requirement.errorMessage}</Text>
+                      </details>
                     )}
                   </MessageBox>
                 )}
@@ -301,9 +331,9 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
             <Text>
               <p>
                 Some requirements failed. Please review the error messages above
-                and try again.
+                and try again. <br />
+                Deployment will not be available.
               </p>
-              <p>Deployment will not be available.</p>
             </Text>
           ))}
       </Box>
@@ -375,9 +405,18 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
       </Box>
 
       <Box style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <pre>
-          <Code>{deploymentOutput}</Code>
-        </pre>
+        {["none", "requirements"].includes(currentActivity) ? (
+          <div>
+            <pre>
+              <Code>{deploymentOutput}</Code>
+            </pre>
+          </div>
+        ) : (
+          <div>
+            <Text>Loading Output... </Text>
+            <Loader />
+          </div>
+        )}
       </Box>
     </DrawerContent>
   );

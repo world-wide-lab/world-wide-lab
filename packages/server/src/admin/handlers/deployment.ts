@@ -94,6 +94,7 @@ export async function deployDeploymentHandler(
       requirementsList.push({
         name: requirement.name,
         status: run ? (valid ? "success" : "error") : "skipped",
+        url: requirement.url,
         message: message,
         errorMessage: errorMessage,
       });
