@@ -9,6 +9,7 @@ import {
   Link,
   Loader,
   MessageBox,
+  Modal,
   Section,
   Select,
   Text,
@@ -73,6 +74,8 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   const [requirementsStatus, setRequirementsStatus] = useState<string>("");
   const [deploymentOutput, setDeploymentOutput] =
     useState<string>("No output yet.");
+  const [showDeployModal, setShowDeployModal] = useState<boolean>(false);
+  const [showDestroyModal, setShowDestroyModal] = useState<boolean>(false);
 
   async function sendDeploymentAction(
     deploymentAction:
@@ -346,7 +349,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           disabled={
             requirementsStatus !== "success" || currentActivity !== "none"
           }
-          onClick={() => sendDeploymentAction("deploy")}
+          onClick={() => setShowDeployModal(true)}
         >
           {currentActivity === "deploy" ? (
             <Icon icon="Loader" spin={true} />
@@ -393,7 +396,7 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           disabled={currentActivity !== "none"}
           rounded={true}
           color="danger"
-          onClick={() => sendDeploymentAction("destroy")}
+          onClick={() => setShowDestroyModal(true)}
         >
           {currentActivity === "destroy" ? (
             <Icon icon="Loader" spin={true} />
@@ -418,6 +421,58 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           </div>
         )}
       </Box>
+
+      {showDeployModal && (
+        <Modal
+          icon="AlertTriangle"
+          label="Deployment Confirmation"
+          title="Are You Sure You Want to Deploy?"
+          subTitle="This will deploy the resources to the cloud provider."
+          variant="success"
+          onClose={() => setShowDeployModal(false)}
+          onOverlayClick={() => setShowDeployModal(false)}
+          buttons={[
+            {
+              label: "Cancel",
+              onClick: () => setShowDeployModal(false),
+            },
+            {
+              label: "Deploy",
+              variant: "success",
+              onClick: () => {
+                setShowDeployModal(false);
+                sendDeploymentAction("deploy");
+              },
+            },
+          ]}
+        />
+      )}
+
+      {showDestroyModal && (
+        <Modal
+          icon="AlertTriangle"
+          label="Destruction Confirmation"
+          title="Are You Sure You Want to Destroy the Deployed Resources?"
+          subTitle="This will destroy the deployed resources on the cloud provider."
+          variant="danger"
+          onClose={() => setShowDestroyModal(false)}
+          onOverlayClick={() => setShowDestroyModal(false)}
+          buttons={[
+            {
+              label: "Cancel",
+              onClick: () => setShowDestroyModal(false),
+            },
+            {
+              label: "Destroy",
+              variant: "danger",
+              onClick: () => {
+                setShowDestroyModal(false);
+                sendDeploymentAction("destroy");
+              },
+            },
+          ]}
+        />
+      )}
     </DrawerContent>
   );
 };
