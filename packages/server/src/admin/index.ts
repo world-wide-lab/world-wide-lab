@@ -53,7 +53,7 @@ const deploymentResource =
                 component: Components.DeploymentShowAction,
               },
               edit: {
-                isAccessible: false,
+                isAccessible: true,
               },
               delete: {
                 isAccessible: true,
@@ -84,6 +84,10 @@ const deploymentResource =
                 },
                 description: columnComments.updatedAt,
               },
+              name: {
+                description:
+                  "The name of the deployment. This is used to identify it. DO NOT change this after deployment.",
+              },
               status: {
                 position: 1,
                 isVisible: {
@@ -95,12 +99,15 @@ const deploymentResource =
               },
               type: {
                 position: 2,
+                description: "The cloud provider and type of deploymennt.",
                 availableValues: [
                   { value: "aws_apprunner", label: "AWS: App Runner" },
                 ],
               },
               stackConfig: {
                 position: 3,
+                description:
+                  "The configuration of the deployment stack. Please note that changing anything in here after deployment can lead to issues with updating or destroying the deployment.",
                 custom: {
                   defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
                     "\n",
@@ -120,6 +127,8 @@ const deploymentResource =
               },
               deploymentConfig: {
                 position: 5,
+                description:
+                  "The configuration of the deployment itself. This includes the database credentials and other sensitive information. These values can be altered after deployment, but we recommend doing this only if strictly necessary.",
                 custom: {
                   defaultValue: [
                     "{",

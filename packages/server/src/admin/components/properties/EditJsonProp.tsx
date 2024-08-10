@@ -1,4 +1,4 @@
-import { Box, Icon, Label } from "@adminjs/design-system";
+import { Box, Icon, Label, Text } from "@adminjs/design-system";
 import { useCallback, useEffect, useState } from "react";
 
 import { Editor, loader } from "@monaco-editor/react";
@@ -67,6 +67,7 @@ const ShowJsonProp = (props: any) => {
           style={{ opacity: 0.5 }}
         />
       </Label>
+      {property.description && <Text my="default">{property.description}</Text>}
       <Editor
         options={{ minimap: { enabled: false } }}
         onChange={handleUpdate}
