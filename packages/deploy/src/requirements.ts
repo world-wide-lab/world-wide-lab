@@ -48,7 +48,7 @@ export const commonRequirements: Requirement[] = [
     name: "Pulumi CLI is installed",
     check: async () => {
       try {
-        PulumiCommand.get();
+        await PulumiCommand.get();
         return getSuccessResult();
       } catch (err) {
         if (err instanceof CommandError) {
