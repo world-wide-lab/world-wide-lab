@@ -151,7 +151,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
       .all([this.db.endpoint, this.db.dbName])
       .apply(
         ([endpoint, dbName]) =>
-          `postgresql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${endpoint}/${dbName}?sslmode=require&sslrootcert=/usr/src/app/certs/aws-rds-global-bundle.pem`,
+          `postgresql://${this.config.secret_dbUsername}:${this.config.secret_dbPassword}@${endpoint}/${dbName}?sslmode=require&sslrootcert=/usr/src/app/certs/aws-rds-global-bundle.pem`,
       );
   }
 }
