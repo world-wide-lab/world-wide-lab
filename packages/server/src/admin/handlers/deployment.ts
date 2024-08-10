@@ -134,6 +134,20 @@ export async function deployDeploymentHandler(
       responseObject.result = result;
       break;
     }
+
+    case "deploy": {
+      logger.info("Deploying Deployment");
+      const result = await deployment.deploy();
+      responseObject.result = result;
+      break;
+    }
+
+    case "destroy": {
+      logger.info("Destroying Deployment");
+      const result = await deployment.remove();
+      responseObject.result = result;
+      break;
+    }
   }
 
   return responseObject;
