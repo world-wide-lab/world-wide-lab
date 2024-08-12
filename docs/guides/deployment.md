@@ -18,6 +18,12 @@ The following is a step-by-step guide to deploying World-Wide-Lab on the [Amazon
 
 While this guide has quite a few steps for its setup, it has the benefit of being able to automatically handle the deployment and configuration in a single step at the end. After the initial setup, it's also easy to delete or update the deployment again via Pulumi.
 
+### Cost
+
+The estimated cost of running this deployment is around `30.60 USD` per month. You can find a detailed breakdown of the calculation in the [AWS Cost Calculator](https://calculator.aws/#/estimate?id=a13478712acf8f10be872963d7287482d8161b0c).
+
+Please note that this is just an estimate and costs can very depending on your configuration and the traffic / amount of data you collect. We recommend setting up an alerts to monitor your cloud costs and notice any changes well in advance.
+
 ## Deploying with the Desktop App 🚀
 
 The World-Wide-Lab Desktop App offers a graphical step-by-step interface to lead you through deployments. It will show which requirements you need to install and will deploy to the cloud with the click of a button once they are installed.
