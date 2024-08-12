@@ -8,12 +8,14 @@ import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
+import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
   newStudyHandler,
 } from "./handlers/study.js";
+import { randomString } from "./helpers.js";
 import { initializeRouter } from "./router_auth.js";
 
 AdminJS.registerAdapter({
@@ -33,6 +35,157 @@ if (config.apiDocs.enabled) {
     },
   } as AdminPage;
 }
+
+// Deployments (only on electron)
+const deploymentResource =
+  config.electronApp || process.env.NODE_ENV === "development"
+    ? [
+        {
+          resource: sequelize.models.Deployment,
+          options: {
+            navigation: {
+              name: null,
+              icon: "UploadCloud",
+            },
+            actions: {
+              new: {},
+              show: {
+                component: Components.DeploymentShowAction,
+              },
+              edit: {
+                isAccessible: true,
+              },
+              delete: {
+                isAccessible: true,
+              },
+              deploy: {
+                actionType: "record",
+                component: false,
+                isVisible: false,
+                handler: deployDeploymentHandler,
+              },
+            },
+            properties: {
+              createdAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.createdAt,
+              },
+              updatedAt: {
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                description: columnComments.updatedAt,
+              },
+              name: {
+                description:
+                  "The name of the deployment. This is used to identify it. DO NOT change this after deployment.",
+              },
+              status: {
+                position: 1,
+                isVisible: {
+                  list: true,
+                  filter: true,
+                  show: true,
+                  edit: false,
+                },
+                availableValues: [
+                  { value: "undeployed", label: "Undeployed" },
+                  { value: "deployed", label: "Deployed" },
+                  { value: "error", label: "Error" },
+                ],
+              },
+              type: {
+                position: 2,
+                description: "The cloud provider and type of deploymennt.",
+                availableValues: [
+                  { value: "aws_apprunner", label: "AWS: App Runner" },
+                ],
+              },
+              stackConfig: {
+                position: 3,
+                description:
+                  "The configuration of the deployment stack. Please note that changing anything in here after deployment can lead to issues with updating or destroying the deployment.",
+                custom: {
+                  defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
+                    "\n",
+                  ),
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
+
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
+              },
+              deploymentConfig: {
+                position: 5,
+                description:
+                  "The configuration of the deployment itself. This includes the database credentials and other sensitive information. These values can be altered after deployment, but we recommend doing this only if strictly necessary.",
+                custom: {
+                  defaultValue: [
+                    "{",
+                    `  "secret_dbUsername": "user_${randomString(6)}",`,
+                    `  "secret_dbPassword": "${randomString(20)}",`,
+                    `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
+                      6,
+                    )}@example.com",`,
+                    `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlAdminAuthSessionSecret": "${randomString(
+                      20,
+                    )}",`,
+                    `  "secret_wwlDefaultApiKey": "${randomString(20)}",`,
+                    '  "dbDeletionProtection": true',
+                    "}",
+                  ].join("\n"),
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
+
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
+              },
+              privateInfo: {
+                custom: {
+                  defaultValue: "{}",
+                },
+                isVisible: {
+                  list: false,
+                  filter: false,
+                  show: true,
+                  edit: true,
+                },
+                components: {
+                  show: Components.ShowJsonProp,
+                  edit: Components.EditJsonProp,
+                },
+                description: columnComments.privateInfo,
+              },
+            },
+          },
+        },
+      ]
+    : [];
 
 const electronOnlySettings = {
   // Use pre-built adminjs assets in electron app
@@ -236,6 +389,8 @@ const admin = new AdminJS({
         },
       },
     },
+
+    ...deploymentResource,
   ],
   pages,
 
@@ -254,6 +409,7 @@ const admin = new AdminJS({
           wwl_participants: "Participants",
           wwl_sessions: "Sessions",
           wwl_responses: "Responses",
+          wwl_deployments: "Deployments",
         },
         resources: {
           wwl_studies: {
@@ -281,6 +437,12 @@ const admin = new AdminJS({
           wwl_responses: {
             actions: {
               show: "View Response",
+            },
+          },
+          wwl_deployments: {
+            actions: {
+              new: "Create New Deployment",
+              show: "Manage Deployment",
             },
           },
         },

@@ -6,9 +6,10 @@
     "dev": "vitepress",
     "build": "npm run ref && vitepress build",
     "preview": "npm run build && vitepress preview",
-    "ref": "npm run ref:extract-client && npm run ref:extract-jsPsych && npm run ref:document",
+    "ref": "npm run ref:extract-client && npm run ref:extract-jsPsych && npm run ref:extract-deploy && npm run ref:document",
     "ref:extract-client": "npm run build --prefix ../packages/client && api-extractor run --local -c ../packages/client/api-extractor.jsonc",
     "ref:extract-jsPsych": "npm run build --prefix ../packages/integration-jsPsych && api-extractor run --local -c ../packages/integration-jsPsych/api-extractor.jsonc",
+    "ref:extract-deploy": "npm run build --prefix ../packages/deploy && api-extractor run --local -c ../packages/deploy/api-extractor.jsonc",
     "ref:document": "api-documenter markdown --input-folder=./temp/ --output-folder=./reference"
   },
   "devDependencies": {

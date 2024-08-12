@@ -4,6 +4,7 @@
       "dist/**",
       "docs/.vitepress/cache/**",
       ".adminjs/**",
+      "monaco-editor/**",
       "packages/server/static/adminjs/**"
     ]
   },
