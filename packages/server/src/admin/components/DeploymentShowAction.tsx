@@ -140,6 +140,11 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           setDeploymentOutputTimestamp(result.lastUpdated);
         }
 
+        // Error in pulumi command
+        if (result.error && result.message) {
+          throwError(result.error, result.message);
+        }
+
         if (result.status === "finished") {
           // The action is finished
           updateCounter = 0;
