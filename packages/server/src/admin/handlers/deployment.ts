@@ -51,13 +51,13 @@ class DeploymentActivity {
   }
 
   // Finish the activity
-  finish(result: any) {
+  private finish(result: any) {
     this.status = "finished";
     this.finalResult = result;
   }
 
   // Get new interim outputs from the activity
-  appendOutput(output: string) {
+  private appendOutput(output: string) {
     this.output += output;
     this.updateTime();
   }
@@ -67,6 +67,8 @@ class DeploymentActivity {
     functionToRun: (options: {
       onOutput: (output: string) => void;
     }) => Promise<any>,
+    onSuccess?: () => void,
+    onError?: () => void,
   ) {
     this.status = "running";
 
@@ -80,12 +82,20 @@ class DeploymentActivity {
 
       // Finish the activity
       this.finish(result);
+
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       this.finish({
         error: "Internal error executing command",
         message: (error as Error).toString(),
       });
       console.error(error);
+
+      if (onError) {
+        onError();
+      }
     }
   }
 
@@ -137,6 +147,7 @@ export async function deployDeploymentHandler(
       "Action#handler",
     );
   }
+  const recordId = request.params.recordId;
 
   const responseObject: { [key: string]: any } = {
     record: record.toJSON(currentAdmin),
@@ -201,12 +212,12 @@ export async function deployDeploymentHandler(
 
   // === Action: update ===
   // Check if an activity is running
-  const previousActivity = runningActivities[record.params.name];
+  const previousActivity = runningActivities[recordId];
   if (deploymentAction === "update") {
     // We just want to check for updates, so return those if possible
     if (!previousActivity) {
       throw new NotFoundError(
-        `There is no active deployment for ${record.params.name}`,
+        `There is no active deployment for ${recordId}`,
         "Action#handler",
       );
     }
@@ -215,7 +226,7 @@ export async function deployDeploymentHandler(
   }
   if (previousActivity && previousActivity.status === "running") {
     throw new Error(
-      `A deployment is already running for ${record.params.name}. Please wait for it to finish.`,
+      `A deployment is already running for ${recordId} (${record.params.name}). Please wait for it to finish.`,
     );
   }
 
@@ -239,7 +250,7 @@ export async function deployDeploymentHandler(
   logger.info("Pulumi Stack initialized");
 
   const currentActivity = new DeploymentActivity(deploymentAction);
-  runningActivities[record.params.name] = currentActivity;
+  runningActivities[recordId] = currentActivity;
 
   switch (deploymentAction) {
     case "refresh": {
@@ -254,12 +265,28 @@ export async function deployDeploymentHandler(
     }
     case "deploy": {
       logger.info("Deploying Deployment");
-      currentActivity.runCommand(async (opts) => deployment.deploy(opts));
+      currentActivity.runCommand(
+        async (opts) => deployment.deploy(opts),
+        () => {
+          record.update({ status: "deployed" });
+        },
+        () => {
+          record.update({ status: "error" });
+        },
+      );
       break;
     }
     case "destroy": {
       logger.info("Destroying Deployment");
-      currentActivity.runCommand(async (opts) => deployment.remove(opts));
+      currentActivity.runCommand(
+        async (opts) => deployment.remove(opts),
+        () => {
+          record.update({ status: "undeployed" });
+        },
+        () => {
+          record.update({ status: "error" });
+        },
+      );
       break;
     }
   }

@@ -96,6 +96,11 @@ const deploymentResource =
                   show: true,
                   edit: false,
                 },
+                availableValues: [
+                  { value: "undeployed", label: "Undeployed" },
+                  { value: "deployed", label: "Deployed" },
+                  { value: "error", label: "Error" },
+                ],
               },
               type: {
                 position: 2,
@@ -143,7 +148,8 @@ const deploymentResource =
                     `  "secret_wwlAdminAuthSessionSecret": "${randomString(
                       20,
                     )}",`,
-                    `  "secret_wwlDefaultApiKey": "${randomString(20)}"`,
+                    `  "secret_wwlDefaultApiKey": "${randomString(20)}",`,
+                    '  "dbDeletionProtection": true',
                     "}",
                   ].join("\n"),
                 },
