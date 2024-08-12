@@ -84,27 +84,27 @@ export abstract class WwlAutomatedDeployment {
   }
 
   // It's important that refresh gets called before other commands
-  async refresh() {
-    return await this.pulumiStack.refresh();
+  async refresh(pulumiOpts?: automation.RefreshOptions) {
+    return await this.pulumiStack.refresh(pulumiOpts);
   }
 
-  async preview() {
+  async preview(pulumiOpts?: automation.PreviewOptions) {
     await this.pulumiStack.refresh();
 
-    return await this.pulumiStack.preview();
+    return await this.pulumiStack.preview(pulumiOpts);
   }
 
-  async deploy() {
+  async deploy(pulumiOpts?: automation.UpOptions) {
     await this.pulumiStack.refresh();
 
-    return await this.pulumiStack.up();
+    return await this.pulumiStack.up(pulumiOpts);
   }
 
-  async remove() {
+  async remove(pulumiOpts?: automation.DestroyOptions) {
     await this.pulumiStack.refresh();
 
     const name = this.pulumiStack.name;
-    const result = await this.pulumiStack.destroy();
+    const result = await this.pulumiStack.destroy(pulumiOpts);
     await this.pulumiStack.workspace.removeStack(name);
 
     if (result.stdout.includes("pulumi stack rm")) {
