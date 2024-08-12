@@ -12,15 +12,23 @@ There are two components to any cloud deployment of World-Wide-Lab: An instance 
 
 By default, we configure our deployments in such a way that the database is only accessible to the World-Wide-Lab instance and only the World-Wide-Lab instance is accessible from the internet.
 
-## Deploying to AWS
+### Deploying to AWS
 
-The following is a step-by-step guide to deploying World-Wide-Lab on the [AWS cloud](https://aws.amazon.com/). We are using [Pulumi](https://www.pulumi.com/) to automatically create and configure all ressources for the cloud provider.
+The following is a step-by-step guide to deploying World-Wide-Lab on the [Amazon Web Services (AWS) cloud](https://aws.amazon.com/). We are using [Pulumi](https://www.pulumi.com/) to automatically create and configure all resources for the cloud provider.
 
 While this guide has quite a few steps for its setup, it has the benefit of being able to automatically handle the deployment and configuration in a single step at the end. After the initial setup, it's also easy to delete or update the deployment again via Pulumi.
 
-### Setup
+## Deploying with the Desktop App 🚀
 
-#### Setting up Pulumi
+The World-Wide-Lab Desktop App offers a graphical step-by-step interface to lead you through deployments. It will show which requirements you need to install and will deploy to the cloud with the click of a button once they are installed.
+
+<div class="video-container">
+  <iframe src="https://www.youtube.com/embed/bBUY3YWGZ48?si=f7nMeC6DI8xeo9Rh&rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+### Requirements
+
+#### 1. Setting up Pulumi
 
 First, you will need to install Pulumi. Pulumi is a tool that allows you to create, deploy, and manage cloud infrastructure using code. You can install Pulumi by following the instructions on the [official Pulumi website](https://www.pulumi.com/docs/install/).
 
@@ -30,9 +38,11 @@ After installing Pulumi, you need to "login", in order to tell it where to store
 pulumi login --local
 ```
 
-#### Setting up the AWS CLI
+#### 2. Installing the AWS CLI
 
 Next, you need to install the AWS CLI, wich will be used to authenticate and communicate with AWS. You can install the AWS CLI by following the instructions on the [official AWS website](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+
+#### 3. Authenticating with the AWS CLI
 
 After installing the AWS CLI, you need to authenticate yourself with it. You can do this by running the following command in your terminal and entering your credentials.
 
@@ -46,6 +56,14 @@ You can get the credentials as follows:
 2. Click on the top-right corner, where youre account name is written.
 3. Click on "Security credentials".
 4. Create a new access key and copy the access key ID and secret access key.
+
+## Deploying with Node.js
+
+If you prefer to use the command line, you can also deploy World-Wide-Lab using Node.js and Pulumi. This is a bit more complex, but allows you to automate or change the deployment process.
+
+### Requirements
+
+When deploying with Node.js you will need to install the same requirements as when deploying with the Desktop App (see above) and install Node.js on your computer.
 
 #### Installing Node.js
 
