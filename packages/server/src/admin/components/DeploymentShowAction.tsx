@@ -50,6 +50,14 @@ const BadgeIcon = styled(Icon)`
   line-height: 0.7;
 `;
 
+const TopRight = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: #FFF;
+  font-size: 1rem;
+`;
+
 const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   const { resource, record, action } = props;
   const properties = resource.showProperties;
@@ -59,6 +67,9 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
   const [currentActivity, setCurrentActivity] = useState<
     "none" | "requirements" | "refresh" | "preview" | "deploy" | "destroy"
   >("none");
+  const updateIntervals = [250, 500, 500, 1000, 1000, 1000, 5000];
+  let updateCounter = 0;
+  const [currentlyUpdating, setCurrentlyUpdating] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<
     { type: string; message: string } | undefined
   >(undefined);
@@ -72,22 +83,37 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
     }[]
   >([]);
   const [requirementsStatus, setRequirementsStatus] = useState<string>("");
-  const [deploymentOutput, setDeploymentOutput] =
-    useState<string>("No output yet.");
+  const DEFAULT_OUTPUT_MESSAGE = "No output yet.";
+  const [deploymentOutput, setDeploymentOutput] = useState<string>(
+    DEFAULT_OUTPUT_MESSAGE,
+  );
+  const [deploymentOutputTimestamp, setDeploymentOutputTimestamp] =
+    useState<string>("");
   const [showDeployModal, setShowDeployModal] = useState<boolean>(false);
   const [showDestroyModal, setShowDestroyModal] = useState<boolean>(false);
 
+  function throwError(name: string, message: string) {
+    const e = new Error(message);
+    e.name = name;
+    throw e;
+  }
+
+  // This is the general "send action" function, which is used to send all deployment actions
   async function sendDeploymentAction(
     deploymentAction:
       | "requirements"
+      | "update"
       | "refresh"
       | "preview"
       | "deploy"
       | "destroy",
   ) {
-    // Reset error
-    setErrorMessage(undefined);
-    setCurrentActivity(deploymentAction);
+    if (deploymentAction !== "update") {
+      // Reset error message and output
+      setErrorMessage(undefined);
+      setCurrentActivity(deploymentAction);
+      setDeploymentOutputTimestamp("");
+    }
 
     try {
       const response = await api.recordAction({
@@ -99,26 +125,51 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
         },
       });
 
-      // Standard Deployment output
+      // Handle "standard" deployment output
       if (response.data.result) {
         const result = response.data.result;
-        setDeploymentOutput(
-          `STDOUT:\n${result.stdout}\n\nSTDERR:\n${result.stderr}`,
-        );
+        let output = result.stdout;
+        if (result.stderr) {
+          output += `\n\nSTDERR:\n${result.stderr}`;
+        }
+        if (output === "") {
+          output = DEFAULT_OUTPUT_MESSAGE;
+        }
+        setDeploymentOutput(output);
+        if (result.lastUpdated) {
+          setDeploymentOutputTimestamp(result.lastUpdated);
+        }
+
+        if (result.status === "finished") {
+          // The action is finished
+          updateCounter = 0;
+          setCurrentlyUpdating(false);
+          setCurrentActivity("none");
+        } else if (result.status === "running") {
+          // The action is still running, so let's start or keep updating
+          setCurrentlyUpdating(true);
+
+          // Schedule the next update (we start quickly, then go more slowly)
+          const updateIn =
+            updateIntervals[
+              Math.min(updateIntervals.length - 1, updateCounter++)
+            ];
+          setTimeout(() => sendDeploymentAction("update"), updateIn);
+        } else {
+          throwError(
+            "Unexpected Result Status",
+            `The result returned from the server is not matching the expected status. Status: ${result.status}. Result: ${result}.`,
+          );
+        }
       } else if (response.data.notice?.type === "error") {
-        setErrorMessage({
-          type: "Server Error",
-          message: response.data.notice.message,
-        });
+        throwError("Server Error", response.data.notice.message);
       } else if (deploymentAction !== "requirements") {
         // Only return an error for actions, that are expected to return a result
-        setErrorMessage({
-          type: "No Result",
-          message: `No result was returned from the server. Response Data: ${response.data}`,
-        });
+        throwError(
+          "No Result",
+          `No result was returned from the server. Response Data: ${response.data}`,
+        );
       }
-
-      setCurrentActivity("none");
 
       return response;
 
@@ -130,13 +181,15 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
       };
 
       // Server error detected, so use the information from there
-      if (err.response.data.error) {
+      if (err.response?.data?.error) {
         if (err.response.data.type) error.type = err.response.data.type;
         error.message = err.response.data.error;
       }
 
       setErrorMessage(error);
       setCurrentActivity("none");
+      updateCounter = 0;
+      setCurrentlyUpdating(false);
       return;
     }
   }
@@ -154,19 +207,22 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
           message: "No requirementsList was returned from the server",
         });
       }
-      return;
+      return false;
     }
 
     setRequirementsList(response.data.requirementsList);
     setRequirementsStatus(response.data.requirementsStatus);
+    setCurrentActivity("none");
+
+    return true;
   }
 
   async function refresh() {
     // First check requirements
-    await checkRequirements();
+    const requirementsSuccessful = await checkRequirements();
 
     // Then run the pulumi refresh
-    if (requirementsStatus && requirementsStatus !== "error") {
+    if (requirementsSuccessful) {
       await sendDeploymentAction("refresh");
     }
   }
@@ -407,18 +463,16 @@ const DeploymentShowAction: React.FC<ActionProps> = (props) => {
         </Button>
       </Box>
 
-      <Box style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        {["none", "requirements"].includes(currentActivity) ? (
-          <div>
-            <pre>
-              <Code>{deploymentOutput}</Code>
-            </pre>
-          </div>
-        ) : (
-          <div>
-            <Text>Loading Output... </Text>
-            <Loader />
-          </div>
+      <Box my="default" style={{ position: "relative" }}>
+        <pre>
+          <Code>{deploymentOutput}</Code>
+        </pre>
+        <TopRight>
+          {currentlyUpdating && <Icon icon="Loader" spin={true} />}
+        </TopRight>
+
+        {deploymentOutputTimestamp && (
+          <Text>Last Updated: {deploymentOutputTimestamp}</Text>
         )}
       </Box>
 

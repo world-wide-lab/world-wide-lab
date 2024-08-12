@@ -11,6 +11,105 @@ import type { WwlAutomatedDeployment } from "@world-wide-lab/deploy/dist/deploym
 import { logger } from "../../logger.js";
 import { extractJsonObjectFromRecord } from "../helpers.js";
 
+const validDeploymentCommands = [
+  "refresh",
+  "preview",
+  "deploy",
+  "destroy",
+] as const;
+
+// Which actions are allowed to be called
+const validDeploymentActions = [
+  "requirements",
+  "update",
+  ...validDeploymentCommands,
+] as const;
+
+class DeploymentActivity {
+  /**
+   * Represents an ongoing and asynchronous deployment activity.
+   * This activity collects regular updates and can be queries to provide
+   * the current status and collected output.
+   */
+
+  command: (typeof validDeploymentCommands)[number];
+  status: "created" | "running" | "finished";
+  output: string;
+  lastUpdated = "";
+  finalResult: any;
+
+  // Start a new activity
+  constructor(command: (typeof validDeploymentCommands)[number]) {
+    this.command = command;
+    this.output = "";
+    this.status = "created";
+    this.updateTime();
+  }
+
+  private updateTime() {
+    this.lastUpdated = new Date().toISOString();
+  }
+
+  // Finish the activity
+  finish(result: any) {
+    this.status = "finished";
+    this.finalResult = result;
+  }
+
+  // Get new interim outputs from the activity
+  appendOutput(output: string) {
+    this.output += output;
+    this.updateTime();
+  }
+
+  // Run an asynchronous pulumi command
+  async runCommand(
+    functionToRun: (options: {
+      onOutput: (output: string) => void;
+    }) => Promise<any>,
+  ) {
+    this.status = "running";
+
+    try {
+      // Run the command / function and pass it onOutput
+      const result = await functionToRun({
+        onOutput: (output) => {
+          this.appendOutput(output);
+        },
+      });
+
+      // Finish the activity
+      this.finish(result);
+    } catch (error) {
+      this.finish({
+        error: "Internal error executing command",
+        message: (error as Error).toString(),
+      });
+      console.error(error);
+    }
+  }
+
+  // Get the result of the activity, this can be called while the activity is running or afterwards
+  getResult() {
+    return {
+      command: this.command,
+      status: this.status,
+      lastUpdated: this.lastUpdated,
+
+      ...(this.finalResult || {
+        stdout: this.output,
+      }),
+    };
+  }
+}
+
+// Global object, that keeps track of currently running activities
+// IMPORTANT: This is not designed to be scalable right now, as it is only intended
+// to run in the non-scaling electron desktop app!
+const runningActivities: {
+  [key: string]: DeploymentActivity;
+} = {};
+
 export async function deployDeploymentHandler(
   request: ActionRequest,
   response: ActionResponse,
@@ -25,13 +124,6 @@ export async function deployDeploymentHandler(
     );
   }
   const { deploymentAction } = request.query;
-  const validDeploymentActions = [
-    "requirements",
-    "refresh",
-    "preview",
-    "deploy",
-    "destroy",
-  ];
   if (!validDeploymentActions.includes(deploymentAction)) {
     throw new NotFoundError(
       `Invalid deploymentAction: ${deploymentAction}. Must be one of ${validDeploymentActions}`,
@@ -59,7 +151,7 @@ export async function deployDeploymentHandler(
   // @ts-ignore
   if (!(type in AutomatedDeployments)) {
     throw new NotFoundError(
-      "Provider not found in Deployments",
+      "Deployment type not found in Deployments",
       "Action#handler",
     );
   }
@@ -67,6 +159,7 @@ export async function deployDeploymentHandler(
   // @ts-ignore Should be safe after the above checks...
   const deployment: WwlAutomatedDeployment = new AutomatedDeployments[type]();
 
+  // === Action: requirements ===
   // Check requirements
   if (deploymentAction === "requirements") {
     logger.info("Checking requirements");
@@ -106,7 +199,31 @@ export async function deployDeploymentHandler(
     return responseObject;
   }
 
-  // Initialize stack
+  // === Action: update ===
+  // Check if an activity is running
+  const previousActivity = runningActivities[record.params.name];
+  if (deploymentAction === "update") {
+    // We just want to check for updates, so return those if possible
+    if (!previousActivity) {
+      throw new NotFoundError(
+        `There is no active deployment for ${record.params.name}`,
+        "Action#handler",
+      );
+    }
+    responseObject.result = previousActivity.getResult();
+    return responseObject;
+  }
+  if (previousActivity && previousActivity.status === "running") {
+    throw new Error(
+      `A deployment is already running for ${record.params.name}. Please wait for it to finish.`,
+    );
+  }
+
+  // === Action: refresh, preview, deploy, destroy (proper pulumi actions) ===
+  // Some of these can take literal *minutes*, so the server only ever allows running of them
+  // and the client can query for updates.
+
+  // Initialize pulumi stack
   logger.info("Initializing Pulumi Stack");
   const stackConfig = extractJsonObjectFromRecord("stackConfig", record);
   const deploymentConfig = extractJsonObjectFromRecord(
@@ -121,34 +238,34 @@ export async function deployDeploymentHandler(
   );
   logger.info("Pulumi Stack initialized");
 
+  const currentActivity = new DeploymentActivity(deploymentAction);
+  runningActivities[record.params.name] = currentActivity;
+
   switch (deploymentAction) {
     case "refresh": {
       logger.info("Refreshing Deployment");
-      const result = await deployment.refresh();
-      responseObject.result = result;
+      currentActivity.runCommand(async (opts) => deployment.refresh(opts));
       break;
     }
     case "preview": {
       logger.info("Previewing Deployment");
-      const result = await deployment.preview();
-      responseObject.result = result;
+      currentActivity.runCommand(async (opts) => deployment.preview(opts));
       break;
     }
-
     case "deploy": {
       logger.info("Deploying Deployment");
-      const result = await deployment.deploy();
-      responseObject.result = result;
+      currentActivity.runCommand(async (opts) => deployment.deploy(opts));
       break;
     }
-
     case "destroy": {
       logger.info("Destroying Deployment");
-      const result = await deployment.remove();
-      responseObject.result = result;
+      currentActivity.runCommand(async (opts) => deployment.remove(opts));
       break;
     }
   }
+
+  // Add result information
+  responseObject.result = currentActivity.getResult();
 
   return responseObject;
 }
