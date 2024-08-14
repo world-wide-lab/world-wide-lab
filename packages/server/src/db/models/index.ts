@@ -203,6 +203,103 @@ function defineModels(sequelize: Sequelize) {
     },
   );
 
+  const Leaderboard = sequelize.define(
+    "Leaderboard",
+    {
+      leaderboardId: {
+        primaryKey: true,
+        type: DataTypes.STRING,
+        validate: {
+          is: /^[a-zA-Z0-9-_]+$/,
+        },
+        unique: true,
+        allowNull: false,
+        defaultValue: null,
+        comment: "The unique identifier and name for each leaderboard.",
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      studyId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null,
+        comment: columnComments.studyId,
+      },
+      privateInfo: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: columnComments.privateInfo,
+      },
+    },
+    {
+      tableName: "wwl_leaderboards",
+    },
+  );
+
+  const LeaderboardScore = sequelize.define(
+    "LeaderboardScore",
+    {
+      leaderboardScoreId: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
+        comment: "The unique identifier for each score on the leaderboard.",
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      leaderboardId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        comment:
+          "The unique identifier for the leaderboard this score belongs to.",
+      },
+      sessionId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        comment: columnComments.sessionId,
+      },
+      score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        comment: "The score that was achieved.",
+      },
+      publicIndividualName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment:
+          "The individual name associated with the score (publicly visible).",
+      },
+      publicGroupName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment:
+          "The group name associated with the score (publicly visible). This needs to match exactly, as it is used for aggregation.",
+      },
+    },
+    {
+      tableName: "wwl_leaderboard_scores",
+    },
+  );
+
   // Associations
   Participant.hasMany(Session, { foreignKey: "participantId" });
   Session.belongsTo(Participant, { foreignKey: "participantId" });
@@ -212,6 +309,15 @@ function defineModels(sequelize: Sequelize) {
 
   Session.hasMany(Response, { foreignKey: "sessionId" });
   Response.belongsTo(Session, { foreignKey: "sessionId" });
+
+  Study.hasMany(Leaderboard, { sourceKey: "studyId", foreignKey: "studyId" });
+  Leaderboard.belongsTo(Study, { targetKey: "studyId", foreignKey: "studyId" });
+
+  Leaderboard.hasMany(LeaderboardScore, { foreignKey: "leaderboardId" });
+  LeaderboardScore.belongsTo(Leaderboard, { foreignKey: "leaderboardId" });
+
+  Session.hasMany(LeaderboardScore, { foreignKey: "sessionId" });
+  LeaderboardScore.belongsTo(Session, { foreignKey: "sessionId" });
 
   const InternalAdminSession = sequelize.define(
     "InternalAdminSession",
