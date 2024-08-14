@@ -192,6 +192,11 @@ const electronOnlySettings = {
   assetsCDN: `${config.root}:${config.port}/static/adminjs/`,
 };
 
+const gamificationNavigation = {
+  name: "Gamification",
+  icon: "TrendingUp",
+};
+
 const admin = new AdminJS({
   rootPath: "/admin",
 
@@ -389,6 +394,57 @@ const admin = new AdminJS({
         },
       },
     },
+    {
+      resource: sequelize.models.Leaderboard,
+      options: {
+        navigation: gamificationNavigation,
+
+        properties: {
+          leaderboardId: {
+            isTitle: true,
+            isVisible: { list: true, filter: true, show: true, edit: true },
+          },
+
+          studyId: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 1,
+          },
+
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
+          },
+
+          privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.privateInfo,
+          },
+        },
+      },
+    },
+    {
+      resource: sequelize.models.LeaderboardScore,
+      options: {
+        navigation: gamificationNavigation,
+
+        actions: {
+          new: {
+            isAccessible: false,
+          },
+          edit: {
+            isAccessible: false,
+          },
+        },
+      },
+    },
 
     ...deploymentResource,
   ],
@@ -410,6 +466,8 @@ const admin = new AdminJS({
           wwl_sessions: "Sessions",
           wwl_responses: "Responses",
           wwl_deployments: "Deployments",
+          wwl_leaderboards: "Leaderboards",
+          wwl_leaderboard_scores: "Scores",
         },
         resources: {
           wwl_studies: {
