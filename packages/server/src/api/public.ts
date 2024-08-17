@@ -4,7 +4,7 @@ import express, {
   type Response,
 } from "express";
 import { ForeignKeyConstraintError } from "sequelize";
-import { number, object } from "yup";
+import { number, object, string } from "yup";
 import { cache } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
@@ -13,6 +13,7 @@ import { AppError } from "../errors.js";
 
 import {
   type CreateSessionParams,
+  type LeaderboardScoreParams,
   type ParticipantParams,
   type ResponseParams,
   type SessionParams,
@@ -20,6 +21,7 @@ import {
   ValidationError,
   fullParticipantSchema,
   fullSessionSchema,
+  leaderboardScoreSchema,
   participantSchema,
   responseSchema,
   sessionCreationRequestSchema,
@@ -726,6 +728,248 @@ routerPublic.get(
           : await cache.wrap(req.path, getCounts, cacheFor * 1000);
 
       res.status(200).json(finalCounts);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /leaderboard/{leaderboardId}/score:
+ *   put:
+ *     summary: Update a leaderboard
+ *     tags:
+ *       - update
+ *     parameters:
+ *       - in: path
+ *         name: leaderboardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the leaderboard to update
+ *     requestBody:
+ *       description: Data for the new score on the leaderboard
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               score:
+ *                 type: integer
+ *                 required: true
+ *               publicIndividualName:
+ *                 type: string
+ *               publicGroupName:
+ *                 type: string
+ *               sessionId:
+ *                 type: string
+ *     responses:
+ *       '200':
+ *         description: Leaderboard score added successfully
+ *       '500':
+ *         description: Failed to add score to leaderboard
+ */
+routerPublic.put(
+  "/leaderboard/:leaderboardId/score",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const scoreParams = leaderboardScoreSchema.validateSync(req.body);
+
+    try {
+      const score = (await sequelize.models.LeaderboardScore.create(
+        scoreParams,
+      )) as any as LeaderboardScoreParams;
+
+      res.json({
+        ...successfulResponsePayload,
+        leaderboardScoreId: score.leaderboardScoreId,
+      });
+    } catch (error) {
+      if (error instanceof ForeignKeyConstraintError) {
+        const leaderboard = await sequelize.models.Leaderboard.findOne({
+          where: { leaderboardId: scoreParams.leaderboardId },
+        });
+        if (!leaderboard) {
+          next(new AppError("Unknown leaderboardId", 400));
+        } else {
+          next(new AppError("Unknown sessionId", 400));
+        }
+      } else {
+        next(error);
+      }
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /leaderboard/{leaderboardId}/scores/{level}:
+ *   get:
+ *     summary: Retrieve the number of sessions for a study
+ *     description: >
+ *       This endpoint is used to count the number of sessions for a study.
+ *     tags:
+ *       - main
+ *     parameters:
+ *       - in: path
+ *         name: leaderboardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the leaderboard to retrieve scores for
+ *       - in: path
+ *         name: level
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             individual,
+ *             groups
+ *           ]
+ *         required: true
+ *         description: >
+ *           Which level of scores to retrieve.
+ *       - in: query
+ *         name: cacheFor
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Cache the result for this many seconds.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: How many rows to return (maximally).
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             asc,
+ *             desc
+ *           ]
+ *         required: false
+ *         description: In which direction to sort the scores.
+ *       - in: query
+ *         name: aggregate
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             none,
+ *             sum
+ *           ]
+ *         required: false
+ *         description: Should scores be aggregated? If so, how?
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved leaderboard scores.
+ *       '400':
+ *         description: Leaderboard does not exist.
+ *       '500':
+ *         description: Failed to retrieve leaderboard.
+ */
+routerPublic.get(
+  "/leaderboard/:leaderboardId/scores/:level",
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Potential extra query parameter:
+    // aggregateOn: scoreLevel, sessionId, participantId
+    const { leaderboardId, level } = object({
+      leaderboardId: string().required(),
+      level: string().oneOf(["individual", "groups"]).required(),
+    }).validateSync(req.params);
+    const { cacheFor, limit, sort, aggregate } = object({
+      cacheFor: number().integer().optional(),
+      limit: number().integer().optional(),
+      sort: string().oneOf(["asc", "desc"]).optional(),
+      aggregate: string().oneOf(["none", "sum"]).optional(),
+    }).validateSync(req.query);
+
+    try {
+      // Filter by leaderboardId
+      const where: { [key: string]: any } = { leaderboardId };
+      const attributes: any = [];
+      const extraQuerySettings: { [key: string]: any } = {};
+
+      // Construct info for query
+      if (level === "individual") {
+        attributes.push("publicIndividualName");
+      } else if (level === "groups") {
+        attributes.push("publicGroupName");
+      } else {
+        throw new AppError(`Unknown level: ${level}`, 400);
+      }
+
+      if (limit) {
+        extraQuerySettings.limit = limit;
+      }
+      if (sort) {
+        let sortName;
+        if (sort === "asc") {
+          sortName = "ASC";
+        } else if (sort === "desc") {
+          sortName = "DESC";
+        } else {
+          throw new AppError(`Unknown sort: ${sort}`, 400);
+        }
+        extraQuerySettings.order = [["score", sortName]];
+      }
+
+      let getScores;
+      if (aggregate && aggregate !== "none") {
+        // Aggregate scores
+        if (aggregate === "sum") {
+          // Calculate the sum of scores
+          attributes.push([
+            sequelize.fn("sum", sequelize.col("score")),
+            "score",
+          ]);
+        } else {
+          throw new AppError(`Unknown aggregate: ${aggregate}`, 400);
+        }
+
+        getScores = async () =>
+          await sequelize.models.LeaderboardScore.findAll({
+            attributes,
+            where,
+            group: [
+              level === "individual"
+                ? "publicIndividualName"
+                : "publicGroupName",
+            ],
+            raw: true,
+            ...extraQuerySettings,
+          });
+      } else {
+        // Direct scores
+        attributes.push("score");
+
+        getScores = async () =>
+          await sequelize.models.LeaderboardScore.findAll({
+            attributes,
+            where,
+            raw: true,
+
+            ...extraQuerySettings,
+          });
+      }
+
+      const scores =
+        cacheFor === undefined
+          ? await getScores()
+          : await cache.wrap(req.path + req.query, getScores, cacheFor * 1000);
+
+      // When the count is 0, check whether it may be due to the study not existing
+      if (scores.length === 0) {
+        const leaderboard = await sequelize.models.Leaderboard.findOne({
+          where: { leaderboardId },
+        });
+        if (!leaderboard) {
+          throw new AppError("Unknown leaderboardId", 400);
+        }
+      }
+
+      res.status(200).json({ scores });
     } catch (error) {
       next(error);
     }

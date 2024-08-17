@@ -54,6 +54,10 @@ export const up: Migration = async ({ context }) => {
     },
   });
 
+  await context.addIndex("wwl_leaderboards", ["studyId"], {
+    name: "idx_wwl_leaderboards_studyId",
+  });
+
   await context.createTable("wwl_leaderboard_scores", {
     leaderboardScoreId: {
       type: DataTypes.INTEGER,
@@ -101,6 +105,23 @@ export const up: Migration = async ({ context }) => {
       comment:
         "The group name associated with the score (publicly visible). This needs to match exactly, as it is used for aggregation.",
     },
+  });
+
+  // Many indices here to support sorting, joining, filtering and aggregating
+  await context.addIndex("wwl_leaderboard_scores", ["leaderboardId"], {
+    name: "idx_wwl_leaderboards_leaderboardId",
+  });
+  await context.addIndex("wwl_leaderboard_scores", ["sessionId"], {
+    name: "idx_wwl_leaderboards_sessionId",
+  });
+  await context.addIndex("wwl_leaderboard_scores", ["score"], {
+    name: "idx_wwl_leaderboards_score",
+  });
+  await context.addIndex("wwl_leaderboard_scores", ["publicIndividualName"], {
+    name: "idx_wwl_leaderboards_publicIndividualName",
+  });
+  await context.addIndex("wwl_leaderboard_scores", ["publicGroupName"], {
+    name: "idx_wwl_leaderboards_publicGroupName",
   });
 };
 export const down: Migration = async ({ context }) => {
