@@ -218,4 +218,32 @@ describe("Client", () => {
     const sessionFinishResult = await session.finish();
     expect(sessionFinishResult).toBe(true);
   });
+
+  it("should add & retrieve scores from the leaderboard", async () => {
+    const session = await client.createSession({ studyId: "example" });
+
+    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
+      score: 1337,
+      publicIndividualName: "Kevin Flynn",
+      publicGroupName: "Encom",
+    });
+    expect(addScoreResult).toBe(true);
+    const addScoreResult2 = await session.addScoreToLeaderboard("lb-test", {
+      score: 663,
+      publicIndividualName: "Sam Flynn",
+      publicGroupName: "Encom",
+    });
+    expect(addScoreResult2).toBe(true);
+
+    const getIndividualScoresResult =
+      await client.getLeaderboardScores("lb-test");
+    expect(getIndividualScoresResult).toMatchSnapshot();
+
+    const getGroupScoresResult = await client.getLeaderboardScores(
+      "lb-test",
+      "groups",
+      { aggregate: "sum" },
+    );
+    expect(getGroupScoresResult).toMatchSnapshot();
+  });
 });

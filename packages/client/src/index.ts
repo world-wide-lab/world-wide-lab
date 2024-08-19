@@ -87,6 +87,34 @@ export type ClientResponseOptions = {
   payload: object;
 };
 
+export type GetLeaderoardScoresOptions = {
+  // Cache the result for this many seconds
+  cacheFor?: number;
+  // How many rows to return (maximally)
+  limit?: number;
+  // In which direction to sort the scores (default is 'desc')
+  sort?: "desc" | "asc";
+  // Should scores be aggregated? If so, how?
+  aggregate?: "none" | "sum";
+};
+
+// Data to add to a leaderboard
+export type LeaderboardScoreData = {
+  // The numerical score
+  score: number;
+  // The individual name to display for this score
+  publicIndividualName?: string;
+  // The group name to display for this score and use for aggregation
+  publicGroupName?: string;
+};
+
+// Data returned when getting scores from a leaderboard
+export type LeaderboardScores = Array<{
+  score: number;
+  publicIndividualName?: string;
+  publicGroupName?: string;
+}>;
+
 /**
  * HTTP method to use for a request
  *
@@ -102,6 +130,10 @@ export class WorldWideLabError extends Error {
 
     this.name = "WorldWideLabError";
   }
+}
+
+function queryString(params: { [key: string]: any }): string {
+  return new URLSearchParams(params).toString();
 }
 
 /**
@@ -329,6 +361,28 @@ export class Client {
     const participant = await this.createParticipant();
     return participant;
   }
+
+  /**
+   * Get the scores of a leaderboard.
+   * @param leaderboardId - The id of the leaderboard to get scores from
+   * @param level - The level of scores to get: individual or groups
+   * @param options - Specify what scores to get, e.g. sorting and aggregation
+   * @returns The scores of the leaderboard
+   */
+  async getLeaderboardScores(
+    leaderboardId: string,
+    level: "individual" | "groups" = "individual",
+    options?: GetLeaderoardScoresOptions,
+  ): Promise<LeaderboardScores> {
+    const queryParams = {
+      // Overwrite with user-supplied options
+      ...options,
+    };
+    return this.call(
+      "GET",
+      `/leaderboard/${leaderboardId}/scores/${level}?${queryString(queryParams)}`,
+    ).then((response) => response.json());
+  }
 }
 
 /**
@@ -444,6 +498,33 @@ export class Session extends _ClientModel {
     const result = await this.clientInstance.call(
       "PUT",
       `/session/${this.sessionId}`,
+      data,
+    );
+    return (await result.json()).success;
+  }
+
+  /**
+   * Add a score to a leaderboard.
+   * @param leaderboardId - The id of the leaderboard to add the score to
+   * @param leaderboardScoreData - The data to add to the leaderboard
+   * @returns true if the score was added successfully
+   */
+  async addScoreToLeaderboard(
+    leaderboardId: string,
+    leaderboardScoreData: LeaderboardScoreData,
+  ): Promise<boolean> {
+    const data = {
+      sessionId: this.sessionId,
+      ...leaderboardScoreData,
+    };
+    if (!data.publicIndividualName && !data.publicGroupName) {
+      console.warn(
+        "No publicIndividualName or publicGroupName provided. Did you forget to add one?",
+      );
+    }
+    const result = await this.clientInstance.call(
+      "PUT",
+      `/leaderboard/${leaderboardId}/score`,
       data,
     );
     return (await result.json()).success;

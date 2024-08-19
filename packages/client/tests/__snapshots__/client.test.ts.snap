@@ -1,5 +1,31 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Client > should add & retrieve scores from the leaderboard 1`] = `
+{
+  "scores": [
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1337,
+    },
+    {
+      "publicIndividualName": "Sam Flynn",
+      "score": 663,
+    },
+  ],
+}
+`;
+
+exports[`Client > should add & retrieve scores from the leaderboard 2`] = `
+{
+  "scores": [
+    {
+      "publicGroupName": "Encom",
+      "score": 2000,
+    },
+  ],
+}
+`;
+
 exports[`Client > should start a new session (without a linked participant) 1`] = `
 {
   "clientMetadata": {
