@@ -9,6 +9,7 @@ import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
+import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
@@ -190,11 +191,6 @@ const deploymentResource =
 const electronOnlySettings = {
   // Use pre-built adminjs assets in electron app
   assetsCDN: `${config.root}:${config.port}/static/adminjs/`,
-};
-
-const gamificationNavigation = {
-  name: "Gamification",
-  icon: "TrendingUp",
 };
 
 const admin = new AdminJS({
@@ -397,7 +393,10 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.Leaderboard,
       options: {
-        navigation: gamificationNavigation,
+        navigation: {
+          name: null,
+          icon: "TrendingUp",
+        },
 
         properties: {
           leaderboardId: {
@@ -428,12 +427,22 @@ const admin = new AdminJS({
             description: columnComments.privateInfo,
           },
         },
+
+        actions: {
+          viewScores: {
+            actionType: "record",
+            component: false,
+            icon: "Eye",
+            handler: viewLeaderboardScoresHandler,
+          },
+        },
       },
     },
     {
       resource: sequelize.models.LeaderboardScore,
       options: {
-        navigation: gamificationNavigation,
+        // Invisible in navigation
+        navigation: false,
 
         actions: {
           new: {
@@ -467,7 +476,7 @@ const admin = new AdminJS({
           wwl_responses: "Responses",
           wwl_deployments: "Deployments",
           wwl_leaderboards: "Leaderboards",
-          wwl_leaderboard_scores: "Scores",
+          wwl_leaderboard_scores: "Leaderboard Scores",
         },
         resources: {
           wwl_studies: {
