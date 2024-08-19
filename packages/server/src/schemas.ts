@@ -103,6 +103,7 @@ const fullLeaderboardScoreSchema = object({
   publicGroupName: string().optional(),
 }).noUnknown();
 const leaderboardScoreSchema = fullLeaderboardScoreSchema.omit([
+  "leaderboardScoreId",
   "createdAt",
   "updatedAt",
 ]);

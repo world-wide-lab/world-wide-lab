@@ -12,6 +12,7 @@ import { getDbVersion } from "../db/replication.js";
 import { AppError } from "../errors.js";
 
 import {
+  type CreateLeaderboardScoreParams,
   type CreateSessionParams,
   type LeaderboardScoreParams,
   type ParticipantParams,
@@ -738,9 +739,9 @@ routerPublic.get(
  * @openapi
  * /leaderboard/{leaderboardId}/score:
  *   put:
- *     summary: Update a leaderboard
+ *     summary: Add a score to a leaderboard
  *     tags:
- *       - update
+ *       - leaderboard
  *     parameters:
  *       - in: path
  *         name: leaderboardId
@@ -774,9 +775,18 @@ routerPublic.get(
 routerPublic.put(
   "/leaderboard/:leaderboardId/score",
   async (req: Request, res: Response, next: NextFunction) => {
-    const scoreParams = leaderboardScoreSchema.validateSync(req.body);
-
+    let scoreParams: CreateLeaderboardScoreParams | undefined;
     try {
+      const { leaderboardId } = leaderboardScoreSchema
+        .pick(["leaderboardId"])
+        .validateSync(req.params);
+      scoreParams = {
+        leaderboardId,
+        ...leaderboardScoreSchema
+          .omit(["leaderboardId"])
+          .validateSync(req.body),
+      };
+
       const score = (await sequelize.models.LeaderboardScore.create(
         scoreParams,
       )) as any as LeaderboardScoreParams;
@@ -786,7 +796,7 @@ routerPublic.put(
         leaderboardScoreId: score.leaderboardScoreId,
       });
     } catch (error) {
-      if (error instanceof ForeignKeyConstraintError) {
+      if (error instanceof ForeignKeyConstraintError && scoreParams) {
         const leaderboard = await sequelize.models.Leaderboard.findOne({
           where: { leaderboardId: scoreParams.leaderboardId },
         });
@@ -806,11 +816,11 @@ routerPublic.put(
  * @openapi
  * /leaderboard/{leaderboardId}/scores/{level}:
  *   get:
- *     summary: Retrieve the number of sessions for a study
+ *     summary: Retrieve scores for a leaderboard
  *     description: >
- *       This endpoint is used to count the number of sessions for a study.
+ *       This endpoint is used to get a table of scores from a leaderboard.
  *     tags:
- *       - main
+ *       - leaderboard
  *     parameters:
  *       - in: path
  *         name: leaderboardId
@@ -846,10 +856,11 @@ routerPublic.put(
  *         schema:
  *           type: string
  *           enum: [
- *             asc,
- *             desc
+ *             desc,
+ *             asc
  *           ]
  *         required: false
+ *         default: desc
  *         description: In which direction to sort the scores.
  *       - in: query
  *         name: aggregate
@@ -881,7 +892,7 @@ routerPublic.get(
     const { cacheFor, limit, sort, aggregate } = object({
       cacheFor: number().integer().optional(),
       limit: number().integer().optional(),
-      sort: string().oneOf(["asc", "desc"]).optional(),
+      sort: string().oneOf(["asc", "desc"]).optional().default("desc"),
       aggregate: string().oneOf(["none", "sum"]).optional(),
     }).validateSync(req.query);
 

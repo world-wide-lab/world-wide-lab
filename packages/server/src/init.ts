@@ -9,6 +9,7 @@ import sequelize from "./db/index.js";
 import { up } from "./db/migrate.js";
 import { logger } from "./logger.js";
 
+import { ensureLeaderboardsExist } from "./db/ensureLeaderboardsExist.js";
 import { ensureStudiesExist } from "./db/ensureStudiesExist.js";
 
 // Export Server type for convenience
@@ -47,6 +48,10 @@ async function init(): Promise<HTTPServer> {
   // Make sure that certain studies are available (based on env vars)
   if (config.studiesToCreate && config.studiesToCreate.length > 0) {
     await ensureStudiesExist(sequelize, config.studiesToCreate);
+  }
+  // Same for certain leaderboards
+  if (config.leaderboardsToCreate && config.leaderboardsToCreate.length > 0) {
+    await ensureLeaderboardsExist(sequelize, config.leaderboardsToCreate);
   }
 
   // Start the server
