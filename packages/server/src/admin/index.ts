@@ -47,6 +47,10 @@ const deploymentResource =
               name: null,
               icon: "UploadCloud",
             },
+            sort: {
+              sortBy: "updatedAt",
+              direction: "desc",
+            },
             actions: {
               new: {},
               show: {
@@ -221,6 +225,10 @@ const admin = new AdminJS({
           name: null,
           icon: "Star",
         },
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
+        },
         properties: {
           studyId: {
             isTitle: true,
@@ -269,6 +277,10 @@ const admin = new AdminJS({
           name: null,
           icon: "Users",
         },
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
+        },
         actions: {
           new: {
             isAccessible: false,
@@ -306,6 +318,10 @@ const admin = new AdminJS({
         navigation: {
           name: null,
           icon: "Archive",
+        },
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
         },
         actions: {
           new: {
@@ -359,6 +375,10 @@ const admin = new AdminJS({
         navigation: {
           name: null,
           icon: "File",
+        },
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
         },
         actions: {
           new: {
