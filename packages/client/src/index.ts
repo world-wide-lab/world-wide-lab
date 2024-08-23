@@ -14,30 +14,37 @@ import { VERSION } from "./version";
  * Options to create a new Client instance
  * @public
  */
-export type ClientOptions = {
+export interface ClientOptions {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
   url: string;
-};
+}
+
+interface ClientUpdateOptions {
+  /**
+   * Additional private information to store for the participant.
+   */
+  privateInfo?: object;
+  /**
+   * Additional public information to store for the participant.
+   *
+   * This information can be retrieved later without authentication.
+   */
+  publicInfo?: object;
+}
 
 /**
  * Options to update an existing {@link Participant}.
  * @public
  */
-export type ClientParticipantUpdateOptions = {
-  privateInfo?: object;
-  publicInfo?: object;
-};
+export interface ClientParticipantUpdateOptions extends ClientUpdateOptions {}
 
 /**
  * Options to update an existing {@link Session}.
  * @public
  */
-export type ClientSessionUpdateOptions = {
-  privateInfo?: object;
-  publicInfo?: object;
-};
+export interface ClientSessionUpdateOptions extends ClientUpdateOptions {}
 
 /**
  * Options to create a new {@link Participant}
@@ -51,7 +58,7 @@ export type ClientParticipantOptions =
  * Options to create a new {@link Session}
  * @public
  */
-export type ClientSessionOptions = ClientSessionUpdateOptions & {
+export interface ClientSessionOptions extends ClientSessionUpdateOptions {
   /**
    * The id of the study to create a session for. Required.
    */
@@ -66,13 +73,13 @@ export type ClientSessionOptions = ClientSessionUpdateOptions & {
    * the session to an existing participant.
    */
   linkParticipant?: boolean;
-};
+}
 
 /**
  * Options to create a new Response
  * @public
  */
-export type ClientResponseOptions = {
+export interface ClientResponseOptions {
   /**
    * Id of the session this response belongs to
    */
@@ -85,12 +92,13 @@ export type ClientResponseOptions = {
    * The actual data of this response
    */
   payload: object;
-};
+}
 
 /**
  * Options to get scores from a leaderboard when using {@link Client.getLeaderboardScores}
+ * @public
  */
-export type GetLeaderoardScoresOptions = {
+export interface GetLeaderoardScoresOptions {
   /**
    * Cache the result for this many seconds
    */
@@ -108,15 +116,17 @@ export type GetLeaderoardScoresOptions = {
    */
   aggregate?: "none" | "sum";
   /**
-   * Only return scores that were updated after and including this timepoint
+   * Only return scores that were updated after and including this timepoint.
+   * Can be used with {@link oneWeekAgo}, {@link oneMonthAgo} or {@link oneYearAgo}.
    */
   updatedAfter?: Date;
-};
+}
 
 /**
  * A record of data to add to a leaderboard with {@link Session.addScoreToLeaderboard}
+ * @public
  */
-export type LeaderboardScoreData = {
+export interface LeaderboardScoreData {
   /**
    * The numerical score
    */
@@ -129,10 +139,11 @@ export type LeaderboardScoreData = {
    * The group name to display for this score and use for aggregation
    */
   publicGroupName?: string;
-};
+}
 
 /**
  * Data returned when getting scores from a leaderboard with {@link Client.getLeaderboardScores}
+ * @public
  */
 export type LeaderboardScores = Array<{
   score: number;
@@ -389,13 +400,11 @@ export class Client {
 
   /**
    * Get the scores of a leaderboard.
+   *
    * @param leaderboardId - The id of the leaderboard to get scores from
    * @param level - The level of scores to get: individual or groups
    * @param options - Specify what scores to get, e.g. sorting and aggregation
    * @returns The scores of the leaderboard
-   * @see {@link oneWeekAgo}
-   * @see {@link oneMonthAgo}
-   * @see {@link oneYearAgo}
    */
   async getLeaderboardScores(
     leaderboardId: string,
@@ -596,6 +605,7 @@ export class Session extends _ClientModel {
  *
  * For use with {@link Client.getLeaderboardScores}.
  * @returns A Date object one week ago
+ * @public
  */
 export function oneWeekAgo(): Date {
   const now = new Date();
@@ -608,6 +618,7 @@ export function oneWeekAgo(): Date {
  *
  * For use with {@link Client.getLeaderboardScores}.
  * @returns A Date object one month ago
+ * @public
  */
 export function oneMonthAgo(): Date {
   const now = new Date();
@@ -620,6 +631,7 @@ export function oneMonthAgo(): Date {
  *
  * For use with {@link Client.getLeaderboardScores}.
  * @returns A Date object one year ago
+ * @public
  */
 export function oneYearAgo(): Date {
   const now = new Date();
