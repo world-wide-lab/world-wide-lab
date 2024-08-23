@@ -1,5 +1,14 @@
 # Frequently Asked Questions (FAQ)
 
+## General
+
+#### I want to recruit people from different sources for my study. Can I keep track of how I recruited them?
+
+Yes, can do this by sending out slightly different URLs to different sources of recruitment e.g. one per newsletter or web-platform. If you put a [query parameter](https://en.wikipedia.org/wiki/Query_string) at the end of the URL to your experiment (e.g. `?source=newsletter`), this will then automatically be recorded in the Session metadata (under `metadata.client.searchParams`).
+
+The final URL would then look something like this: `https://my-awesome.website/studies/exciting-study?source=newsletter`. If you want to add multiple parameters, you can also do this, but please make sure to separate them with an ampersand `&` so that they remain valid a [valid query string](https://en.wikipedia.org/wiki/Query_string).
+
+
 ## Desktop App
 
 #### Error Message: “World-Wide-Lab.app” is damaged and can’t be opened. You should move it to the Bin
