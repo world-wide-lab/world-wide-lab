@@ -108,20 +108,23 @@ export const up: Migration = async ({ context }) => {
   });
 
   // Many indices here to support sorting, joining, filtering and aggregating
+  await context.addIndex("wwl_leaderboard_scores", ["updatedAt"], {
+    name: "idx_wwl_leaderboard_scores_updatedAt",
+  });
   await context.addIndex("wwl_leaderboard_scores", ["leaderboardId"], {
-    name: "idx_wwl_leaderboards_leaderboardId",
+    name: "idx_wwl_leaderboard_scores_leaderboardId",
   });
   await context.addIndex("wwl_leaderboard_scores", ["sessionId"], {
-    name: "idx_wwl_leaderboards_sessionId",
+    name: "idx_wwl_leaderboard_scores_sessionId",
   });
   await context.addIndex("wwl_leaderboard_scores", ["score"], {
-    name: "idx_wwl_leaderboards_score",
+    name: "idx_wwl_leaderboard_scores_score",
   });
   await context.addIndex("wwl_leaderboard_scores", ["publicIndividualName"], {
-    name: "idx_wwl_leaderboards_publicIndividualName",
+    name: "idx_wwl_leaderboard_scores_publicIndividualName",
   });
   await context.addIndex("wwl_leaderboard_scores", ["publicGroupName"], {
-    name: "idx_wwl_leaderboards_publicGroupName",
+    name: "idx_wwl_leaderboard_scores_publicGroupName",
   });
 };
 export const down: Migration = async ({ context }) => {
