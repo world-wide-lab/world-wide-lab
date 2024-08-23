@@ -3,8 +3,9 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import Sequelize from "sequelize";
 import { ForeignKeyConstraintError } from "sequelize";
-import { number, object, string } from "yup";
+import { date, number, object, string } from "yup";
 import { cache } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
@@ -872,6 +873,16 @@ routerPublic.put(
  *           ]
  *         required: false
  *         description: Should scores be aggregated? If so, how?
+ *       - in: query
+ *         name: updatedAfter
+ *         example: 2000-01-01T00:00:00Z
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: >
+ *           Filter scores to only those updated after and including this time.
+ *           Useful for rolling leaderboards e.g. only the last week or month.
  *     responses:
  *       '200':
  *         description: Successfully retrieved leaderboard scores.
@@ -889,11 +900,12 @@ routerPublic.get(
       leaderboardId: string().required(),
       level: string().oneOf(["individual", "groups"]).required(),
     }).validateSync(req.params);
-    const { cacheFor, limit, sort, aggregate } = object({
+    const { cacheFor, limit, sort, aggregate, updatedAfter } = object({
       cacheFor: number().integer().optional(),
       limit: number().integer().optional(),
       sort: string().oneOf(["asc", "desc"]).optional().default("desc"),
       aggregate: string().oneOf(["none", "sum"]).optional(),
+      updatedAfter: date().optional(),
     }).validateSync(req.query);
 
     try {
@@ -914,6 +926,7 @@ routerPublic.get(
       if (limit) {
         extraQuerySettings.limit = limit;
       }
+
       if (sort) {
         let sortName;
         if (sort === "asc") {
@@ -924,6 +937,12 @@ routerPublic.get(
           throw new AppError(`Unknown sort: ${sort}`, 400);
         }
         extraQuerySettings.order = [["score", sortName]];
+      }
+
+      if (updatedAfter) {
+        where.updatedAt = {
+          [Sequelize.Op.gte]: updatedAfter,
+        };
       }
 
       let getScores;

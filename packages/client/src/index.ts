@@ -87,28 +87,53 @@ export type ClientResponseOptions = {
   payload: object;
 };
 
+/**
+ * Options to get scores from a leaderboard when using {@link Client.getLeaderboardScores}
+ */
 export type GetLeaderoardScoresOptions = {
-  // Cache the result for this many seconds
+  /**
+   * Cache the result for this many seconds
+   */
   cacheFor?: number;
-  // How many rows to return (maximally)
+  /**
+   * How many rows to return (maximally)
+   */
   limit?: number;
-  // In which direction to sort the scores (default is 'desc')
+  /**
+   * In which direction to sort the scores (default is 'desc')
+   */
   sort?: "desc" | "asc";
-  // Should scores be aggregated? If so, how?
+  /**
+   * Should scores be aggregated? If so, how?
+   */
   aggregate?: "none" | "sum";
+  /**
+   * Only return scores that were updated after and including this timepoint
+   */
+  updatedAfter?: Date;
 };
 
-// Data to add to a leaderboard
+/**
+ * A record of data to add to a leaderboard with {@link Session.addScoreToLeaderboard}
+ */
 export type LeaderboardScoreData = {
-  // The numerical score
+  /**
+   * The numerical score
+   */
   score: number;
-  // The individual name to display for this score
+  /**
+   * The individual name to display for this score
+   */
   publicIndividualName?: string;
-  // The group name to display for this score and use for aggregation
+  /**
+   * The group name to display for this score and use for aggregation
+   */
   publicGroupName?: string;
 };
 
-// Data returned when getting scores from a leaderboard
+/**
+ * Data returned when getting scores from a leaderboard with {@link Client.getLeaderboardScores}
+ */
 export type LeaderboardScores = Array<{
   score: number;
   publicIndividualName?: string;
@@ -368,6 +393,9 @@ export class Client {
    * @param level - The level of scores to get: individual or groups
    * @param options - Specify what scores to get, e.g. sorting and aggregation
    * @returns The scores of the leaderboard
+   * @see {@link oneWeekAgo}
+   * @see {@link oneMonthAgo}
+   * @see {@link oneYearAgo}
    */
   async getLeaderboardScores(
     leaderboardId: string,
@@ -378,6 +406,12 @@ export class Client {
       // Overwrite with user-supplied options
       ...options,
     };
+
+    if (queryParams.updatedAfter) {
+      // @ts-ignore - Convert to ISO string (typescript does not like the type change here)
+      queryParams.updatedAfter = queryParams.updatedAfter.toISOString();
+    }
+
     return this.call(
       "GET",
       `/leaderboard/${leaderboardId}/scores/${level}?${queryString(queryParams)}`,
@@ -553,6 +587,44 @@ export class Session extends _ClientModel {
     );
     return false;
   }
+}
+
+// --- Helpers ---
+
+/**
+ * Helper function to return the date exactly one week ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one week ago
+ */
+export function oneWeekAgo(): Date {
+  const now = new Date();
+  now.setDate(now.getDate() - 7);
+  return now;
+}
+
+/**
+ * Helper function to return the date exactly one month ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one month ago
+ */
+export function oneMonthAgo(): Date {
+  const now = new Date();
+  now.setMonth(now.getMonth() - 1);
+  return now;
+}
+
+/**
+ * Helper function to return the date exactly one year ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one year ago
+ */
+export function oneYearAgo(): Date {
+  const now = new Date();
+  now.setFullYear(now.getFullYear() - 1);
+  return now;
 }
 
 export { VERSION };
