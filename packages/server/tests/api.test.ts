@@ -753,9 +753,13 @@ describe("API Routes", () => {
     });
 
     it("should return individual scores (with explicit ordering and a limit)", async () => {
+      const timestamp = new Date();
+      // Set to one hour ago, to include all scores
+      timestamp.setHours(timestamp.getHours() - 1);
+
       const response = await endpoint
         .get(
-          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc&limit=3`,
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc&limit=3&updatedAfter=${timestamp.toISOString()}`,
         )
         .send();
 
@@ -765,6 +769,21 @@ describe("API Routes", () => {
         { score: 400, publicIndividualName: "D" },
         { score: 300, publicIndividualName: "C" },
       ]);
+    });
+
+    it("should not return too old scores", async () => {
+      const timestamp = new Date();
+      // Set to the future to exclude all scores
+      timestamp.setHours(timestamp.getHours() + 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc&limit=3&updatedAfter=${timestamp.toISOString()}`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([]);
     });
 
     it("should return individual scores (in reverse order)", async () => {

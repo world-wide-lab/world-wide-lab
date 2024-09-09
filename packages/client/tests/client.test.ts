@@ -222,6 +222,8 @@ describe("Client", () => {
   it("should add & retrieve scores from the leaderboard", async () => {
     const session = await client.createSession({ studyId: "example" });
 
+    const tsBeforeScores = new Date();
+
     const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
       score: 1337,
       publicIndividualName: "Kevin Flynn",
@@ -245,5 +247,25 @@ describe("Client", () => {
       { aggregate: "sum" },
     );
     expect(getGroupScoresResult).toMatchSnapshot();
+
+    const tsFuture = new Date();
+    tsFuture.setSeconds(tsFuture.getSeconds() + 10);
+
+    // Older timestamp should work just fine
+    const getIndividualScoresResultWithTimestamp =
+      await client.getLeaderboardScores("lb-test", "individual", {
+        updatedAfter: tsBeforeScores,
+      });
+    expect(getIndividualScoresResultWithTimestamp).toMatchObject(
+      getIndividualScoresResult,
+    );
+
+    // Future timestamp should return empty leaderboard
+    const getIndividualScoresResultInFuture = await client.getLeaderboardScores(
+      "lb-test",
+      "individual",
+      { updatedAfter: tsFuture },
+    );
+    expect(getIndividualScoresResultInFuture).toMatchObject({ scores: [] });
   });
 });
