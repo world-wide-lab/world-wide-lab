@@ -85,7 +85,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // Can be called via e.g.
   // node dist/db/migrate.js create --name migration-name.ts --skip-verify
   // after npm run build, or the following before building
-  // npx ts-node-esm src/db/migrate.ts create --name migration-name.ts --skip-verify
+  // npx node --loader ts-node/esm src/db/migrate.ts create --name migration-name.common.ts --skip-verify
   umzug.runAsCLI();
 }
 

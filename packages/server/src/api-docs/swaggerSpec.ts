@@ -47,6 +47,10 @@ const options = {
         description: "Export or download data for analyses.",
       },
       {
+        name: "leaderboard",
+        description: "Set and retrieve leaderboard scores.",
+      },
+      {
         name: "replication",
         description: "Replicate data from a WWL server to another.",
       },

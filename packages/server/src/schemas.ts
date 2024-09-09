@@ -74,16 +74,54 @@ const responseSchema = fullResponseSchema.omit([
   "updatedAt",
 ]);
 
+// Leaderboard Schema
+const fullLeaderboardSchema = object({
+  leaderboardId: string()
+    .matches(/^[a-zA-Z0-9-_]+$/)
+    .required(),
+  createdAt: date(),
+  updatedAt: date(),
+  studyId: string().optional(),
+  privateInfo: object().optional(),
+}).noUnknown();
+const leaderboardSchema = fullLeaderboardSchema.omit([
+  "createdAt",
+  "updatedAt",
+]);
+
+// Leaderboard Score Schema
+const fullLeaderboardScoreSchema = object({
+  leaderboardScoreId: number().integer().required(),
+  createdAt: date(),
+  updatedAt: date(),
+  leaderboardId: string()
+    .matches(/^[a-zA-Z0-9-_]+$/)
+    .required(),
+  sessionId: string().uuid().required(),
+  score: number().required(),
+  publicIndividualName: string().optional(),
+  publicGroupName: string().optional(),
+}).noUnknown();
+const leaderboardScoreSchema = fullLeaderboardScoreSchema.omit([
+  "leaderboardScoreId",
+  "createdAt",
+  "updatedAt",
+]);
+
 export {
   studySchema,
   participantSchema,
   sessionSchema,
   sessionCreationRequestSchema,
   responseSchema,
+  leaderboardSchema,
+  leaderboardScoreSchema,
   fullStudySchema,
   fullParticipantSchema,
   fullSessionSchema,
   fullResponseSchema,
+  fullLeaderboardSchema,
+  fullLeaderboardScoreSchema,
   ValidationError,
 };
 
@@ -95,6 +133,10 @@ type StudyParams = InferType<typeof fullStudySchema>;
 type ParticipantParams = InferType<typeof fullParticipantSchema>;
 type SessionParams = InferType<typeof fullSessionSchema>;
 type ResponseParams = InferType<typeof fullResponseSchema>;
+type CreateLeaderboardParams = InferType<typeof leaderboardSchema>;
+type CreateLeaderboardScoreParams = InferType<typeof leaderboardScoreSchema>;
+type LeaderboardParams = InferType<typeof fullLeaderboardSchema>;
+type LeaderboardScoreParams = InferType<typeof fullLeaderboardScoreSchema>;
 
 export type {
   CreateStudyParams,
@@ -105,4 +147,8 @@ export type {
   ParticipantParams,
   SessionParams,
   ResponseParams,
+  CreateLeaderboardParams,
+  CreateLeaderboardScoreParams,
+  LeaderboardParams,
+  LeaderboardScoreParams,
 };

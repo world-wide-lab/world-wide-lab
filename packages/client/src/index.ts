@@ -14,30 +14,37 @@ import { VERSION } from "./version";
  * Options to create a new Client instance
  * @public
  */
-export type ClientOptions = {
+export interface ClientOptions {
   /**
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
   url: string;
-};
+}
+
+interface ClientUpdateOptions {
+  /**
+   * Additional private information to store for the participant.
+   */
+  privateInfo?: object;
+  /**
+   * Additional public information to store for the participant.
+   *
+   * This information can be retrieved later without authentication.
+   */
+  publicInfo?: object;
+}
 
 /**
  * Options to update an existing {@link Participant}.
  * @public
  */
-export type ClientParticipantUpdateOptions = {
-  privateInfo?: object;
-  publicInfo?: object;
-};
+export interface ClientParticipantUpdateOptions extends ClientUpdateOptions {}
 
 /**
  * Options to update an existing {@link Session}.
  * @public
  */
-export type ClientSessionUpdateOptions = {
-  privateInfo?: object;
-  publicInfo?: object;
-};
+export interface ClientSessionUpdateOptions extends ClientUpdateOptions {}
 
 /**
  * Options to create a new {@link Participant}
@@ -51,7 +58,7 @@ export type ClientParticipantOptions =
  * Options to create a new {@link Session}
  * @public
  */
-export type ClientSessionOptions = ClientSessionUpdateOptions & {
+export interface ClientSessionOptions extends ClientSessionUpdateOptions {
   /**
    * The id of the study to create a session for. Required.
    */
@@ -66,13 +73,13 @@ export type ClientSessionOptions = ClientSessionUpdateOptions & {
    * the session to an existing participant.
    */
   linkParticipant?: boolean;
-};
+}
 
 /**
  * Options to create a new Response
  * @public
  */
-export type ClientResponseOptions = {
+export interface ClientResponseOptions {
   /**
    * Id of the session this response belongs to
    */
@@ -85,7 +92,64 @@ export type ClientResponseOptions = {
    * The actual data of this response
    */
   payload: object;
-};
+}
+
+/**
+ * Options to get scores from a leaderboard when using {@link Client.getLeaderboardScores}
+ * @public
+ */
+export interface GetLeaderoardScoresOptions {
+  /**
+   * Cache the result for this many seconds
+   */
+  cacheFor?: number;
+  /**
+   * How many rows to return (maximally)
+   */
+  limit?: number;
+  /**
+   * In which direction to sort the scores (default is 'desc')
+   */
+  sort?: "desc" | "asc";
+  /**
+   * Should scores be aggregated? If so, how?
+   */
+  aggregate?: "none" | "sum";
+  /**
+   * Only return scores that were updated after and including this timepoint.
+   * Can be used with {@link oneWeekAgo}, {@link oneMonthAgo} or {@link oneYearAgo}.
+   */
+  updatedAfter?: Date;
+}
+
+/**
+ * A record of data to add to a leaderboard with {@link Session.addScoreToLeaderboard}
+ * @public
+ */
+export interface LeaderboardScoreData {
+  /**
+   * The numerical score
+   */
+  score: number;
+  /**
+   * The individual name to display for this score
+   */
+  publicIndividualName?: string;
+  /**
+   * The group name to display for this score and use for aggregation
+   */
+  publicGroupName?: string;
+}
+
+/**
+ * Data returned when getting scores from a leaderboard with {@link Client.getLeaderboardScores}
+ * @public
+ */
+export type LeaderboardScores = Array<{
+  score: number;
+  publicIndividualName?: string;
+  publicGroupName?: string;
+}>;
 
 /**
  * HTTP method to use for a request
@@ -102,6 +166,10 @@ export class WorldWideLabError extends Error {
 
     this.name = "WorldWideLabError";
   }
+}
+
+function queryString(params: { [key: string]: any }): string {
+  return new URLSearchParams(params).toString();
 }
 
 /**
@@ -329,6 +397,35 @@ export class Client {
     const participant = await this.createParticipant();
     return participant;
   }
+
+  /**
+   * Get the scores of a leaderboard.
+   *
+   * @param leaderboardId - The id of the leaderboard to get scores from
+   * @param level - The level of scores to get: individual or groups
+   * @param options - Specify what scores to get, e.g. sorting and aggregation
+   * @returns The scores of the leaderboard
+   */
+  async getLeaderboardScores(
+    leaderboardId: string,
+    level: "individual" | "groups" = "individual",
+    options?: GetLeaderoardScoresOptions,
+  ): Promise<LeaderboardScores> {
+    const queryParams = {
+      // Overwrite with user-supplied options
+      ...options,
+    };
+
+    if (queryParams.updatedAfter) {
+      // @ts-ignore - Convert to ISO string (typescript does not like the type change here)
+      queryParams.updatedAfter = queryParams.updatedAfter.toISOString();
+    }
+
+    return this.call(
+      "GET",
+      `/leaderboard/${leaderboardId}/scores/${level}?${queryString(queryParams)}`,
+    ).then((response) => response.json());
+  }
 }
 
 /**
@@ -450,6 +547,33 @@ export class Session extends _ClientModel {
   }
 
   /**
+   * Add a score to a leaderboard.
+   * @param leaderboardId - The id of the leaderboard to add the score to
+   * @param leaderboardScoreData - The data to add to the leaderboard
+   * @returns true if the score was added successfully
+   */
+  async addScoreToLeaderboard(
+    leaderboardId: string,
+    leaderboardScoreData: LeaderboardScoreData,
+  ): Promise<boolean> {
+    const data = {
+      sessionId: this.sessionId,
+      ...leaderboardScoreData,
+    };
+    if (!data.publicIndividualName && !data.publicGroupName) {
+      console.warn(
+        "No publicIndividualName or publicGroupName provided. Did you forget to add one?",
+      );
+    }
+    const result = await this.clientInstance.call(
+      "PUT",
+      `/leaderboard/${leaderboardId}/score`,
+      data,
+    );
+    return (await result.json()).success;
+  }
+
+  /**
    * Retrieve public meta-data for a session
    * @returns The session's publicInfo meta data
    */
@@ -472,6 +596,47 @@ export class Session extends _ClientModel {
     );
     return false;
   }
+}
+
+// --- Helpers ---
+
+/**
+ * Helper function to return the date exactly one week ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one week ago
+ * @public
+ */
+export function oneWeekAgo(): Date {
+  const now = new Date();
+  now.setDate(now.getDate() - 7);
+  return now;
+}
+
+/**
+ * Helper function to return the date exactly one month ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one month ago
+ * @public
+ */
+export function oneMonthAgo(): Date {
+  const now = new Date();
+  now.setMonth(now.getMonth() - 1);
+  return now;
+}
+
+/**
+ * Helper function to return the date exactly one year ago.
+ *
+ * For use with {@link Client.getLeaderboardScores}.
+ * @returns A Date object one year ago
+ * @public
+ */
+export function oneYearAgo(): Date {
+  const now = new Date();
+  now.setFullYear(now.getFullYear() - 1);
+  return now;
 }
 
 export { VERSION };

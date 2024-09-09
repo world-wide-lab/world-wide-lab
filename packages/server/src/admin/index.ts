@@ -9,6 +9,7 @@ import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
+import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
   deleteStudyHandler,
@@ -409,6 +410,70 @@ const admin = new AdminJS({
         },
       },
     },
+    {
+      resource: sequelize.models.Leaderboard,
+      options: {
+        navigation: {
+          name: null,
+          icon: "TrendingUp",
+        },
+
+        properties: {
+          leaderboardId: {
+            isTitle: true,
+            isVisible: { list: true, filter: true, show: true, edit: true },
+          },
+
+          studyId: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 1,
+          },
+
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
+          },
+
+          privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.privateInfo,
+          },
+        },
+
+        actions: {
+          viewScores: {
+            actionType: "record",
+            component: false,
+            icon: "Eye",
+            handler: viewLeaderboardScoresHandler,
+          },
+        },
+      },
+    },
+    {
+      resource: sequelize.models.LeaderboardScore,
+      options: {
+        // Invisible in navigation
+        navigation: false,
+
+        actions: {
+          new: {
+            isAccessible: false,
+          },
+          edit: {
+            isAccessible: false,
+          },
+        },
+      },
+    },
 
     ...deploymentResource,
   ],
@@ -430,6 +495,8 @@ const admin = new AdminJS({
           wwl_sessions: "Sessions",
           wwl_responses: "Responses",
           wwl_deployments: "Deployments",
+          wwl_leaderboards: "Leaderboards",
+          wwl_leaderboard_scores: "Leaderboard Scores",
         },
         resources: {
           wwl_studies: {

@@ -626,4 +626,263 @@ describe("API Routes", () => {
       expect(response.body).toMatchSnapshot();
     });
   });
+
+  describe("PUT /leaderboard/:leaderboardId/score", () => {
+    const LEADERBOARD_ID = "test-leaderboard";
+
+    beforeAll(async () => {
+      // Create a leaderboard
+      await sequelize.models.Leaderboard.create({
+        leaderboardId: LEADERBOARD_ID,
+      });
+    });
+
+    it("should successfully add a leaderboard score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body).toHaveProperty("leaderboardScoreId");
+    });
+
+    it("should reject a leaderboard score with an invalid sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Alan Bradley",
+          sessionId: "invalidSessionId",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject a leaderboard score with an non-existing sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Lora Bradley",
+          // Correct schema, but non-existent
+          sessionId: "5e876f78-9b29-4692-9673-777da42fa144",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject a leaderboard score without a score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          publicIndividualName: "Ed Dillinger",
+          sessionId,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+  });
+
+  describe("GET /leaderboard/:leaderboardId/scores/:level", () => {
+    const LEADERBOARD_ID = "test-leaderboard-2";
+
+    beforeAll(async () => {
+      // Create a leaderboard
+      await sequelize.models.Leaderboard.create({
+        leaderboardId: LEADERBOARD_ID,
+      });
+    });
+
+    it("should successfully add a handful of scores", async () => {
+      const scores = [
+        { score: 100, publicIndividualName: "A", publicGroupName: "GRP-A" },
+        { score: 200, publicIndividualName: "B", publicGroupName: "GRP-A" },
+        { score: 300, publicIndividualName: "C", publicGroupName: "GRP-B" },
+        { score: 400, publicIndividualName: "D", publicGroupName: "GRP-B" },
+        { score: 500, publicIndividualName: "E", publicGroupName: "GRP-B" },
+      ];
+      for (let index = 0; index < scores.length; index++) {
+        const scoreEntry = scores[index];
+        const response = await endpoint
+          .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+          .send({
+            sessionId,
+            ...scoreEntry,
+          });
+
+        expect(response.status).toBe(200);
+      }
+    });
+
+    it("should return individual scores", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/individual`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicIndividualName: "E" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 300, publicIndividualName: "C" },
+        { score: 200, publicIndividualName: "B" },
+        { score: 100, publicIndividualName: "A" },
+      ]);
+    });
+
+    it("should return individual scores (with explicit ordering)", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicIndividualName: "E" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 300, publicIndividualName: "C" },
+        { score: 200, publicIndividualName: "B" },
+        { score: 100, publicIndividualName: "A" },
+      ]);
+    });
+
+    it("should return individual scores (with explicit ordering and a limit)", async () => {
+      const timestamp = new Date();
+      // Set to one hour ago, to include all scores
+      timestamp.setHours(timestamp.getHours() - 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc&limit=3&updatedAfter=${timestamp.toISOString()}`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicIndividualName: "E" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 300, publicIndividualName: "C" },
+      ]);
+    });
+
+    it("should not return too old scores", async () => {
+      const timestamp = new Date();
+      // Set to the future to exclude all scores
+      timestamp.setHours(timestamp.getHours() + 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc&limit=3&updatedAfter=${timestamp.toISOString()}`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([]);
+    });
+
+    it("should return individual scores (in reverse order)", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=asc`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 100, publicIndividualName: "A" },
+        { score: 200, publicIndividualName: "B" },
+        { score: 300, publicIndividualName: "C" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 500, publicIndividualName: "E" },
+      ]);
+    });
+
+    it("should return group scores", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/groups`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicGroupName: "GRP-B" },
+        { score: 400, publicGroupName: "GRP-B" },
+        { score: 300, publicGroupName: "GRP-B" },
+        { score: 200, publicGroupName: "GRP-A" },
+        { score: 100, publicGroupName: "GRP-A" },
+      ]);
+    });
+
+    it("should return group scores (in reverse order)", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/groups?sort=asc`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 100, publicGroupName: "GRP-A" },
+        { score: 200, publicGroupName: "GRP-A" },
+        { score: 300, publicGroupName: "GRP-B" },
+        { score: 400, publicGroupName: "GRP-B" },
+        { score: 500, publicGroupName: "GRP-B" },
+      ]);
+    });
+
+    it("should aggregate group scores", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/groups?aggregate=sum`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 1200, publicGroupName: "GRP-B" },
+        { score: 300, publicGroupName: "GRP-A" },
+      ]);
+    });
+
+    it("should aggregate group scores (in reverse order)", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/groups?aggregate=sum&sort=asc`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 300, publicGroupName: "GRP-A" },
+        { score: 1200, publicGroupName: "GRP-B" },
+      ]);
+    });
+
+    it("should aggregate group scores (in reverse order, with a limit)", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/groups?aggregate=sum&sort=asc&limit=1`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 300, publicGroupName: "GRP-A" },
+      ]);
+    });
+
+    it("should (explicitly) not aggregate group scores", async () => {
+      const response = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/groups?aggregate=none`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicGroupName: "GRP-B" },
+        { score: 400, publicGroupName: "GRP-B" },
+        { score: 300, publicGroupName: "GRP-B" },
+        { score: 200, publicGroupName: "GRP-A" },
+        { score: 100, publicGroupName: "GRP-A" },
+      ]);
+    });
+  });
 });

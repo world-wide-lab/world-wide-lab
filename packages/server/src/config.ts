@@ -111,6 +111,7 @@ const config = {
   },
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
+  leaderboardsToCreate: getArrayFromEnv("CREATE_LEADERBOARDS"),
 
   replication: {
     role: getStringFromEnv("REPLICATION_ROLE", null) as
