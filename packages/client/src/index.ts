@@ -410,7 +410,7 @@ export class Client {
     leaderboardId: string,
     level: "individual" | "groups" = "individual",
     options?: GetLeaderoardScoresOptions,
-  ): Promise<LeaderboardScores> {
+  ): Promise<{ scores: LeaderboardScores }> {
     const queryParams = {
       // Overwrite with user-supplied options
       ...options,
