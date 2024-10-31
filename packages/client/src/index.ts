@@ -203,6 +203,18 @@ export class Client {
   ) {
     console.log("Initializing Client", options);
 
+    // Validate client options
+    if (options.url) {
+      const parsedUrl = new URL(options.url);
+      if (typeof location !== "undefined" && location.protocol !== parsedUrl.protocol) {
+        console.warn(
+          `The client is initialized with a different protocol (${parsedUrl.protocol}) than the current page (${location.protocol}). This might cause CORS issues.`,
+        );
+      }
+    } else {
+      throw new Error("Error: url is required to initialize the client");
+    }
+
     this._library = "@world-wide-lab/client";
   }
 
