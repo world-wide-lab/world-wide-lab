@@ -769,7 +769,7 @@ routerPublic.get(
  *                 type: string
  *     responses:
  *       '200':
- *         description: Leaderboard score added successfully
+ *         description: Leaderboard score added successfully. Will return the leaderboardScoreId.
  *       '500':
  *         description: Failed to add score to leaderboard
  */
@@ -809,6 +809,89 @@ routerPublic.put(
       } else {
         next(error);
       }
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /leaderboard/{leaderboardId}/score/{leaderboardScoreId}:
+ *   put:
+ *     summary: Update a score on a leaderboard. This requires a sessionId to be provided.
+ *     tags:
+ *       - leaderboard
+ *     parameters:
+ *       - in: path
+ *         name: leaderboardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the leaderboard to update
+ *       - in: path
+ *         name: leaderboardScoreId
+ *         schema:
+ *           type: number
+ *         required: true
+ *         description: ID of the score to update
+ *     requestBody:
+ *       description: Data for the score on the leaderboard
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 required: true
+ *               score:
+ *                 type: integer
+ *                 required: true
+ *               publicIndividualName:
+ *                 type: string
+ *               publicGroupName:
+ *                 type: string
+
+ *     responses:
+ *       '200':
+ *         description: Leaderboard score updated successfully
+ *       '500':
+ *         description: Failed to update score on leaderboard
+ */
+routerPublic.put(
+  "/leaderboard/:leaderboardId/score/:leaderboardScoreId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { leaderboardId, leaderboardScoreId } = object({
+        leaderboardId: string().required(),
+        leaderboardScoreId: number().required(),
+      }).validateSync(req.params);
+      const { sessionId, ...scoreParams } = leaderboardScoreSchema
+        .omit(["leaderboardId"])
+        .noUnknown()
+        .validateSync(req.body);
+
+      const updatedRow = await sequelize.models.LeaderboardScore.update(
+        scoreParams,
+        {
+          where: {
+            leaderboardId,
+            leaderboardScoreId,
+            sessionId,
+          },
+        },
+      );
+
+      if (updatedRow && updatedRow[0] === 1) {
+        res.status(200).send(successfulResponsePayload);
+      } else {
+        throw new AppError(
+          "Unable to update score. Most likely issue: Unknown leaderboardId, leaderboardScoreId, or sessionId.",
+          400,
+        );
+      }
+    } catch (error) {
+      next(error);
     }
   },
 );
