@@ -637,9 +637,25 @@ describe("API Routes", () => {
       });
     });
 
-    it("should successfully add a leaderboard score", async () => {
+    it("LEGACY-COMPAT should successfully add a leaderboard score", async () => {
+      // Remove this test once the legacy compatibility is removed
+      // Ideally in the next major version
       const response = await endpoint
         .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 99,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body).toHaveProperty("leaderboardScoreId");
+    });
+
+    it("should successfully add a leaderboard score", async () => {
+      const response = await endpoint
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           score: 100,
           publicIndividualName: "Sam Flynn",
@@ -653,7 +669,7 @@ describe("API Routes", () => {
 
     it("should reject a leaderboard score with an invalid sessionId", async () => {
       const response = await endpoint
-        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           score: 100,
           publicIndividualName: "Alan Bradley",
@@ -666,7 +682,7 @@ describe("API Routes", () => {
 
     it("should reject a leaderboard score with an non-existing sessionId", async () => {
       const response = await endpoint
-        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           score: 100,
           publicIndividualName: "Lora Bradley",
@@ -680,7 +696,7 @@ describe("API Routes", () => {
 
     it("should reject a leaderboard score without a score", async () => {
       const response = await endpoint
-        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           publicIndividualName: "Ed Dillinger",
           sessionId,
@@ -703,7 +719,7 @@ describe("API Routes", () => {
 
       // Add a score to the leaderboard
       const response = await endpoint
-        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           score: 100,
           publicIndividualName: "Samwise Gamgee",
@@ -830,7 +846,7 @@ describe("API Routes", () => {
       for (let index = 0; index < scores.length; index++) {
         const scoreEntry = scores[index];
         const response = await endpoint
-          .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+          .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
           .send({
             sessionId,
             ...scoreEntry,

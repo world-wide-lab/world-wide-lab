@@ -739,7 +739,7 @@ routerPublic.get(
 /**
  * @openapi
  * /leaderboard/{leaderboardId}/score:
- *   put:
+ *   post:
  *     summary: Add a score to a leaderboard
  *     tags:
  *       - leaderboard
@@ -773,44 +773,53 @@ routerPublic.get(
  *       '500':
  *         description: Failed to add score to leaderboard
  */
+const leaderboardAddScoreHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  let scoreParams: CreateLeaderboardScoreParams | undefined;
+  try {
+    const { leaderboardId } = leaderboardScoreSchema
+      .pick(["leaderboardId"])
+      .validateSync(req.params);
+    scoreParams = {
+      leaderboardId,
+      ...leaderboardScoreSchema.omit(["leaderboardId"]).validateSync(req.body),
+    };
+
+    const score = (await sequelize.models.LeaderboardScore.create(
+      scoreParams,
+    )) as any as LeaderboardScoreParams;
+
+    res.json({
+      ...successfulResponsePayload,
+      leaderboardScoreId: score.leaderboardScoreId,
+    });
+  } catch (error) {
+    if (error instanceof ForeignKeyConstraintError && scoreParams) {
+      const leaderboard = await sequelize.models.Leaderboard.findOne({
+        where: { leaderboardId: scoreParams.leaderboardId },
+      });
+      if (!leaderboard) {
+        next(new AppError("Unknown leaderboardId", 400));
+      } else {
+        next(new AppError("Unknown sessionId", 400));
+      }
+    } else {
+      next(error);
+    }
+  }
+};
+routerPublic.post(
+  "/leaderboard/:leaderboardId/score",
+  leaderboardAddScoreHandler,
+);
+// Support for the put variant is only here for legacy reasons.
+// TODO: Remvoe this in the next major version, alongside it's one test case
 routerPublic.put(
   "/leaderboard/:leaderboardId/score",
-  async (req: Request, res: Response, next: NextFunction) => {
-    let scoreParams: CreateLeaderboardScoreParams | undefined;
-    try {
-      const { leaderboardId } = leaderboardScoreSchema
-        .pick(["leaderboardId"])
-        .validateSync(req.params);
-      scoreParams = {
-        leaderboardId,
-        ...leaderboardScoreSchema
-          .omit(["leaderboardId"])
-          .validateSync(req.body),
-      };
-
-      const score = (await sequelize.models.LeaderboardScore.create(
-        scoreParams,
-      )) as any as LeaderboardScoreParams;
-
-      res.json({
-        ...successfulResponsePayload,
-        leaderboardScoreId: score.leaderboardScoreId,
-      });
-    } catch (error) {
-      if (error instanceof ForeignKeyConstraintError && scoreParams) {
-        const leaderboard = await sequelize.models.Leaderboard.findOne({
-          where: { leaderboardId: scoreParams.leaderboardId },
-        });
-        if (!leaderboard) {
-          next(new AppError("Unknown leaderboardId", 400));
-        } else {
-          next(new AppError("Unknown sessionId", 400));
-        }
-      } else {
-        next(error);
-      }
-    }
-  },
+  leaderboardAddScoreHandler,
 );
 
 /**
