@@ -290,13 +290,15 @@ describe("Client", () => {
     const getIndividualScoresResult =
       await client.getLeaderboardScores("lb-test");
 
-    expect(getIndividualScoresResult.scores).toEqual(expect.arrayContaining([
-      {
-        score: 1500,
-        publicIndividualName: "Gimli",
-        publicGroupName: "Die Gefährten",
-      },
-    ]));
+    expect(getIndividualScoresResult.scores).toEqual(
+      expect.arrayContaining([
+        {
+          score: 1500,
+          publicIndividualName: "Gimli",
+          publicGroupName: "Die Gefährten",
+        },
+      ]),
+    );
     expect([
       {
         score: 1337,
