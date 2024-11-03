@@ -598,7 +598,7 @@ export class Session extends _ClientModel {
    */
   async updateLeaderboardScore(
     leaderboardId: string,
-    leaderboardScoreId: string,
+    leaderboardScoreId: number,
     leaderboardScoreData: LeaderboardScoreData,
   ): Promise<boolean> {
     const data = {

@@ -815,7 +815,7 @@ routerPublic.put(
 
 /**
  * @openapi
- * /leaderboard/{leaderboardId}/score/{scoreId}:
+ * /leaderboard/{leaderboardId}/score/{leaderboardScoreId}:
  *   put:
  *     summary: Update a score on a leaderboard. This requires a sessionId to be provided.
  *     tags:
@@ -830,7 +830,7 @@ routerPublic.put(
  *       - in: path
  *         name: leaderboardScoreId
  *         schema:
- *           type: string
+ *           type: number
  *         required: true
  *         description: ID of the score to update
  *     requestBody:
@@ -886,7 +886,7 @@ routerPublic.put(
         res.status(200).send(successfulResponsePayload);
       } else {
         throw new AppError(
-          "Unable to update score. Most likely issue: Unknown leaderboardId, scoreId, or sessionId.",
+          "Unable to update score. Most likely issue: Unknown leaderboardId, leaderboardScoreId, or sessionId.",
           400,
         );
       }
