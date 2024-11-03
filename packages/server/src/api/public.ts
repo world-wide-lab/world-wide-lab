@@ -373,7 +373,7 @@ routerPublic.post(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -427,7 +427,7 @@ routerPublic.post(
  *       description: New data for the session
  *       required: true
  *       content:
- *         application/json
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -837,7 +837,7 @@ routerPublic.put(
  *       description: Data for the score on the leaderboard
  *       required: true
  *       content:
- *         application/json
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
