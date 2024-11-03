@@ -565,12 +565,12 @@ export class Session extends _ClientModel {
    * Add a score to a leaderboard.
    * @param leaderboardId - The id of the leaderboard to add the score to
    * @param leaderboardScoreData - The data to add to the leaderboard
-   * @returns true if the score was added successfully
+   * @returns The leaderboardScoreId if the score was added successfully
    */
   async addScoreToLeaderboard(
     leaderboardId: string,
     leaderboardScoreData: LeaderboardScoreData,
-  ): Promise<boolean> {
+  ): Promise<string> {
     const data = {
       sessionId: this.sessionId,
       ...leaderboardScoreData,
@@ -583,6 +583,31 @@ export class Session extends _ClientModel {
     const result = await this.clientInstance.call(
       "PUT",
       `/leaderboard/${leaderboardId}/score`,
+      data,
+    );
+    const responseData = await result.json();
+    return responseData.leaderboardScoreId;
+  }
+
+  /**
+   * Update a score on a leaderboard.
+   * @param leaderboardId - The id of the leaderboard to update the score on
+   * @param scoreId - The id of the score to update
+   * @param leaderboardScoreData - The data to update on the leaderboard
+   * @returns true if the score was updated successfully
+   */
+  async updateLeaderboardScore(
+    leaderboardId: string,
+    scoreId: string,
+    leaderboardScoreData: LeaderboardScoreData,
+  ): Promise<boolean> {
+    const data = {
+      sessionId: this.sessionId,
+      ...leaderboardScoreData,
+    };
+    const result = await this.clientInstance.call(
+      "PUT",
+      `/leaderboard/${leaderboardId}/score/${scoreId}`,
       data,
     );
     return (await result.json()).success;

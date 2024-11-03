@@ -1,4 +1,3 @@
-// Set up fake environment variables
 import "./setup_env";
 
 import request from "supertest";
@@ -683,6 +682,80 @@ describe("API Routes", () => {
         .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           publicIndividualName: "Ed Dillinger",
+          sessionId,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+  });
+
+  describe("PUT /leaderboard/:leaderboardId/score/:scoreId", () => {
+    const LEADERBOARD_ID = "test-leaderboard-update";
+    let scoreId: string;
+
+    beforeAll(async () => {
+      // Create a leaderboard
+      await sequelize.models.Leaderboard.create({
+        leaderboardId: LEADERBOARD_ID,
+      });
+
+      // Add a score to the leaderboard
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      scoreId = response.body.leaderboardScoreId;
+    });
+
+    it("should successfully update a leaderboard score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it("should reject an update with an invalid sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId: "invalidSessionId",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject an update with a non-existing sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId: "5e876f78-9b29-4692-9673-777da42fa144",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject an update without a score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          publicIndividualName: "Sam Flynn",
           sessionId,
         });
 
