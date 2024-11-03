@@ -998,12 +998,17 @@ routerPublic.get(
       const extraQuerySettings: { [key: string]: any } = {};
 
       // Construct info for query
-      if (level === "individual") {
+      if (!aggregate || aggregate === "none") {
         attributes.push("publicIndividualName");
-      } else if (level === "groups") {
         attributes.push("publicGroupName");
       } else {
-        throw new AppError(`Unknown level: ${level}`, 400);
+        if (level === "individual") {
+          attributes.push("publicIndividualName");
+        } else if (level === "groups") {
+          attributes.push("publicGroupName");
+        } else {
+          throw new AppError(`Unknown level: ${level}`, 400);
+        }
       }
 
       if (limit) {

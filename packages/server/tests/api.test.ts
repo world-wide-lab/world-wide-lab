@@ -847,11 +847,11 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.scores).toMatchObject([
-        { score: 500, publicIndividualName: "E" },
-        { score: 400, publicIndividualName: "D" },
-        { score: 300, publicIndividualName: "C" },
-        { score: 200, publicIndividualName: "B" },
-        { score: 100, publicIndividualName: "A" },
+        { score: 500, publicIndividualName: "E", publicGroupName: "GRP-B" },
+        { score: 400, publicIndividualName: "D", publicGroupName: "GRP-B" },
+        { score: 300, publicIndividualName: "C", publicGroupName: "GRP-B" },
+        { score: 200, publicIndividualName: "B", publicGroupName: "GRP-A" },
+        { score: 100, publicIndividualName: "A", publicGroupName: "GRP-A" },
       ]);
     });
 
@@ -862,11 +862,11 @@ describe("API Routes", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.scores).toMatchObject([
-        { score: 500, publicIndividualName: "E" },
-        { score: 400, publicIndividualName: "D" },
-        { score: 300, publicIndividualName: "C" },
-        { score: 200, publicIndividualName: "B" },
-        { score: 100, publicIndividualName: "A" },
+        { score: 500, publicIndividualName: "E", publicGroupName: "GRP-B" },
+        { score: 400, publicIndividualName: "D", publicGroupName: "GRP-B" },
+        { score: 300, publicIndividualName: "C", publicGroupName: "GRP-B" },
+        { score: 200, publicIndividualName: "B", publicGroupName: "GRP-A" },
+        { score: 100, publicIndividualName: "A", publicGroupName: "GRP-A" },
       ]);
     });
 

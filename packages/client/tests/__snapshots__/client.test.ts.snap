@@ -4,10 +4,12 @@ exports[`Client > should add & retrieve scores from the leaderboard 1`] = `
 {
   "scores": [
     {
+      "publicGroupName": "Encom",
       "publicIndividualName": "Kevin Flynn",
       "score": 1337,
     },
     {
+      "publicGroupName": "Encom",
       "publicIndividualName": "Sam Flynn",
       "score": 663,
     },
