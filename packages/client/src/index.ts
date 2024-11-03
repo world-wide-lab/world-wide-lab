@@ -570,7 +570,7 @@ export class Session extends _ClientModel {
   async addScoreToLeaderboard(
     leaderboardId: string,
     leaderboardScoreData: LeaderboardScoreData,
-  ): Promise<string> {
+  ): Promise<number> {
     const data = {
       sessionId: this.sessionId,
       ...leaderboardScoreData,

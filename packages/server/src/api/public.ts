@@ -769,7 +769,7 @@ routerPublic.get(
  *                 type: string
  *     responses:
  *       '200':
- *         description: Leaderboard score added successfully
+ *         description: Leaderboard score added successfully. Will return the leaderboardScoreId.
  *       '500':
  *         description: Failed to add score to leaderboard
  */

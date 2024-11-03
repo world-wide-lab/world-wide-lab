@@ -26,6 +26,33 @@ exports[`Client > should add & retrieve scores from the leaderboard 2`] = `
 }
 `;
 
+exports[`Client > should require sessionId when updating a score on the leaderboard 1`] = `
+{
+  "scores": [
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1500,
+    },
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1500,
+    },
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1337,
+    },
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1337,
+    },
+    {
+      "publicIndividualName": "Sam Flynn",
+      "score": 663,
+    },
+  ],
+}
+`;
+
 exports[`Client > should start a new session (without a linked participant) 1`] = `
 {
   "clientMetadata": {
@@ -76,4 +103,23 @@ exports[`Client > should store responses 3`] = `
   "0",
   "1",
 ]
+`;
+
+exports[`Client > should update a score on the leaderboard 1`] = `
+{
+  "scores": [
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1500,
+    },
+    {
+      "publicIndividualName": "Kevin Flynn",
+      "score": 1337,
+    },
+    {
+      "publicIndividualName": "Sam Flynn",
+      "score": 663,
+    },
+  ],
+}
 `;

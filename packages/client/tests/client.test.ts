@@ -302,7 +302,7 @@ describe("Client", () => {
       publicGroupName: "Encom",
     });
     expect(addScoreResult).toBeDefined();
-    expect(typeof addScoreResult).toBe("string");
+    expect(typeof addScoreResult).toBe("number");
   });
 
   it("should require sessionId when updating a score on the leaderboard", async () => {
