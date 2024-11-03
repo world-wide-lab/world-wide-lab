@@ -270,64 +270,57 @@ describe("Client", () => {
   it("should update a score on the leaderboard", async () => {
     const session = await client.createSession({ studyId: "example" });
 
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
+    const leaderboardScoreId = await session.addScoreToLeaderboard("lb-test", {
       score: 1337,
-      publicIndividualName: "Kevin Flynn",
-      publicGroupName: "Encom",
+      publicIndividualName: "Legolas",
     });
-    expect(addScoreResult).toBeDefined();
+    expect(leaderboardScoreId).toBeDefined();
 
     const updateScoreResult = await session.updateLeaderboardScore(
       "lb-test",
-      addScoreResult,
+      leaderboardScoreId,
       {
         score: 1500,
-        publicIndividualName: "Kevin Flynn",
-        publicGroupName: "Encom",
+        publicIndividualName: "Gimli",
+        publicGroupName: "Die Gefährten",
       },
     );
     expect(updateScoreResult).toBe(true);
 
     const getIndividualScoresResult =
       await client.getLeaderboardScores("lb-test");
-    expect(getIndividualScoresResult).toMatchSnapshot();
+
+    expect([
+      {
+        score: 1500,
+        publicIndividualName: "Gimli",
+        publicGroupName: "Die Gefährten",
+      },
+    ]).toEqual(expect.arrayContaining(getIndividualScoresResult.scores));
+    expect([
+      {
+        score: 1337,
+        publicIndividualName: "Legolas",
+      },
+    ]).not.toEqual(expect.arrayContaining(getIndividualScoresResult.scores));
+    expect([
+      {
+        score: 1337,
+        publicIndividualName: "Legolas",
+        publicGroupName: "Die Gefährten",
+      },
+    ]).not.toEqual(expect.arrayContaining(getIndividualScoresResult.scores));
   });
 
   it("should return the leaderboardScoreId when adding a score to the leaderboard", async () => {
     const session = await client.createSession({ studyId: "example" });
 
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
+    const leaderboardScoreId = await session.addScoreToLeaderboard("lb-test", {
       score: 1337,
       publicIndividualName: "Kevin Flynn",
       publicGroupName: "Encom",
     });
-    expect(addScoreResult).toBeDefined();
-    expect(typeof addScoreResult).toBe("number");
-  });
-
-  it("should require sessionId when updating a score on the leaderboard", async () => {
-    const session = await client.createSession({ studyId: "example" });
-
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
-      score: 1337,
-      publicIndividualName: "Kevin Flynn",
-      publicGroupName: "Encom",
-    });
-    expect(addScoreResult).toBeDefined();
-
-    const updateScoreResult = await session.updateLeaderboardScore(
-      "lb-test",
-      addScoreResult,
-      {
-        score: 1500,
-        publicIndividualName: "Kevin Flynn",
-        publicGroupName: "Encom",
-      },
-    );
-    expect(updateScoreResult).toBe(true);
-
-    const getIndividualScoresResult =
-      await client.getLeaderboardScores("lb-test");
-    expect(getIndividualScoresResult).toMatchSnapshot();
+    expect(leaderboardScoreId).toBeDefined();
+    expect(typeof leaderboardScoreId).toBe("number");
   });
 });

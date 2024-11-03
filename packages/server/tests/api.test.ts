@@ -756,6 +756,33 @@ describe("API Routes", () => {
       ]);
     });
 
+    it("should successfully add information to a leaderboard score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${leaderboardScoreId}`)
+        .send({
+          score: 400,
+          publicIndividualName: "Frodo Beutlin",
+          publicGroupName: "Die Gefaehrten",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      const leaderboardResponse = await endpoint
+        .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/individual`)
+        .send();
+
+      expect(leaderboardResponse.status).toBe(200);
+      expect(leaderboardResponse.body.scores).toMatchObject([
+        {
+          score: 400,
+          publicIndividualName: "Frodo Beutlin",
+          publicGroupName: "Die Gefaehrten",
+        },
+      ]);
+    });
+
     it("should reject an update with a non-existing sessionId", async () => {
       const response = await endpoint
         .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${leaderboardScoreId}`)
