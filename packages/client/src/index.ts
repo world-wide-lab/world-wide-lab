@@ -592,13 +592,13 @@ export class Session extends _ClientModel {
   /**
    * Update a score on a leaderboard.
    * @param leaderboardId - The id of the leaderboard to update the score on
-   * @param scoreId - The id of the score to update
+   * @param leaderboardScoreId - The id of the score to update
    * @param leaderboardScoreData - The data to update on the leaderboard
    * @returns true if the score was updated successfully
    */
   async updateLeaderboardScore(
     leaderboardId: string,
-    scoreId: string,
+    leaderboardScoreId: string,
     leaderboardScoreData: LeaderboardScoreData,
   ): Promise<boolean> {
     const data = {
@@ -607,7 +607,7 @@ export class Session extends _ClientModel {
     };
     const result = await this.clientInstance.call(
       "PUT",
-      `/leaderboard/${leaderboardId}/score/${scoreId}`,
+      `/leaderboard/${leaderboardId}/score/${leaderboardScoreId}`,
       data,
     );
     return (await result.json()).success;
