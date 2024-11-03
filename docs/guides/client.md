@@ -156,3 +156,25 @@ If you want to create a new participant without retrieving one from a stored id,
 ```js
 const participant = await client.createParticipant();
 ```
+
+### Updating a Leaderboard Score
+
+You can update a leaderboard score using the `updateLeaderboardScore` method in the `Session` class. This method requires the `leaderboardId`, `scoreId`, and the new `leaderboardScoreData`.
+
+```js
+const updated = await session.updateLeaderboardScore(
+  "my-awesome-leaderboardId",
+  "my-score-id",
+  {
+    score: 1500,
+    publicIndividualName: "Updated Name",
+    publicGroupName: "Updated Group",
+  }
+);
+
+if (updated) {
+  console.log("Leaderboard score updated successfully");
+} else {
+  console.log("Failed to update leaderboard score");
+}
+```

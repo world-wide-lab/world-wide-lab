@@ -1,4 +1,3 @@
-// Set up fake environment variables
 import "./setup_env";
 
 import request from "supertest";
@@ -396,6 +395,20 @@ describe("API Routes", () => {
         .post("/v1/response")
         .send({ sessionId: newSessionResponse.body.sessionId, ...exampleData });
     });
+
+    it("should return the responseId in the response", async () => {
+      const response = await endpoint.post("/v1/response").send({
+        sessionId,
+        name: "test_trail",
+        payload: {
+          key_1: "value 1",
+          key_2: "value 2",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("responseId");
+    });
   });
 
   describe("GET /study/:studyId/count/:countType", () => {
@@ -683,6 +696,80 @@ describe("API Routes", () => {
         .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
         .send({
           publicIndividualName: "Ed Dillinger",
+          sessionId,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+  });
+
+  describe("PUT /leaderboard/:leaderboardId/score/:scoreId", () => {
+    const LEADERBOARD_ID = "test-leaderboard-update";
+    let scoreId: number;
+
+    beforeAll(async () => {
+      // Create a leaderboard
+      await sequelize.models.Leaderboard.create({
+        leaderboardId: LEADERBOARD_ID,
+      });
+
+      // Add a score to the leaderboard
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      scoreId = response.body.leaderboardScoreId;
+    });
+
+    it("should successfully update a leaderboard score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+    });
+
+    it("should reject an update with an invalid sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId: "invalidSessionId",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject an update with a non-existing sessionId", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          score: 200,
+          publicIndividualName: "Sam Flynn",
+          sessionId: "5e876f78-9b29-4692-9673-777da42fa144",
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
+
+    it("should reject an update without a score", async () => {
+      const response = await endpoint
+        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score/${scoreId}`)
+        .send({
+          publicIndividualName: "Sam Flynn",
           sessionId,
         });
 
