@@ -581,7 +581,7 @@ export class Session extends _ClientModel {
       );
     }
     const result = await this.clientInstance.call(
-      "PUT",
+      "POST",
       `/leaderboard/${leaderboardId}/score`,
       data,
     );
