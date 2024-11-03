@@ -206,7 +206,10 @@ export class Client {
     // Validate client options
     if (options.url) {
       const parsedUrl = new URL(options.url);
-      if (typeof location !== "undefined" && location.protocol !== parsedUrl.protocol) {
+      if (
+        typeof location !== "undefined" &&
+        location.protocol !== parsedUrl.protocol
+      ) {
         console.warn(
           `The client is initialized with a different protocol (${parsedUrl.protocol}) than the current page (${location.protocol}). This might cause CORS issues.`,
         );
