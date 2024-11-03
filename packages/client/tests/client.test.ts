@@ -1,3 +1,4 @@
+// Set up fake environment variables
 import "./setup_env";
 
 import { version as packageVersion } from "../package.json";
@@ -9,6 +10,7 @@ import {
   WorldWideLabError,
 } from "../src";
 
+// import { init as initProd } from '@world-wide-lab/server/dist/init.js'
 import {
   type Server,
   init as initDev,
@@ -227,13 +229,13 @@ describe("Client", () => {
       publicIndividualName: "Kevin Flynn",
       publicGroupName: "Encom",
     });
-    expect(addScoreResult).toBeDefined();
+    expect(addScoreResult).toBe(true);
     const addScoreResult2 = await session.addScoreToLeaderboard("lb-test", {
       score: 663,
       publicIndividualName: "Sam Flynn",
       publicGroupName: "Encom",
     });
-    expect(addScoreResult2).toBeDefined();
+    expect(addScoreResult2).toBe(true);
 
     const getIndividualScoresResult =
       await client.getLeaderboardScores("lb-test");
@@ -265,69 +267,5 @@ describe("Client", () => {
       { updatedAfter: tsFuture },
     );
     expect(getIndividualScoresResultInFuture).toMatchObject({ scores: [] });
-  });
-
-  it("should update a score on the leaderboard", async () => {
-    const session = await client.createSession({ studyId: "example" });
-
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
-      score: 1337,
-      publicIndividualName: "Kevin Flynn",
-      publicGroupName: "Encom",
-    });
-    expect(addScoreResult).toBeDefined();
-
-    const updateScoreResult = await session.updateLeaderboardScore(
-      "lb-test",
-      addScoreResult,
-      {
-        score: 1500,
-        publicIndividualName: "Kevin Flynn",
-        publicGroupName: "Encom",
-      },
-    );
-    expect(updateScoreResult).toBe(true);
-
-    const getIndividualScoresResult =
-      await client.getLeaderboardScores("lb-test");
-    expect(getIndividualScoresResult).toMatchSnapshot();
-  });
-
-  it("should return the leaderboardScoreId when adding a score to the leaderboard", async () => {
-    const session = await client.createSession({ studyId: "example" });
-
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
-      score: 1337,
-      publicIndividualName: "Kevin Flynn",
-      publicGroupName: "Encom",
-    });
-    expect(addScoreResult).toBeDefined();
-    expect(typeof addScoreResult).toBe("number");
-  });
-
-  it("should require sessionId when updating a score on the leaderboard", async () => {
-    const session = await client.createSession({ studyId: "example" });
-
-    const addScoreResult = await session.addScoreToLeaderboard("lb-test", {
-      score: 1337,
-      publicIndividualName: "Kevin Flynn",
-      publicGroupName: "Encom",
-    });
-    expect(addScoreResult).toBeDefined();
-
-    const updateScoreResult = await session.updateLeaderboardScore(
-      "lb-test",
-      addScoreResult,
-      {
-        score: 1500,
-        publicIndividualName: "Kevin Flynn",
-        publicGroupName: "Encom",
-      },
-    );
-    expect(updateScoreResult).toBe(true);
-
-    const getIndividualScoresResult =
-      await client.getLeaderboardScores("lb-test");
-    expect(getIndividualScoresResult).toMatchSnapshot();
   });
 });
