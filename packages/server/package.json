@@ -59,10 +59,10 @@
   "devDependencies": {
     "@adminjs/bundler": "^3.0.0",
     "@playwright/test": "^1.48.2",
-    "@types/cors": "^2.8.13",
-    "@types/express": "^4.17.17",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/express-session": "^1.18.0",
-    "@types/node": "^20.3.1",
+    "@types/node": "^20.17.6",
     "@types/pg": "^8.11.10",
     "@types/pg-copy-streams": "^1.2.5",
     "@types/styled-components": "^5.1.34",
