@@ -6,7 +6,7 @@ import { initJsPsych } from "jspsych";
 import { version } from "../package.json";
 import jsPsychWorldWideLab from "../src";
 
-const url = "https://non-existing-wwl-url/";
+const url = "http://non-existing-wwl-url/";
 
 // Always in an URL, METHOD format
 const MOCK_RESPONSES = {
