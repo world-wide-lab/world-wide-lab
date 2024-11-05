@@ -94,6 +94,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
    */
   static info: PluginInfo = {
     name: "world-wide-lab",
+    // version: VERSION,
     parameters: {
       /**
        * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
@@ -140,6 +141,20 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
         default: true,
       },
     },
+    // data: {
+    //   /**
+    //    * The sessionId of the session in which the data was stored.
+    //    */
+    //   sessionId: {
+    //     type: ParameterType.STRING,
+    //   },
+    //   /**
+    //    * Whether the data was saved successfully.
+    //    */
+    //   success: {
+    //     type: ParameterType.BOOL,
+    //   },
+    // }
   };
 
   constructor(private jsPsych: JsPsych) {}
