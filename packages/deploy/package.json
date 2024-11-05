@@ -9,13 +9,13 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@types/node": "^16.18.91"
+    "@types/node": "^22.9.0"
   },
   "dependencies": {
-    "@pulumi/aws": "^6.48.0",
-    "@pulumi/awsx": "^2.13.0",
-    "@pulumi/pulumi": "^3.112.0",
+    "@pulumi/aws": "^6.57.0",
+    "@pulumi/awsx": "^2.16.1",
+    "@pulumi/pulumi": "^3.137.0",
     "dotenv": "^16.4.5",
-    "typescript": "^5.5.4"
+    "typescript": "^5.6.3"
   }
 }
