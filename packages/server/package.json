@@ -73,7 +73,7 @@
     "supertest": "^6.3.4",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3",
-    "vitest": "^1.6.0"
+    "vitest": "^2.1.4"
   },
   "optionalDependencies": {
     "@world-wide-lab/deploy": "file:../deploy"
