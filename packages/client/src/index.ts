@@ -565,7 +565,7 @@ export class Session extends _ClientModel {
    * Add a score to a leaderboard.
    * @param leaderboardId - The id of the leaderboard to add the score to
    * @param leaderboardScoreData - The data to add to the leaderboard
-   * @returns The leaderboardScoreId if the score was added successfully
+   * @returns The leaderboardScoreId if the score was added successfully (for use with {@link Session.updateLeaderboardScore | updateLeaderboardScore})
    */
   async addScoreToLeaderboard(
     leaderboardId: string,
@@ -592,7 +592,7 @@ export class Session extends _ClientModel {
   /**
    * Update a score on a leaderboard.
    * @param leaderboardId - The id of the leaderboard to update the score on
-   * @param leaderboardScoreId - The id of the score to update
+   * @param leaderboardScoreId - The id of the score to update (from {@link Session.addScoreToLeaderboard | addScoreToLeaderboard})
    * @param leaderboardScoreData - The data to update on the leaderboard
    * @returns true if the score was updated successfully
    */
