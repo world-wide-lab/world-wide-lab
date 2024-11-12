@@ -871,6 +871,47 @@ describe("API Routes", () => {
       ]);
     });
 
+    it("should return individual scores filtered by publicIndividualName", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?publicIndividualName=B`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 200, publicIndividualName: "B", publicGroupName: "GRP-A" },
+      ]);
+    });
+
+    it("should return individual scores filtered by publicGroupName", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?publicGroupName=GRP-B`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 500, publicIndividualName: "E", publicGroupName: "GRP-B" },
+        { score: 400, publicIndividualName: "D", publicGroupName: "GRP-B" },
+        { score: 300, publicIndividualName: "C", publicGroupName: "GRP-B" },
+      ]);
+    });
+
+    it("should return individual scores filtered by publicIndividualName and publicGroupName", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?publicIndividualName=C&publicGroupName=GRP-B`,
+        )
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.scores).toMatchObject([
+        { score: 300, publicIndividualName: "C", publicGroupName: "GRP-B" },
+      ]);
+    });
+
     it("should return individual scores (with explicit ordering)", async () => {
       const response = await endpoint
         .get(`/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?sort=desc`)
