@@ -120,6 +120,14 @@ export interface GetLeaderoardScoresOptions {
    * Can be used with {@link oneWeekAgo}, {@link oneMonthAgo} or {@link oneYearAgo}.
    */
   updatedAfter?: Date;
+  /**
+   * Filter scores to only those with this publicIndividualName.
+   */
+  publicIndividualName?: string;
+  /**
+   * Filter scores to only those with this publicGroupName.
+   */
+  publicGroupName?: string;
 }
 
 /**
