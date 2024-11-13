@@ -975,6 +975,20 @@ routerPublic.put(
  *         description: >
  *           Filter scores to only those updated after and including this time.
  *           Useful for rolling leaderboards e.g. only the last week or month.
+ *       - in: query
+ *         name: publicIndividualName
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: >
+ *          Filter scores to only those with this publicIndividualName.
+ *       - in: query
+ *         name: publicGroupName
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: >
+ *          Filter scores to only those with this publicGroupName.
  *     responses:
  *       '200':
  *         description: Successfully retrieved leaderboard scores.
@@ -992,12 +1006,22 @@ routerPublic.get(
       leaderboardId: string().required(),
       level: string().oneOf(["individual", "groups"]).required(),
     }).validateSync(req.params);
-    const { cacheFor, limit, sort, aggregate, updatedAfter } = object({
+    const {
+      cacheFor,
+      limit,
+      publicIndividualName,
+      publicGroupName,
+      sort,
+      aggregate,
+      updatedAfter,
+    } = object({
       cacheFor: number().integer().optional(),
       limit: number().integer().optional(),
       sort: string().oneOf(["asc", "desc"]).optional().default("desc"),
       aggregate: string().oneOf(["none", "sum"]).optional(),
       updatedAfter: date().optional(),
+      publicIndividualName: string().optional(),
+      publicGroupName: string().optional(),
     }).validateSync(req.query);
 
     try {
@@ -1040,6 +1064,12 @@ routerPublic.get(
         where.updatedAt = {
           [Sequelize.Op.gte]: updatedAfter,
         };
+      }
+      if (publicIndividualName) {
+        where.publicIndividualName = publicIndividualName;
+      }
+      if (publicGroupName) {
+        where.publicGroupName = publicGroupName;
       }
 
       let getScores;
