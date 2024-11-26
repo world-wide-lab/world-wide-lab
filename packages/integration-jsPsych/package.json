@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/integration-jspsych",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "",
   "type": "module",
   "main": "dist/index.cjs",
