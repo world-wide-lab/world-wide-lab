@@ -608,7 +608,7 @@ routerPublic.post(
  *         required: false
  *         description: >
  *           Minimum number of responses before a session is counted.
- *           Only used for countType = usingResponses, defaults to 2.
+ *           Only used for countType = usingResponses, defaults to 1.
  *     responses:
  *       '200':
  *         description: Successfully retrieved study count.
@@ -631,7 +631,7 @@ routerPublic.get(
           (value) => countType === "usingResponses" || !!value,
         )
         .optional()
-        .default(2),
+        .default(1),
     }).validateSync(req.query);
 
     try {

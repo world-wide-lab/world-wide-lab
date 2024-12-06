@@ -419,7 +419,7 @@ describe("API Routes", () => {
 
     it("should return the correct count (for sessions with 2 responses)", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/count/usingResponses`)
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=2`)
         .send();
 
       expect(response.status).toBe(200);
@@ -428,7 +428,7 @@ describe("API Routes", () => {
 
     it("should return the correct count (for sessions with 1 response)", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=1`)
+        .get(`/v1/study/${studyId}/count/usingResponses`)
         .send();
 
       expect(response.status).toBe(200);
