@@ -637,44 +637,49 @@ routerPublic.get(
     try {
       // Filter by studyId by default
       const where: { [key: string]: any } = { studyId };
-      const getCountOptions: { [key: string]: any } = {};
+      let getCount: (() => Promise<number>) | undefined
 
       if (countType === "all") {
         // Do nothing, retrieve all
       } else if (countType === "finished") {
         where.finished = true;
       } else if (countType === "usingResponses") {
-        // TODO: Eventually handle this via a subquery once sequelize v7 allows escaping. Else we can do it, but have to escape ourselves (which differs by dialect)
-        getCountOptions.include = [
-          {
-            model: sequelize.models.Response,
-            // No need to retrieve response attributes
-            attributes: [],
-          },
-        ];
-        getCountOptions.group = ["Session.sessionId"];
-        getCountOptions.having = Sequelize.literal(
-          `COUNT(Responses.responseId) >= ${minResponseCount}`,
-        );
+        // Use the correct separator per dialect
+        const s = sequelize.getDialect() === "sqlite" ? '`' : '"';
+        getCount = async () => {
+          const result = await sequelize.query<{count: number}>(
+            `
+              SELECT COUNT(*) as count FROM (
+                SELECT
+                  ${s}Session${s}.${s}sessionId${s}
+                FROM ${s}wwl_sessions${s} AS ${s}Session${s}
+                INNER JOIN ${s}wwl_responses${s} AS ${s}Responses${s}
+                  ON ${s}Session${s}.${s}sessionId${s} = ${s}Responses${s}.${s}sessionId${s}
+                WHERE ${s}Session${s}.${s}studyId${s} = :studyId
+                GROUP BY ${s}Session${s}.${s}sessionId${s}
+                HAVING COUNT(${s}Responses${s}.${s}responseId${s}) >= :minResponseCount
+              );
+            `,
+            {
+              type: Sequelize.QueryTypes.SELECT,
+              replacements: {
+                studyId,
+                minResponseCount
+              }
+            }
+          )
+          return result[0].count
+        }
       } else {
         throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
-      const getCount =
-        countType === "usingResponses"
-          ? async () => {
-              const result = await sequelize.models.Session.count({
-                where,
-                ...getCountOptions,
-              });
-              // @ts-ignore Sequelize typing is wrong here. However, ideally we'd solve this differently anyways (see above TODO)
-              return result.length;
-            }
-          : async () =>
-              await sequelize.models.Session.count({
-                where,
-                ...getCountOptions,
-              });
+      if (!getCount) {
+        getCount = async () =>
+          await sequelize.models.Session.count({
+            where,
+          });
+      }
 
       const count =
         cacheFor === undefined
