@@ -437,7 +437,7 @@ describe("API Routes", () => {
 
     it("should return the correct count (for sessions with 50 responses)", async () => {
       const response = await endpoint
-        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=5`)
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=50`)
         .send();
 
       expect(response.status).toBe(200);
