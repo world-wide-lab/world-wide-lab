@@ -637,7 +637,7 @@ routerPublic.get(
     try {
       // Filter by studyId by default
       const where: { [key: string]: any } = { studyId };
-      let getCount: (() => Promise<number>) | undefined
+      let getCount: (() => Promise<number>) | undefined;
 
       if (countType === "all") {
         // Do nothing, retrieve all
@@ -645,9 +645,9 @@ routerPublic.get(
         where.finished = true;
       } else if (countType === "usingResponses") {
         // Use the correct separator per dialect
-        const s = sequelize.getDialect() === "sqlite" ? '`' : '"';
+        const s = sequelize.getDialect() === "sqlite" ? "`" : '"';
         getCount = async () => {
-          const result = await sequelize.query<{count: number}>(
+          const result = await sequelize.query<{ count: number }>(
             `
               SELECT COUNT(*) as count FROM (
                 SELECT
@@ -664,12 +664,12 @@ routerPublic.get(
               type: Sequelize.QueryTypes.SELECT,
               replacements: {
                 studyId,
-                minResponseCount
-              }
-            }
-          )
-          return result[0].count
-        }
+                minResponseCount,
+              },
+            },
+          );
+          return result[0].count;
+        };
       } else {
         throw new AppError(`Unknown countType: ${countType}`, 400);
       }
