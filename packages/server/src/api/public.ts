@@ -589,7 +589,8 @@ routerPublic.post(
  *           type: string
  *           enum: [
  *             all,
- *             finished
+ *             finished,
+ *             usingResponses
  *          ]
  *         required: true
  *         description: >
@@ -600,6 +601,14 @@ routerPublic.post(
  *           type: integer
  *         required: false
  *         description: Cache the result for this many seconds.
+ *       - in: query
+ *         name: minResponseCount
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Minimum number of responses before a session is counted.
+ *           Only used for countType = usingResponses, defaults to 2.
  *     responses:
  *       '200':
  *         description: Successfully retrieved study count.
@@ -612,25 +621,60 @@ routerPublic.get(
   "/study/:studyId/count/:countType",
   async (req: Request, res: Response, next: NextFunction) => {
     const { studyId, countType } = req.params;
-    const { cacheFor } = object({
+    const { cacheFor, minResponseCount } = object({
       cacheFor: number().integer().optional(),
+      minResponseCount: number()
+        .integer()
+        .test(
+          "allow-only-for-usingResponses",
+          "Setting minResponseCount is only supported for the countType 'usingResponses'",
+          (value) => countType === "usingResponses" || !!value,
+        )
+        .optional()
+        .default(2),
     }).validateSync(req.query);
 
     try {
       // Filter by studyId by default
       const where: { [key: string]: any } = { studyId };
+      const getCountOptions: { [key: string]: any } = {};
+
       if (countType === "all") {
         // Do nothing, retrieve all
       } else if (countType === "finished") {
         where.finished = true;
+      } else if (countType === "usingResponses") {
+        // TODO: Eventually handle this via a subquery once sequelize v7 allows escaping. Else we can do it, but have to escape ourselves (which differs by dialect)
+        getCountOptions.include = [
+          {
+            model: sequelize.models.Response,
+            // No need to retrieve response attributes
+            attributes: [],
+          },
+        ];
+        getCountOptions.group = ["Session.sessionId"];
+        getCountOptions.having = Sequelize.literal(
+          `COUNT(Responses.responseId) >= ${minResponseCount}`,
+        );
       } else {
         throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
-      const getCount = async () =>
-        await sequelize.models.Session.count({
-          where,
-        });
+      const getCount =
+        countType === "usingResponses"
+          ? async () => {
+              const result = await sequelize.models.Session.count({
+                where,
+                ...getCountOptions,
+              });
+              // @ts-ignore Sequelize typing is wrong here. However, ideally we'd solve this differently anyways (see above TODO)
+              return result.length;
+            }
+          : async () =>
+              await sequelize.models.Session.count({
+                where,
+                ...getCountOptions,
+              });
 
       const count =
         cacheFor === undefined

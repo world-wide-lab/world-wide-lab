@@ -417,6 +417,33 @@ describe("API Routes", () => {
       expect(response.body.count).toBe(1);
     });
 
+    it("should return the correct count (for sessions with 2 responses)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+    });
+
+    it("should return the correct count (for sessions with 1 response)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=1`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(2);
+    });
+
+    it("should return the correct count (for sessions with 50 responses)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=5`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(0);
+    });
+
     it("should fail when the countType does not exist", async () => {
       // Don't pass on console.error message, as it is expected
       vi.spyOn(console, "error").mockImplementation(() => {});
