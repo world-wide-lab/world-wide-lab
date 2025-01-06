@@ -465,6 +465,15 @@ describe("API Routes", () => {
       expect(response.body).toMatchSnapshot();
     });
 
+    it("should fail when an unsupported cofiguration is provided", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/all?minResponseCount=2`)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
     it("should cache counts", async () => {
       vi.spyOn(sequelize.models.Session, "count");
 

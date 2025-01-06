@@ -620,21 +620,20 @@ routerPublic.post(
 routerPublic.get(
   "/study/:studyId/count/:countType",
   async (req: Request, res: Response, next: NextFunction) => {
-    const { studyId, countType } = req.params;
-    const { cacheFor, minResponseCount } = object({
-      cacheFor: number().integer().optional(),
-      minResponseCount: number()
-        .integer()
-        .test(
-          "allow-only-for-usingResponses",
-          "Setting minResponseCount is only supported for the countType 'usingResponses'",
-          (value) => countType === "usingResponses" || !!value,
-        )
-        .optional()
-        .default(1),
-    }).validateSync(req.query);
-
     try {
+      const { studyId, countType } = req.params;
+      const { cacheFor, minResponseCount } = object({
+        cacheFor: number().integer().optional(),
+        minResponseCount: number()
+          .integer()
+          .test(
+            "allow-only-for-usingResponses",
+            "Setting minResponseCount is only supported for the countType 'usingResponses'",
+            (value) => countType === "usingResponses" || !value,
+          )
+          .optional(),
+      }).validateSync(req.query);
+
       // Filter by studyId by default
       const where: { [key: string]: any } = { studyId };
       let getCount: (() => Promise<number>) | undefined;
@@ -647,6 +646,7 @@ routerPublic.get(
         // Use the correct separator per dialect
         const s = sequelize.getDialect() === "sqlite" ? "`" : '"';
         getCount = async () => {
+          const effectiveMinResponseCount = minResponseCount ?? 1;
           const result = await sequelize.query<{ count: number }>(
             `
               SELECT COUNT(*) as count FROM (
@@ -657,14 +657,14 @@ routerPublic.get(
                   ON ${s}Session${s}.${s}sessionId${s} = ${s}Responses${s}.${s}sessionId${s}
                 WHERE ${s}Session${s}.${s}studyId${s} = :studyId
                 GROUP BY ${s}Session${s}.${s}sessionId${s}
-                HAVING COUNT(${s}Responses${s}.${s}responseId${s}) >= :minResponseCount
+                HAVING COUNT(${s}Responses${s}.${s}responseId${s}) >= :effectiveMinResponseCount
               );
             `,
             {
               type: Sequelize.QueryTypes.SELECT,
               replacements: {
                 studyId,
-                minResponseCount,
+                effectiveMinResponseCount,
               },
             },
           );

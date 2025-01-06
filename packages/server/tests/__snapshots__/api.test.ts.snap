@@ -46,6 +46,13 @@ exports[`API Routes > GET /session/:sessionId > should retrieve public informati
 }
 `;
 
+exports[`API Routes > GET /study/:studyId/count/:countType > should fail when an unsupported cofiguration is provided 1`] = `
+{
+  "error": "Setting minResponseCount is only supported for the countType 'usingResponses'",
+  "type": "ValidationError",
+}
+`;
+
 exports[`API Routes > GET /study/:studyId/count/:countType > should fail when the countType does not exist 1`] = `
 {
   "error": "Unknown countType: non-existent-type",
