@@ -18,7 +18,7 @@ When starting World-Wide-Lab for the first time, you will be greeted with the we
 
 ### Trying it Out 🚀
 
-If you want to give World-Wide-Lab a try, you can download our [jsPsych example study](https://github.com/world-wide-lab/world-wide-lab/blob/main/examples/study-jsPsych/index.html) and open it in your browser (make sure to also download the two images and put them in a folder "img" or use the [online version](https://world-wide-lab.github.io/world-wide-lab/examples/study-jsPsych/index.html)).
+If you want to give World-Wide-Lab a try, you can download our [jsPsych example study](https://github.com/world-wide-lab/world-wide-lab/blob/main/docs/public/examples/study-jsPsych/index.html) and open it in your browser (make sure to also download the two images and put them in a folder "img" or use the [online version](https://world-wide-lab.github.io/world-wide-lab/examples/study-jsPsych/index.html)).
 
 You should see data pop up in the `example` study in World-Wide-Lab as you play through the experiment.
 
