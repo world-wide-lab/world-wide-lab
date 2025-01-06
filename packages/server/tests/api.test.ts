@@ -417,6 +417,33 @@ describe("API Routes", () => {
       expect(response.body.count).toBe(1);
     });
 
+    it("should return the correct count (for sessions with 2 responses)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=2`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(1);
+    });
+
+    it("should return the correct count (for sessions with 1 response)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(2);
+    });
+
+    it("should return the correct count (for sessions with 50 responses)", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/usingResponses?minResponseCount=50`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.count).toBe(0);
+    });
+
     it("should fail when the countType does not exist", async () => {
       // Don't pass on console.error message, as it is expected
       vi.spyOn(console, "error").mockImplementation(() => {});
@@ -432,6 +459,15 @@ describe("API Routes", () => {
     it("should fail when the study does not exist", async () => {
       const response = await endpoint
         .get("/v1/study/non-existent-study/count/all")
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchSnapshot();
+    });
+
+    it("should fail when an unsupported cofiguration is provided", async () => {
+      const response = await endpoint
+        .get(`/v1/study/${studyId}/count/all?minResponseCount=2`)
         .send();
 
       expect(response.status).toBe(400);

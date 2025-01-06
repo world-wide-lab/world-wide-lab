@@ -589,7 +589,8 @@ routerPublic.post(
  *           type: string
  *           enum: [
  *             all,
- *             finished
+ *             finished,
+ *             usingResponses
  *          ]
  *         required: true
  *         description: >
@@ -600,6 +601,14 @@ routerPublic.post(
  *           type: integer
  *         required: false
  *         description: Cache the result for this many seconds.
+ *       - in: query
+ *         name: minResponseCount
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Minimum number of responses before a session is counted.
+ *           Only used for countType = usingResponses, defaults to 1.
  *     responses:
  *       '200':
  *         description: Successfully retrieved study count.
@@ -611,26 +620,66 @@ routerPublic.post(
 routerPublic.get(
   "/study/:studyId/count/:countType",
   async (req: Request, res: Response, next: NextFunction) => {
-    const { studyId, countType } = req.params;
-    const { cacheFor } = object({
-      cacheFor: number().integer().optional(),
-    }).validateSync(req.query);
-
     try {
+      const { studyId, countType } = req.params;
+      const { cacheFor, minResponseCount } = object({
+        cacheFor: number().integer().optional(),
+        minResponseCount: number()
+          .integer()
+          .test(
+            "allow-only-for-usingResponses",
+            "Setting minResponseCount is only supported for the countType 'usingResponses'",
+            (value) => countType === "usingResponses" || !value,
+          )
+          .optional(),
+      }).validateSync(req.query);
+
       // Filter by studyId by default
       const where: { [key: string]: any } = { studyId };
+      let getCount: (() => Promise<number>) | undefined;
+
       if (countType === "all") {
         // Do nothing, retrieve all
       } else if (countType === "finished") {
         where.finished = true;
+      } else if (countType === "usingResponses") {
+        // Use the correct separator per dialect
+        const s = sequelize.getDialect() === "sqlite" ? "`" : '"';
+        getCount = async () => {
+          const effectiveMinResponseCount = minResponseCount ?? 1;
+          const result = await sequelize.query<{ count: number }>(
+            `
+              SELECT COUNT(*) as count FROM (
+                SELECT
+                  ${s}Session${s}.${s}sessionId${s}
+                FROM ${s}wwl_sessions${s} AS ${s}Session${s}
+                INNER JOIN ${s}wwl_responses${s} AS ${s}Responses${s}
+                  ON ${s}Session${s}.${s}sessionId${s} = ${s}Responses${s}.${s}sessionId${s}
+                WHERE ${s}Session${s}.${s}studyId${s} = :studyId
+                GROUP BY ${s}Session${s}.${s}sessionId${s}
+                HAVING COUNT(${s}Responses${s}.${s}responseId${s}) >= :effectiveMinResponseCount
+              );
+            `,
+            {
+              type: Sequelize.QueryTypes.SELECT,
+              replacements: {
+                studyId,
+                effectiveMinResponseCount,
+              },
+            },
+          );
+          return result[0].count;
+        };
       } else {
         throw new AppError(`Unknown countType: ${countType}`, 400);
       }
 
-      const getCount = async () =>
-        await sequelize.models.Session.count({
-          where,
-        });
+      if (!getCount) {
+        getCount = async () =>
+          await sequelize.models.Session.count({
+            where,
+          });
+      }
 
       const count =
         cacheFor === undefined
