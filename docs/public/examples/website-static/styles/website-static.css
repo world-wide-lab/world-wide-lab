@@ -2,7 +2,7 @@
 .hero {
   position: relative;
   overflow: hidden;
-  border-bottom: 1px solid var(--bulma-border)
+  border-bottom: 1px solid var(--bulma-border);
 }
 .hero-background {
   position: absolute;
@@ -33,8 +33,9 @@
 .card:hover {
   --g: 40;
   --a: 0.05;
-  border-color: #AAA;
-  box-shadow: 0 1em 2em 0 rgba(var(--g), var(--g), var(--g), var(--a)), 0 2em 4em 0 rgba(var(--g), var(--g), var(--g), var(--a));
+  border-color: #aaa;
+  box-shadow: 0 1em 2em 0 rgba(var(--g), var(--g), var(--g), var(--a)), 0 2em
+    4em 0 rgba(var(--g), var(--g), var(--g), var(--a));
   transform: translateY(-.5em);
 }
 
