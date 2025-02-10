@@ -12,7 +12,8 @@ hero:
   actions:
     - theme: brand
       text: Check out the Demo
-      link: https://worldwidelab.org/redirect-demo.html
+      link: /redirect-demo.html
+      target: _blank
     - theme: alt
       text: Get Started
       link: /guides/getting-started
