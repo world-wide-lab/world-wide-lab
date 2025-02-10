@@ -12,7 +12,7 @@ hero:
   actions:
     - theme: brand
       text: Check out the Demo
-      link: /redirect-demo.html
+      link: https://worldwidelab.org/redirect-demo.html
     - theme: alt
       text: Get Started
       link: /guides/getting-started
