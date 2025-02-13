@@ -179,56 +179,6 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
           `postgresql://${this.config.secret_dbUsername}:${this.config.secret_dbPassword}@${serverName}.postgres.database.azure.com/${dbName}?sslmode=require`,
       );
 
-    // Create a container group
-    // const containerGroup = new azureNative.containerinstance.ContainerGroup("containerGroup", {
-    //     resourceGroupName: resourceGroup.name,
-    //     location: resourceGroup.location,
-    //     osType: "Linux",
-    //     containers: [{
-    //         name: "mycontainer",
-    //         image: "nginx",
-    //         resources: {
-    //             requests: {
-    //                 cpu: 1,
-    //                 memoryInGB: 1.5,
-    //             },
-    //         },
-    //         environmentVariables: [
-    //           { name: "NODE_ENV", value: "production" },
-    //           { name: "PORT", value: `${this.config.containerPort}` },
-    //           { name: "DATABASE_URL", value: dbConnectionString },
-    //           { name: "ADMIN_UI", value: "true" },
-    //           { name: "USE_AUTHENTICATION", value: "true" },
-    //           { name: "REPLICATION_ROLE", value: "source" },
-    //           {
-    //             name: "ADMIN_AUTH_DEFAULT_EMAIL",
-    //             value: this.config.secret_wwlAdminAuthDefaultEmail,
-    //           },
-    //           {
-    //             name: "ADMIN_AUTH_DEFAULT_PASSWORD",
-    //             value: this.config.secret_wwlAdminAuthDefaultPassword,
-    //           },
-    //           {
-    //             name: "ADMIN_AUTH_SESSION_SECRET",
-    //             value: this.config.secret_wwlAdminAuthSessionSecret,
-    //           },
-    //           { name: "DEFAULT_API_KEY", value: this.config.secret_wwlDefaultApiKey },
-    //           { name: "DATABASE_CHUNK_SIZE", value: "5000" },
-    //           { name: "LOGGING_HTTP", value: "false" },
-    //           { name: "LOGGING_SQL", value: "false" },
-    //           { name: "LOGGING_LEVEL_CONSOLE", value: "info" },
-    //         ],
-    //     }],
-    //     restartPolicy: "Always",
-    //     ipAddress: {
-    //         type: "Public",
-    //         ports: [{
-    //             port: this.config.containerPort,
-    //             protocol: "TCP",
-    //         }],
-    //     },
-    // });
-
     // Create a container app environment
     const containerAppEnvironment = new azureNative.app.ManagedEnvironment(
       "wwl-containerapp-environment",
