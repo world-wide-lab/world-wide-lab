@@ -1,4 +1,8 @@
 import { WwlAwsDeployment, WwlAzureDeployment } from "@world-wide-lab/deploy";
+import dotenv from "dotenv";
+
+// Load environment variables from a .env file
+dotenv.config();
 
 new WwlAzureDeployment({
   // Load from .env
