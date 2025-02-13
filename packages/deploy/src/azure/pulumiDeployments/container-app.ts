@@ -160,6 +160,17 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
       },
     );
 
+    // Add firewall rule to allow Azure services
+    const firewallRule = new azureNative.dbforpostgresql.FirewallRule(
+      "allowAzureServices",
+      {
+        resourceGroupName: resourceGroup.name,
+        serverName: postgresServer.name,
+        startIpAddress: "0.0.0.0",
+        endIpAddress: "0.0.0.0", // Special case: 0.0.0.0 allows Azure services
+      },
+    );
+
     // Get the connection string for the PostgreSQL server
     const dbConnectionString = pulumi
       .all([postgresServer.name, db.name])
