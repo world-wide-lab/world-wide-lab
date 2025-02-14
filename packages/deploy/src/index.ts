@@ -13,10 +13,12 @@ import { WwlAwsDeployment } from "./aws/";
 import { WwlAwsAppRunnerAutomatedDeployment } from "./aws/automatedDeployments/app-runner";
 import { WwlAwsDeploymentConfig } from "./aws/pulumiDeployments/_base";
 import { WwlAzureDeployment } from "./azure/";
+import { WwlAzureContainerAppAutomatedDeployment } from "./azure/automatedDeployments/container-app";
 import { WwlAzureDeploymentConfig } from "./azure/pulumiDeployments/container-app";
 
 export const AutomatedDeployments = {
   aws_apprunner: WwlAwsAppRunnerAutomatedDeployment,
+  azure_containerapp: WwlAzureContainerAppAutomatedDeployment,
 };
 
 export {

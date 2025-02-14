@@ -185,14 +185,6 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
       {
         resourceGroupName: resourceGroup.name,
         location: resourceGroup.location,
-        // appLogsConfiguration: {
-        //     destination: "log-analytics",
-        //     logAnalyticsConfiguration: {
-        //         customerId: "your-log-analytics-workspace-id",
-        //         sharedKey: "your-log-analytics-shared-key",
-        //     },
-        // },
-        // daprAIConnectionString: "your-dapr-ai-connection-string",
       },
     );
 
