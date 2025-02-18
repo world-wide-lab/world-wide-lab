@@ -65,5 +65,5 @@ World-Wide-Lab has ready-made integrations for popular experimental libraries as
 With this in place, you are ready to start collecting data 🎉
 
 ::: tip
-If you want to kick-start your own citizen science website you can also try our [simple starter template](https://github.com/world-wide-lab/world-wide-lab/blob/main/examples/website-static/) ([preview](https://world-wide-lab.github.io/world-wide-lab/examples/website-static/index.html)).
+If you want to kick-start your own citizen science website you can also try our [simple starter template](https://github.com/world-wide-lab/world-wide-lab/tree/main/docs/public/examples/website-static) ([preview](https://world-wide-lab.github.io/world-wide-lab/examples/website-static/index.html)).
 :::
