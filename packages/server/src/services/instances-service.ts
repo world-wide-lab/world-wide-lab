@@ -63,14 +63,7 @@ class InstancesService extends Service {
         startTime: new Date(),
         lastHeartbeat: new Date(),
         isPrimary: false,
-        metadata: {
-          platform: os.platform(),
-          arch: os.arch(),
-          nodeVersion: process.version,
-          cpus: os.cpus().length,
-          memory: os.totalmem(),
-          freeMemory: os.freemem(),
-        },
+        metadata: this.getMetadata(),
       });
       // @ts-ignore
       this.instanceId = instance.instanceId;
@@ -88,9 +81,7 @@ class InstancesService extends Service {
       await sequelize.models.Instance.update(
         {
           lastHeartbeat: new Date(),
-          metadata: {
-            ...this.getMetadata(),
-          },
+          metadata: this.getMetadata(),
         },
         { where: { instanceId: this.instanceId } },
       );
@@ -214,6 +205,7 @@ class InstancesService extends Service {
   private getMetadata() {
     return {
       version: config.version,
+      systemUptime: os.uptime(),
       platform: os.platform(),
       arch: os.arch(),
       nodeVersion: process.version,
