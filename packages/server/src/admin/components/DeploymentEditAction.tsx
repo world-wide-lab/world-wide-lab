@@ -32,6 +32,8 @@ const getActionElementCss = (
   suffix: string,
 ) => getDataCss(resourceId, actionName, suffix);
 
+const EDIT_READONLY_PROPERTIES = ["type", "stackConfig"];
+
 const getDefaultStackConfig = (type: string) => {
   switch (type) {
     case "aws_apprunner":
@@ -89,8 +91,11 @@ const DeploymentEditAction: React.FC<ActionProps> = (props) => {
     loading,
     setRecord,
   } = useRecord(initialRecord, resource.id);
+
   const { translateButton } = useTranslation();
   const navigate = useNavigate();
+
+  const isNew = action.name !== "edit";
 
   // Handle type changes to update default configs
   const handleTypeChange = (
@@ -104,6 +109,7 @@ const DeploymentEditAction: React.FC<ActionProps> = (props) => {
       }
       handleChange(propertyPath, value);
     }
+    handleChange(propertyOrRecord, value);
   };
 
   const updateDefaults = (type: string) => {
@@ -116,7 +122,7 @@ const DeploymentEditAction: React.FC<ActionProps> = (props) => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: This should only be run once
   useEffect(() => {
-    if (!initialRecord?.params?.id) {
+    if (!initialRecord?.id) {
       updateDefaults(initialRecord?.params?.type);
     }
   }, [initialRecord]);
@@ -163,15 +169,6 @@ const DeploymentEditAction: React.FC<ActionProps> = (props) => {
       <DrawerContent data-css={contentTag}>
         {action?.showInDrawer ? <ActionHeader {...props} /> : null}
 
-        <MessageBox
-          mb="xxl"
-          variant="warning"
-          message="Warning: Changing the Deployment Type"
-        >
-          Changing the deployment type will reset the stack and deployment
-          configuration to default values.
-        </MessageBox>
-
         {action.layout
           ? action.layout.map((layoutElement, i) => (
               <LayoutElementRenderer
@@ -184,16 +181,27 @@ const DeploymentEditAction: React.FC<ActionProps> = (props) => {
                 record={record}
               />
             ))
-          : resource.editProperties.map((property) => (
-              <BasePropertyComponent
-                key={property.propertyPath}
-                where="edit"
-                onChange={handleTypeChange}
-                property={property}
-                resource={resource}
-                record={record}
-              />
-            ))}
+          : resource.editProperties.map((property) => {
+              let where: "show" | "edit" = "edit";
+              if (
+                !isNew &&
+                EDIT_READONLY_PROPERTIES.includes(property.propertyPath)
+              ) {
+                console.log(property.propertyPath);
+                where = "show";
+              }
+
+              return (
+                <BasePropertyComponent
+                  key={property.propertyPath}
+                  where={where}
+                  onChange={handleTypeChange}
+                  property={property}
+                  resource={resource}
+                  record={record}
+                />
+              );
+            })}
       </DrawerContent>
       <DrawerFooter data-css={footerTag}>
         <Button
