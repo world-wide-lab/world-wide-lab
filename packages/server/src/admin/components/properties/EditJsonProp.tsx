@@ -38,7 +38,7 @@ const ShowJsonProp = (props: BasePropertyProps) => {
           newValue = JSON.stringify(newValue);
         }
 
-        setValue(newValue);
+        updateValue(newValue);
       }
     }
   }, [record?.params?.[property.name]]);
