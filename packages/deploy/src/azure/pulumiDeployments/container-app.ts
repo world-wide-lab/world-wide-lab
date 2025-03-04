@@ -128,6 +128,20 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
       }
     }
 
+    // Conver potential strings to numbers (due to adminJs casting)
+    const numericKeys = [
+      "containerPort",
+      "cpu",
+      "memory",
+      "minCapacity",
+      "maxCapacity",
+    ];
+    for (const key of numericKeys) {
+      if (typeof this.config[key] === "string") {
+        this.config[key] = Number.parseFloat(this.config[key]);
+      }
+    }
+
     // Create an Azure Resource Group
     const resourceGroup = new azureNative.resources.ResourceGroup(
       "wwlResourceGroup",

@@ -59,6 +59,9 @@ const getDefaultDeploymentConfig = (type: string) => {
     secret_wwlDefaultApiKey: randomString(20),
   };
 
+  // NOTE: AdminJS seems to automatically cast all values to strings,
+  // so we'll have to manually cast numbers in the deployments themselves.
+
   switch (type) {
     case "aws_apprunner":
       return {
@@ -66,15 +69,15 @@ const getDefaultDeploymentConfig = (type: string) => {
 
         dbDeletionProtection: true,
 
-        cpu: 256,
-        memory: 512,
+        cpu: "256",
+        memory: "512",
       };
     case "azure_containerapp":
       return {
         ...defaultConfig,
 
-        cpu: 0.5,
-        memory: 1,
+        cpu: "0.5",
+        memory: "1",
       };
     default:
       return {};
