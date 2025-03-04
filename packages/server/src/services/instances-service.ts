@@ -31,9 +31,11 @@ class InstancesService extends Service {
     // Start periodic primary instance check
     this.primaryCheckInterval = setInterval(async () => {
       await this.checkPrimaryStatus();
-
       await this.cleanupStaleInstances();
     }, PRIMARY_CHECK_INTERVAL);
+
+    await this.checkPrimaryStatus();
+    await this.cleanupStaleInstances();
   }
 
   async onStop(): Promise<void> {
@@ -68,9 +70,6 @@ class InstancesService extends Service {
       // @ts-ignore
       this.instanceId = instance.instanceId;
       logger.info(`Instance registered with ID: ${this.shortInstanceId}`);
-
-      // Check primary status immediately after registration
-      await this.checkPrimaryStatus();
     } catch (error) {
       logger.error("Failed to register instance:", error);
     }
