@@ -80,7 +80,9 @@ describe("Instances Service", () => {
     const instance = instances[0];
     expect(instance.getDataValue("ipAddress")).toBe("192.168.1.2");
     expect(instance.getDataValue("hostname")).toBe("test-host");
-    expect(instance.getDataValue("port").toString()).toBe(config.port.toString());
+    expect(instance.getDataValue("port").toString()).toBe(
+      config.port.toString(),
+    );
 
     // Should become primary since it's the only instance
     expect(instancesService.isPrimaryInstance()).toBe(true);
