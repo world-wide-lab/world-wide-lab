@@ -17,6 +17,8 @@ permissions:
 jobs:
   build-electron:
     runs-on: ${{ matrix.os }}
+    env:
+        NODE_OPTIONS: "--max-old-space-size=4096"
 
     strategy:
       matrix:
