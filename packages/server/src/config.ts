@@ -118,6 +118,7 @@ const config = {
   instances: {
     // Only enabled in development mode (by default)
     visible: getBooleanFromEnv("INSTANCES_VISIBLE", !electronApp),
+    enabled: getBooleanFromEnv("INSTANCES_ENABLED", !electronApp),
   },
 
   replication: {
@@ -174,6 +175,12 @@ if (config.admin.enabled && config.admin.auth.enabled) {
       "When authentication for Admin UI is enabled, credentials and session secret have to be set as well.",
     );
   }
+}
+
+if (!config.instances.enabled && config.instances.visible) {
+  throw new Error(
+    "INSTANCES_VISIBLE can only be set to true if INSTANCES_ENABLED is also set to true.",
+  );
 }
 
 export default config;

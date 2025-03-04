@@ -1,10 +1,15 @@
+import config from "../config.js";
 import { instancesService } from "./instances-service.js";
 import type Service from "./service.js";
 
 /**
  * Array of registered services.
  */
-export const services: Service[] = [instancesService];
+export const services: Service[] = [];
+
+if (config.instances.enabled) {
+  services.push(instancesService);
+}
 
 /**
  * Starts all registered services.
