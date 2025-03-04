@@ -11,11 +11,12 @@ hero:
     alt: logo
   actions:
     - theme: brand
+      text: Check out the Demo
+      link: /redirect-demo.html
+      target: _blank
+    - theme: alt
       text: Get Started
       link: /guides/getting-started
-    - theme: alt
-      text: Download the App
-      link: https://github.com/world-wide-lab/world-wide-lab/releases/latest
 
 features:
   - title: Easy to Use
