@@ -84,18 +84,24 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
   /**
    * Create a new deployment of WWL on AWS App Runner.
    * @param config The configuration for this deployment.
+   * @param stackConfig The stack configuration for the pulumi stack (this is usually only needed in exceptional circumstances).
    */
-  constructor(config?: WwlAzureDeploymentConfig) {
+  constructor(config?: WwlAzureDeploymentConfig, stackConfig?: any) {
     super();
 
     // Load environment variables from a .env file
     // TODO: Should this be moved somewhere else?
     dotenv.config();
 
+    // Allow setting the location via the stack configuration (if it exists)
+    // This is mainly for consistency with the behaviour of the AWS autoamted deployments,
+    // where the region has to be set on the stack (not so in Azure)
+    const defaultLocation = stackConfig?.location || "eastus";
+
     // Generate the final configuration by merging in defaults
     const defaultConfig: FlipOptional<WwlAzureDeploymentConfig> = {
+      location: defaultLocation,
       // Deployment Configuration
-      location: "eastus",
       containerPort: 80,
       cpu: 0.5,
       memory: 1,

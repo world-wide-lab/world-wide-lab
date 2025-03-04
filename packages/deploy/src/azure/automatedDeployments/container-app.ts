@@ -8,7 +8,7 @@ import { azureRequirements } from "./requirements";
 export class WwlAzureContainerAppAutomatedDeployment extends WwlAutomatedDeployment {
   requirements = azureRequirements;
 
-  defaultStackConfiguration = {}
+  defaultStackConfiguration = {};
 
   PulumiDeployment: typeof WwlPulumiDeployment = WwlAzureContainerAppDeployment;
 

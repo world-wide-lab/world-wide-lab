@@ -1,4 +1,5 @@
 import { Box, Icon, Label, Text } from "@adminjs/design-system";
+import type { BasePropertyProps } from "adminjs";
 import { useCallback, useEffect, useState } from "react";
 
 import { Editor, loader } from "@monaco-editor/react";
@@ -11,7 +12,7 @@ loader.config({
   },
 });
 
-const ShowJsonProp = (props: any) => {
+const ShowJsonProp = (props: BasePropertyProps) => {
   const { property, record, onChange } = props;
 
   const object = extractJsonObjectFromRecord(property.name, record);
@@ -22,11 +23,32 @@ const ShowJsonProp = (props: any) => {
       ? JSON.stringify(object, undefined, 2)
       : property.custom.defaultValue || "";
 
+  const [value, setValue] = useState(defaultValue);
   const [jsonStatus, setJsonStatus] = useState<string>("");
+
+  // Update value when property changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Seems to be confused by nested dependencies
+  useEffect(() => {
+    let newValue = record?.params?.[property.name];
+    console.log(newValue);
+    if (newValue) {
+      if (newValue !== value) {
+        // Make sure the new value is a string
+        if (typeof newValue !== "string") {
+          newValue = JSON.stringify(newValue);
+        }
+
+        setValue(newValue);
+      }
+    }
+  }, [record?.params?.[property.name]]);
+
   const updateValue = (newValue: string | undefined) => {
+    if (newValue === undefined) return;
+    setValue(newValue);
     try {
-      // @ts-ignore
       const parsedNewValue = JSON.parse(newValue);
+      // @ts-ignore - This should be caught by try/catch
       onChange(property.path, parsedNewValue);
       setJsonStatus("success");
     } catch (err) {
@@ -37,7 +59,7 @@ const ShowJsonProp = (props: any) => {
   const handleUpdate = useCallback(updateValue, []);
 
   // Set default value
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: This should only run once
   useEffect(() => {
     if (object === undefined && property.custom.defaultValue) {
       updateValue(defaultValue);
@@ -71,7 +93,7 @@ const ShowJsonProp = (props: any) => {
       <Editor
         options={{ minimap: { enabled: false } }}
         onChange={handleUpdate}
-        defaultValue={defaultValue}
+        value={value}
         theme="vs-dark"
         defaultLanguage="json"
         height="8em"

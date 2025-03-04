@@ -40,4 +40,7 @@ const azureOnlyRequirements: Requirement[] = [
   },
 ];
 
-export const azureRequirements = [...commonRequirements, ...azureOnlyRequirements];
+export const azureRequirements = [
+  ...commonRequirements,
+  ...azureOnlyRequirements,
+];

@@ -53,12 +53,15 @@ const deploymentResource =
               direction: "desc",
             },
             actions: {
-              new: {},
+              new: {
+                component: Components.DeploymentEditAction,
+              },
               show: {
                 component: Components.DeploymentShowAction,
               },
               edit: {
                 isAccessible: true,
+                component: Components.DeploymentEditAction,
               },
               delete: {
                 isAccessible: true,
@@ -112,17 +115,16 @@ const deploymentResource =
                 description: "The cloud provider and type of deploymennt.",
                 availableValues: [
                   { value: "aws_apprunner", label: "AWS: App Runner" },
+                  {
+                    value: "azure_containerapp",
+                    label: "Azure: Container App",
+                  },
                 ],
               },
               stackConfig: {
                 position: 3,
                 description:
                   "The configuration of the deployment stack. Please note that changing anything in here after deployment can lead to issues with updating or destroying the deployment.",
-                custom: {
-                  defaultValue: ["{", '  "awsRegion": "us-east-1"', "}"].join(
-                    "\n",
-                  ),
-                },
                 components: {
                   show: Components.ShowJsonProp,
                   edit: Components.EditJsonProp,
@@ -139,25 +141,6 @@ const deploymentResource =
                 position: 5,
                 description:
                   "The configuration of the deployment itself. This includes the database credentials and other sensitive information. These values can be altered after deployment, but we recommend doing this only if strictly necessary.",
-                custom: {
-                  defaultValue: [
-                    "{",
-                    `  "secret_dbUsername": "user_${randomString(6)}",`,
-                    `  "secret_dbPassword": "${randomString(20)}",`,
-                    `  "secret_wwlAdminAuthDefaultEmail": "hello_${randomString(
-                      6,
-                    )}@example.com",`,
-                    `  "secret_wwlAdminAuthDefaultPassword": "${randomString(
-                      20,
-                    )}",`,
-                    `  "secret_wwlAdminAuthSessionSecret": "${randomString(
-                      20,
-                    )}",`,
-                    `  "secret_wwlDefaultApiKey": "${randomString(20)}",`,
-                    '  "dbDeletionProtection": true',
-                    "}",
-                  ].join("\n"),
-                },
                 components: {
                   show: Components.ShowJsonProp,
                   edit: Components.EditJsonProp,

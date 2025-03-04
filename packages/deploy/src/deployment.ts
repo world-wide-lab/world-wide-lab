@@ -26,7 +26,9 @@ export abstract class WwlAutomatedDeployment {
     combinedStackConfiguration: StackConfiguration &
       typeof this.defaultStackConfiguration,
   ): Promise<void>;
+
   private pulumiStack: automation.Stack;
+
   async initStack(
     projectName: string,
     stackName: string,
@@ -60,7 +62,10 @@ export abstract class WwlAutomatedDeployment {
       stackName,
       program: async () => {
         // @ts-ignore - ts seems to not be able to comprehend, that this can be overwritten
-        await new this.PulumiDeployment(deploymentConfiguration);
+        await new this.PulumiDeployment(
+          deploymentConfiguration,
+          stackConfiguration,
+        );
       },
     };
 
