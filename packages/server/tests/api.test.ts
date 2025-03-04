@@ -673,22 +673,6 @@ describe("API Routes", () => {
       });
     });
 
-    it("LEGACY-COMPAT should successfully add a leaderboard score", async () => {
-      // Remove this test once the legacy compatibility is removed
-      // Ideally in the next major version
-      const response = await endpoint
-        .put(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
-        .send({
-          score: 99,
-          publicIndividualName: "Sam Flynn",
-          sessionId,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body).toHaveProperty("leaderboardScoreId");
-    });
-
     it("should successfully add a leaderboard score", async () => {
       const response = await endpoint
         .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
