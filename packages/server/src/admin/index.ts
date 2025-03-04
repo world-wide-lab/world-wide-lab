@@ -175,6 +175,76 @@ const deploymentResource =
       ]
     : [];
 
+const instancesResource = config.instances.visible
+  ? [
+      {
+        resource: sequelize.models.Instance,
+        options: {
+          navigation: {
+            name: null,
+            icon: "Server",
+          },
+          sort: {
+            sortBy: "startTime",
+            direction: "desc",
+          },
+          actions: {
+            new: {
+              isAccessible: false,
+            },
+            edit: {
+              isAccessible: false,
+            },
+            delete: {
+              isAccessible: false,
+            },
+          },
+          properties: {
+            instanceId: {
+              isTitle: true,
+              isVisible: { list: true, filter: true, show: true },
+            },
+            isPrimary: {
+              isVisible: { list: true, filter: true, show: true },
+              position: 1,
+            },
+            ipAddress: {
+              isVisible: { list: true, filter: true, show: true },
+            },
+            hostname: {
+              isVisible: { list: false, filter: true, show: true },
+            },
+            port: {
+              isVisible: { list: false, filter: true, show: true },
+            },
+            startTime: {
+              isVisible: { list: true, filter: true, show: true },
+              position: 2,
+            },
+            lastHeartbeat: {
+              isVisible: { list: true, filter: true, show: true },
+            },
+            metadata: {
+              isVisible: { list: false, filter: false, show: true },
+              components: {
+                show: Components.ShowJsonProp,
+              },
+              description: "Additional information about the instance",
+            },
+            createdAt: {
+              isVisible: { list: false, filter: true, show: true },
+              description: columnComments.createdAt,
+            },
+            updatedAt: {
+              isVisible: { list: false, filter: true, show: true },
+              description: columnComments.updatedAt,
+            },
+          },
+        },
+      },
+    ]
+  : [];
+
 const electronOnlySettings = {
   // Use pre-built adminjs assets in electron app
   assetsCDN: `${config.root}:${config.port}/static/adminjs/`,
@@ -459,6 +529,7 @@ const admin = new AdminJS({
     },
 
     ...deploymentResource,
+    ...instancesResource,
   ],
   pages,
 
@@ -480,6 +551,7 @@ const admin = new AdminJS({
           wwl_deployments: "Deployments",
           wwl_leaderboards: "Leaderboards",
           wwl_leaderboard_scores: "Leaderboard Scores",
+          wwl_internal_instances: "Instances",
         },
         resources: {
           wwl_studies: {
@@ -513,6 +585,11 @@ const admin = new AdminJS({
             actions: {
               new: "Create New Deployment",
               show: "Manage Deployment",
+            },
+          },
+          wwl_internal_instances: {
+            actions: {
+              show: "View Instance Details",
             },
           },
         },

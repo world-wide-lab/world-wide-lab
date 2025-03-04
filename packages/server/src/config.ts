@@ -64,13 +64,15 @@ dotenvConfig({
   path: getValueFromEnv("WWL_ENV_FILE") || ".env",
 });
 
+const electronApp = getBooleanFromEnv("WWL_ELECTRON_APP", false);
+
 const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",
   port: getValueFromEnv("PORT") || 8787,
 
   version: VERSION,
 
-  electronApp: getBooleanFromEnv("WWL_ELECTRON_APP", false),
+  electronApp,
 
   logging: {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",
@@ -112,6 +114,12 @@ const config = {
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
   leaderboardsToCreate: getArrayFromEnv("CREATE_LEADERBOARDS"),
+
+  instances: {
+    // Only enabled in development mode (by default)
+    visible: getBooleanFromEnv("INSTANCES_VISIBLE", !electronApp),
+    enabled: getBooleanFromEnv("INSTANCES_ENABLED", !electronApp),
+  },
 
   replication: {
     role: getStringFromEnv("REPLICATION_ROLE", null) as
@@ -167,6 +175,12 @@ if (config.admin.enabled && config.admin.auth.enabled) {
       "When authentication for Admin UI is enabled, credentials and session secret have to be set as well.",
     );
   }
+}
+
+if (!config.instances.enabled && config.instances.visible) {
+  throw new Error(
+    "INSTANCES_VISIBLE can only be set to true if INSTANCES_ENABLED is also set to true.",
+  );
 }
 
 export default config;
