@@ -1,20 +1,10 @@
-/**
- * Abstract base class for services
- */
-export abstract class Service {
-  async onStart(): Promise<void> {
-    // Default implementation does nothing
-  }
-
-  async onStop(): Promise<void> {
-    // Default implementation does nothing
-  }
-}
+import { instancesService } from "./instances-service.js";
+import type Service from "./service.js";
 
 /**
  * Array of registered services.
  */
-export const services: Service[] = [];
+export const services: Service[] = [instancesService];
 
 /**
  * Starts all registered services.
