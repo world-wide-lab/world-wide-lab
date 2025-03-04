@@ -11,6 +11,7 @@ import { logger } from "./logger.js";
 
 import { ensureLeaderboardsExist } from "./db/ensureLeaderboardsExist.js";
 import { ensureStudiesExist } from "./db/ensureStudiesExist.js";
+import { startServices } from "./services/index.js";
 
 // Export Server type for convenience
 export type Server = HTTPServer;
@@ -53,6 +54,9 @@ async function init(): Promise<HTTPServer> {
   if (config.leaderboardsToCreate && config.leaderboardsToCreate.length > 0) {
     await ensureLeaderboardsExist(sequelize, config.leaderboardsToCreate);
   }
+
+  // Start any registered services running in the background
+  startServices();
 
   // Start the server
   const root = config.root;
