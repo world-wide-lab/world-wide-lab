@@ -6,7 +6,7 @@ World-Wide-Lab is currently in beta, so we might still be tweaking a few things 
 
 ## Desktop Application
 
-The easiest way to get started with World-Wide-Lab is to use the Desktop Application which automatically includes everything you will need to run your own local experiments. The Desktop App is available for Windows, Mac, and Linux and can be [⬇️ downloaded here](https://github.com/world-wide-lab/world-wide-lab/releases/latest).
+The easiest way to get started with World-Wide-Lab is to use the Desktop Application which automatically includes everything you will need to run your own local experiments. The Desktop App is available for Windows, Mac, and Linux and can be [⬇️ downloaded here](/guides/download-desktop.html).
 
 ::: info
 Even if you plan to use the World-Wide-Lab Server, we recommend to try out the Desktop Application first to get to know the platform, before setting up an online server.
@@ -65,5 +65,5 @@ World-Wide-Lab has ready-made integrations for popular experimental libraries as
 With this in place, you are ready to start collecting data 🎉
 
 ::: tip
-If you want to kick-start your own citizen science website you can also try our [simple starter template](https://github.com/world-wide-lab/world-wide-lab/blob/main/examples/website-static/) ([preview](https://world-wide-lab.github.io/world-wide-lab/examples/website-static/index.html)).
+If you want to kick-start your own citizen science website you can also try our [simple starter template](https://github.com/world-wide-lab/world-wide-lab/tree/main/docs/public/examples/website-static) ([preview](https://world-wide-lab.github.io/world-wide-lab/examples/website-static/index.html)).
 :::
