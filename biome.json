@@ -5,7 +5,8 @@
       "docs/.vitepress/cache/**",
       ".adminjs/**",
       "monaco-editor/**",
-      "packages/server/static/adminjs/**"
+      "packages/server/static/adminjs/**",
+      "*.min.css"
     ]
   },
   "formatter": {

@@ -1,6 +1,10 @@
-import { WwlAwsDeployment } from "@world-wide-lab/deploy";
+import { WwlAwsDeployment, WwlAzureDeployment } from "@world-wide-lab/deploy";
+import dotenv from "dotenv";
 
-new WwlAwsDeployment({
+// Load environment variables from a .env file
+dotenv.config();
+
+new WwlAzureDeployment({
   // Load from .env
   secret_dbUsername: process.env.DB_USERNAME as string,
   secret_dbPassword: process.env.DB_PASSWORD as string,

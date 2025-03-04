@@ -12,6 +12,8 @@ jobs:
   test-playwright:
     timeout-minutes: 60
     runs-on: macos-latest
+    env:
+        NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
