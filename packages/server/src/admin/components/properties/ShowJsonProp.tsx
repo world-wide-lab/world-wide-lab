@@ -15,7 +15,7 @@ const ShowJsonProp = (props: any) => {
 
   // Pretty print the object
   const formattedObject =
-    object !== undefined ? JSON.stringify(object, undefined, 2) : "";
+    object !== undefined ? JSON.stringify(object, undefined, 2) : "(empty)";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Automatic detection of dependencies is not correct
   useEffect(() => {
