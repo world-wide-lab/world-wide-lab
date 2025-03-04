@@ -64,13 +64,15 @@ dotenvConfig({
   path: getValueFromEnv("WWL_ENV_FILE") || ".env",
 });
 
+const electronApp = getBooleanFromEnv("WWL_ELECTRON_APP", false);
+
 const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",
   port: getValueFromEnv("PORT") || 8787,
 
   version: VERSION,
 
-  electronApp: getBooleanFromEnv("WWL_ELECTRON_APP", false),
+  electronApp,
 
   logging: {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",
@@ -112,6 +114,11 @@ const config = {
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
   leaderboardsToCreate: getArrayFromEnv("CREATE_LEADERBOARDS"),
+
+  instances: {
+    // Only enabled in development mode (by default)
+    visible: getBooleanFromEnv("INSTANCES_VISIBLE", !electronApp),
+  },
 
   replication: {
     role: getStringFromEnv("REPLICATION_ROLE", null) as
