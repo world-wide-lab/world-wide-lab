@@ -137,14 +137,14 @@ const config = {
     enabled: getBooleanFromEnv("ALERTS_ENABLED", !!alertsWebhookUrl),
     webhook_url: alertsWebhookUrl,
 
-    check_interval: getIntFromEnv("ALERTS_CHECK_INTERVAL") || 60, // in seconds
-    cooldown: getIntFromEnv("ALERTS_COOLDOWN") || 600, // in seconds
+    check_interval: getIntFromEnv("ALERTS_CHECK_INTERVAL") || 300, // in seconds
+    cooldown: getIntFromEnv("ALERTS_COOLDOWN") || 900, // in seconds
     // Scaling Alert: Send alert if the number of instances is above X
     scaling_enabled: getBooleanFromEnv("ALERTS_SCALING_ENABLED", true),
     scaling_threshold: getIntFromEnv("ALERTS_SCALING_THRESHOLD") || 1,
     // Session Alert: Send alert if there are X sessions in the last Y seconds
     sessions_enabled: getBooleanFromEnv("ALERTS_SESSIONS_ENABLED", true),
-    sessions_threshold: getIntFromEnv("ALERTS_SESSIONS_THRESHOLD") || 20,
+    sessions_threshold: getIntFromEnv("ALERTS_SESSIONS_THRESHOLD") || 50,
     sessions_window: getIntFromEnv("ALERTS_SESSIONS_WINDOW") || 300, // in seconds
   },
 };
