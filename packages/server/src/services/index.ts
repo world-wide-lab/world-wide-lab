@@ -1,4 +1,5 @@
 import config from "../config.js";
+import { alertsService } from "./alerts-service.js";
 import { instancesService } from "./instances-service.js";
 import type Service from "./service.js";
 
@@ -9,6 +10,9 @@ export const services: Service[] = [];
 
 if (config.instances.enabled) {
   services.push(instancesService);
+}
+if (config.alerts.enabled) {
+  services.push(alertsService);
 }
 
 /**
