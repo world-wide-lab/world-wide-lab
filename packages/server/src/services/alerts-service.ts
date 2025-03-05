@@ -26,7 +26,7 @@ class AlertsService extends Service {
     );
     this.checkInterval = setInterval(
       () => this.checkAlerts(),
-      config.alerts.check_interval,
+      config.alerts.check_interval * 1000, // Convert to ms
     );
 
     // Run an initial check

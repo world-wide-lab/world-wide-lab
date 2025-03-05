@@ -27,7 +27,7 @@ export abstract class Alert {
       // Only check if cooldown period is over
       if (
         this.lastAlertSent &&
-        Date.now() - this.lastAlertSent.getTime() < this.options.cooldown
+        Date.now() - this.lastAlertSent.getTime() < this.options.cooldown * 1000 // Convert seconds to ms
       ) {
         return;
       }

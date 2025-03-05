@@ -9,8 +9,8 @@ import { instancesService } from "../src/services/instances-service.js";
 
 // Override the config for testing
 config.alerts.webhook_url = "https://fake-webhook.test";
-config.alerts.cooldown = 1000; // 1 second for faster testing
-config.alerts.check_interval = 500; // 500ms for faster testing
+config.alerts.cooldown = 1; // 1 second
+config.alerts.check_interval = 0.5; // 0.5 seconds
 config.alerts.scaling_threshold = 1; // Alert when more than 1 instance
 config.alerts.sessions_threshold = 2; // Alert when more than 2 sessions
 config.alerts.sessions_window = 60; // 1 minute window
@@ -240,7 +240,7 @@ describe("Alerts Service", () => {
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Advance time beyond cooldown
-    vi.advanceTimersByTime(config.alerts.cooldown + 100);
+    vi.advanceTimersByTime(config.alerts.cooldown * 1000 + 100); // Convert seconds to ms + 100ms
 
     // Now it should send alert again
     // @ts-ignore - Accessing private method for testing

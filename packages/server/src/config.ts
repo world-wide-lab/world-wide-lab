@@ -137,8 +137,8 @@ const config = {
     enabled: getBooleanFromEnv("ALERTS_ENABLED", !!alertsWebhookUrl),
     webhook_url: alertsWebhookUrl,
 
-    check_interval: getIntFromEnv("ALERTS_CHECK_INTERVAL") || 60000,
-    cooldown: getIntFromEnv("ALERTS_COOLDOWN") || 600000,
+    check_interval: getIntFromEnv("ALERTS_CHECK_INTERVAL") || 60, // in seconds
+    cooldown: getIntFromEnv("ALERTS_COOLDOWN") || 600, // in seconds
     // Scaling Alert: Send alert if the number of instances is above X
     scaling_enabled: getBooleanFromEnv("ALERTS_SCALING_ENABLED", true),
     scaling_threshold: getIntFromEnv("ALERTS_SCALING_THRESHOLD") || 1,
