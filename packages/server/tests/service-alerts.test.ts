@@ -4,8 +4,8 @@ import "./setup_env.js";
 import config from "../src/config.js";
 import sequelize from "../src/db/index.js";
 import { up } from "../src/db/migrate.js";
-import { alertsService } from "../src/services/alerts-service.js";
-import { instancesService } from "../src/services/instances-service.js";
+import { alertsService } from "../src/services/service-alerts.js";
+import { instancesService } from "../src/services/service-instances.js";
 
 // Override the config for testing
 config.alerts.webhook_url = "https://fake-webhook.test";
@@ -30,9 +30,9 @@ const fetchMock = vi.fn();
 global.fetch = fetchMock;
 
 // Mock instances service
-vi.mock("../src/services/instances-service.js", async () => {
+vi.mock("../src/services/service-instances.js", async () => {
   const originalModule = await vi.importActual(
-    "../src/services/instances-service.js",
+    "../src/services/service-instances.js",
   );
   return {
     ...originalModule,

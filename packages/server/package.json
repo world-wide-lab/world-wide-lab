@@ -17,6 +17,7 @@
     "start": "node dist/index.js",
     "start:build": "npm run build && npm start",
     "test": "vitest run",
+    "format": "npx @biomejs/biome check ../../ --write",
     "start:playwright": "WWL_ENV_FILE=.env.playwright npm run build && node dist/index.js",
     "test:playwright": "WWL_ENV_FILE=.env.playwright npx playwright test",
     "update-docs-screenshots": "WWL_ENV_FILE=.env.playwright ALLOW_NON_TESTS=1 npx playwright test update-docs-screenshots"
