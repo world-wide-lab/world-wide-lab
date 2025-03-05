@@ -1,7 +1,7 @@
 import merge from "deepmerge";
 import dotenv from "dotenv";
 
-import * as aws from "@pulumi/aws";
+import { Instance } from "@pulumi/aws/rds";
 import * as pulumi from "@pulumi/pulumi";
 
 import { WwlPulumiDeployment } from "../../deployment";
@@ -83,7 +83,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
 
   readonly config: WwlAwsDeploymentConfig;
   readonly dbConnectionString: pulumi.Output<string>;
-  readonly db: aws.rds.Instance;
+  readonly db: Instance;
 
   url: pulumi.Output<string>;
 
@@ -146,7 +146,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
     }
 
     // - Database -
-    this.db = new aws.rds.Instance("wwl-database", {
+    this.db = new Instance("wwl-database", {
       dbName: "wwl_db",
       engine: "postgres",
       engineVersion: "15",

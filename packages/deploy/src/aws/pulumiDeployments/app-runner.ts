@@ -1,12 +1,17 @@
-import * as aws from "@pulumi/aws";
+import {
+  AutoScalingConfigurationVersion,
+  Service,
+  VpcConnector,
+} from "@pulumi/aws/apprunner";
+import { getSubnets } from "@pulumi/aws/ec2";
 import * as pulumi from "@pulumi/pulumi";
 
 import { WwlAwsBaseDeployment, type WwlAwsDeploymentConfig } from "./_base";
 
 export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
-  readonly autoScalingConfig: aws.apprunner.AutoScalingConfigurationVersion;
-  readonly vpcConnector: aws.apprunner.VpcConnector;
-  readonly appRunnerService: aws.apprunner.Service;
+  readonly autoScalingConfig: AutoScalingConfigurationVersion;
+  readonly vpcConnector: VpcConnector;
+  readonly appRunnerService: Service;
 
   /**
    * Create a new deployment of WWL on AWS App Runner.
@@ -18,7 +23,7 @@ export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
     super(config);
 
     // How should the app auto-scale itself?
-    this.autoScalingConfig = new aws.apprunner.AutoScalingConfigurationVersion(
+    this.autoScalingConfig = new AutoScalingConfigurationVersion(
       "autoScalingConfig",
       {
         autoScalingConfigurationName: "wwl-server-auto-scaling-config",
@@ -29,19 +34,17 @@ export class WwlAwsAppRunnerDeployment extends WwlAwsBaseDeployment {
     );
 
     // Allow the apprunner to connect to the database
-    this.vpcConnector = new aws.apprunner.VpcConnector("wwl-vpc-connector", {
+    this.vpcConnector = new VpcConnector("wwl-vpc-connector", {
       vpcConnectorName: "name",
       // Use all subnets by default
-      subnets: aws.ec2
-        .getSubnets({
-          filters: [],
-        })
-        .then((subnets) => subnets.ids),
+      subnets: getSubnets({
+        filters: [],
+      }).then((subnets) => subnets.ids),
       securityGroups: this.db.vpcSecurityGroupIds,
     });
 
     // Create the App Runner service itself, which runs the app / container
-    this.appRunnerService = new aws.apprunner.Service("wwl-server-service", {
+    this.appRunnerService = new Service("wwl-server-service", {
       serviceName: "wwl-server-service",
       sourceConfiguration: {
         autoDeploymentsEnabled: false,
