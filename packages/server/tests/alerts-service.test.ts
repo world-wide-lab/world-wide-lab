@@ -46,7 +46,6 @@ describe("Alerts Service", () => {
   beforeAll(async () => {
     // Initialize Database
     await up();
-    await sequelize.sync();
   });
 
   beforeEach(async () => {
