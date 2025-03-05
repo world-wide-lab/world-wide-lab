@@ -1,9 +1,13 @@
 import merge from "deepmerge";
 import dotenv from "dotenv";
 
+import { ContainerApp, ManagedEnvironment } from "@pulumi/azure-native/app";
+import {
+  Database,
+  FirewallRule,
+  Server,
+} from "@pulumi/azure-native/dbforpostgresql";
 import { ResourceGroup } from "@pulumi/azure-native/resources";
-import { Server, Database, FirewallRule } from "@pulumi/azure-native/dbforpostgresql";
-import { ManagedEnvironment, ContainerApp } from "@pulumi/azure-native/app";
 import * as pulumi from "@pulumi/pulumi";
 import { WwlPulumiDeployment } from "../../deployment";
 
@@ -145,12 +149,9 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     }
 
     // Create an Azure Resource Group
-    const resourceGroup = new ResourceGroup(
-      "wwlResourceGroup",
-      {
-        location: this.config.location,
-      },
-    );
+    const resourceGroup = new ResourceGroup("wwlResourceGroup", {
+      location: this.config.location,
+    });
 
     // Create an Azure PostgreSQL Server
     const postgresServer = new Server(
@@ -183,15 +184,12 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     );
 
     // Add firewall rule to allow Azure services
-    const firewallRule = new FirewallRule(
-      "allowAzureServices",
-      {
-        resourceGroupName: resourceGroup.name,
-        serverName: postgresServer.name,
-        startIpAddress: "0.0.0.0",
-        endIpAddress: "0.0.0.0", // Special case: 0.0.0.0 allows Azure services
-      },
-    );
+    const firewallRule = new FirewallRule("allowAzureServices", {
+      resourceGroupName: resourceGroup.name,
+      serverName: postgresServer.name,
+      startIpAddress: "0.0.0.0",
+      endIpAddress: "0.0.0.0", // Special case: 0.0.0.0 allows Azure services
+    });
 
     // Get the connection string for the PostgreSQL server
     const dbConnectionString = pulumi
