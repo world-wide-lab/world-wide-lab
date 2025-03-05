@@ -4,7 +4,7 @@ import "./setup_env.js";
 import config from "../src/config.js";
 import sequelize from "../src/db/index.js";
 import { up } from "../src/db/migrate.js";
-import { instancesService } from "../src/services/instances-service.js";
+import { instancesService } from "../src/services/service-instances.js";
 
 // Override the config to ensure instances are enabled for tests
 config.instances.enabled = true;
