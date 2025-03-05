@@ -65,6 +65,7 @@ dotenvConfig({
 });
 
 const electronApp = getBooleanFromEnv("WWL_ELECTRON_APP", false);
+const alertsWebhookUrl = getValueFromEnv("ALERTS_WEBHOOK_URL");
 
 const config = {
   root: getValueFromEnv("ROOT") || "http://localhost",
@@ -130,6 +131,21 @@ const config = {
     sourceApiKey: getStringFromEnv("REPLICATION_SOURCE_API_KEY", null),
 
     chunkSize: getIntFromEnv("REPLICATION_CHUNK_SIZE") || 50000,
+  },
+
+  alerts: {
+    enabled: getBooleanFromEnv("ALERTS_ENABLED", !!alertsWebhookUrl),
+    webhook_url: alertsWebhookUrl,
+
+    check_interval: getIntFromEnv("ALERTS_CHECK_INTERVAL") || 60000,
+    cooldown: getIntFromEnv("ALERTS_COOLDOWN") || 600000,
+    // Scaling Alert: Send alert if the number of instances is above X
+    scaling_enabled: getBooleanFromEnv("ALERTS_SCALING_ENABLED", true),
+    scaling_threshold: getIntFromEnv("ALERTS_SCALING_THRESHOLD") || 1,
+    // Session Alert: Send alert if there are X sessions in the last Y seconds
+    sessions_enabled: getBooleanFromEnv("ALERTS_SESSIONS_ENABLED", true),
+    sessions_threshold: getIntFromEnv("ALERTS_SESSIONS_THRESHOLD") || 20,
+    sessions_window: getIntFromEnv("ALERTS_SESSIONS_WINDOW") || 300, // in seconds
   },
 };
 
