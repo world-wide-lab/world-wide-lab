@@ -1,7 +1,9 @@
 import merge from "deepmerge";
 import dotenv from "dotenv";
 
-import * as azureNative from "@pulumi/azure-native";
+import { ResourceGroup } from "@pulumi/azure-native/resources";
+import { Server, Database, FirewallRule } from "@pulumi/azure-native/dbforpostgresql";
+import { ManagedEnvironment, ContainerApp } from "@pulumi/azure-native/app";
 import * as pulumi from "@pulumi/pulumi";
 import { WwlPulumiDeployment } from "../../deployment";
 
@@ -143,7 +145,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     }
 
     // Create an Azure Resource Group
-    const resourceGroup = new azureNative.resources.ResourceGroup(
+    const resourceGroup = new ResourceGroup(
       "wwlResourceGroup",
       {
         location: this.config.location,
@@ -151,7 +153,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     );
 
     // Create an Azure PostgreSQL Server
-    const postgresServer = new azureNative.dbforpostgresql.Server(
+    const postgresServer = new Server(
       // Only lowercase letters, numbers and hypens are allowed in the server name
       "wwl-postgres-server",
       {
@@ -171,7 +173,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     );
 
     // Create a database in the PostgreSQL server
-    const db = new azureNative.dbforpostgresql.Database(
+    const db = new Database(
       // Only lowercase letters, numbers and hypens are allowed in the db name
       "wwl-db",
       {
@@ -181,7 +183,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     );
 
     // Add firewall rule to allow Azure services
-    const firewallRule = new azureNative.dbforpostgresql.FirewallRule(
+    const firewallRule = new FirewallRule(
       "allowAzureServices",
       {
         resourceGroupName: resourceGroup.name,
@@ -200,7 +202,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
       );
 
     // Create a container app environment
-    const containerAppEnvironment = new azureNative.app.ManagedEnvironment(
+    const containerAppEnvironment = new ManagedEnvironment(
       "wwl-containerapp-environment",
       {
         resourceGroupName: resourceGroup.name,
@@ -209,7 +211,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     );
 
     // Create a container app
-    const containerApp = new azureNative.app.ContainerApp("wwl-containerapp", {
+    const containerApp = new ContainerApp("wwl-containerapp", {
       resourceGroupName: resourceGroup.name,
       managedEnvironmentId: containerAppEnvironment.id,
       configuration: {
