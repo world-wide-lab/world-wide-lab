@@ -102,6 +102,7 @@ export abstract class Alert {
               type: "image",
               image_url: "https://worldwidelab.org/favicon.png",
               alt_text: "The World-Wide-Lab Logo",
+              title: "This alert was sent by World-Wide-Lab.",
             },
             {
               type: "mrkdwn",
