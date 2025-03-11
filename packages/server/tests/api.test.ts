@@ -1080,4 +1080,156 @@ describe("API Routes", () => {
       ]);
     });
   });
+
+  describe("Null Bytes Sanitization", () => {
+    it("should sanitize null bytes in participant data", async () => {
+      // Create a participant with null bytes in data
+      const response = await endpoint.post("/v1/participant").send({
+        privateInfo: {
+          bio: "Contains\u0000null\u0000bytes",
+          contact: "email\u0000@example.com",
+        },
+        publicInfo: {
+          username: "user\u0000name",
+          displayName: "Display\u0000Name",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const participantId = response.body.participantId;
+
+      // Retrieve the participant and verify null bytes were removed
+      const participant = await sequelize.models.Participant.findOne({
+        where: { participantId },
+      });
+
+      expect(participant).toHaveProperty(
+        "privateInfo.bio",
+        "Containsnullbytes",
+      );
+      expect(participant).toHaveProperty(
+        "privateInfo.contact",
+        "email@example.com",
+      );
+      expect(participant).toHaveProperty("publicInfo.username", "username");
+      expect(participant).toHaveProperty(
+        "publicInfo.displayName",
+        "DisplayName",
+      );
+    });
+
+    it("should sanitize null bytes in session metadata", async () => {
+      // Create a session with null bytes in data
+      const response = await endpoint.post("/v1/session").send({
+        studyId,
+        privateInfo: { notes: "Private\u0000Notes" },
+        publicInfo: { status: "In\u0000Progress" },
+        clientMetadata: {
+          userAgent: "Test\u0000Browser",
+          screenSize: "1920\u0000x1080",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const sessionId = response.body.sessionId;
+
+      // Retrieve the session and verify null bytes were removed
+      const session = await sequelize.models.Session.findOne({
+        where: { sessionId },
+      });
+
+      expect(session).toHaveProperty("privateInfo.notes", "PrivateNotes");
+      expect(session).toHaveProperty("publicInfo.status", "InProgress");
+
+      // Check metadata was sanitized
+      // @ts-ignore - accessing metadata which might not be typed properly
+      expect(session.metadata.client.userAgent).toBe("TestBrowser");
+      // @ts-ignore
+      expect(session.metadata.client.screenSize).toBe("1920x1080");
+    });
+
+    it("should sanitize null bytes in response payload", async () => {
+      // First create a session if we don't have one
+      const sessionResponse = await endpoint.post("/v1/session").send({
+        studyId,
+      });
+      const sessionId = sessionResponse.body.sessionId;
+
+      // Create a response with null bytes in payload
+      const response = await endpoint.post("/v1/response").send({
+        sessionId,
+        name: "test\u0000_response",
+        payload: {
+          question: "What is your name\u0000?",
+          answer: "John\u0000Doe",
+          nestedData: {
+            field1: "nested\u0000value",
+            array: ["item\u00001", "item\u00002"],
+          },
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const responseId = response.body.responseId;
+
+      // Retrieve the response and verify null bytes were removed
+      const savedResponse = await sequelize.models.Response.findOne({
+        where: { responseId },
+      });
+
+      expect(savedResponse).toHaveProperty("name", "test_response");
+      expect(savedResponse).toHaveProperty(
+        "payload.question",
+        "What is your name?",
+      );
+      expect(savedResponse).toHaveProperty("payload.answer", "JohnDoe");
+      expect(savedResponse).toHaveProperty(
+        "payload.nestedData.field1",
+        "nestedvalue",
+      );
+      expect(savedResponse).toHaveProperty(
+        "payload.nestedData.array[0]",
+        "item1",
+      );
+      expect(savedResponse).toHaveProperty(
+        "payload.nestedData.array[1]",
+        "item2",
+      );
+    });
+
+    it("should sanitize null bytes in leaderboard scores", async () => {
+      // Create a test leaderboard
+      const LEADERBOARD_ID = "sanitization-test-leaderboard";
+      await sequelize.models.Leaderboard.create({
+        leaderboardId: LEADERBOARD_ID,
+      });
+
+      // Create a session if needed
+      const sessionResponse = await endpoint.post("/v1/session").send({
+        studyId,
+      });
+      const sessionId = sessionResponse.body.sessionId;
+
+      // Add a score with null bytes
+      const response = await endpoint
+        .post(`/v1/leaderboard/${LEADERBOARD_ID}/score`)
+        .send({
+          score: 100,
+          publicIndividualName: "Player\u0000One",
+          publicGroupName: "Team\u0000Alpha",
+          sessionId,
+        });
+
+      expect(response.status).toBe(200);
+      const scoreId = response.body.leaderboardScoreId;
+
+      // Retrieve the score and verify null bytes were removed
+      const score = await sequelize.models.LeaderboardScore.findOne({
+        where: { leaderboardScoreId: scoreId },
+      });
+
+      expect(score).toHaveProperty("publicIndividualName", "PlayerOne");
+      expect(score).toHaveProperty("publicGroupName", "TeamAlpha");
+    });
+  });
 });
