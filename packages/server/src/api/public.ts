@@ -11,6 +11,7 @@ import config from "../config.js";
 import sequelize from "../db/index.js";
 import { getDbVersion } from "../db/replication.js";
 import { AppError } from "../errors.js";
+import { sanitizeNullBytes } from "../validation/sanitization.js";
 
 import {
   type CreateLeaderboardScoreParams,
@@ -29,7 +30,7 @@ import {
   sessionCreationRequestSchema,
   sessionSchema,
   studySchema,
-} from "../schemas.js";
+} from "../validation/schemas.js";
 
 const routerPublic = express.Router();
 
@@ -106,7 +107,9 @@ routerPublic.post(
   "/participant",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const participantParams = participantSchema.validateSync(req.body);
+      const participantParams = sanitizeNullBytes(
+        participantSchema.validateSync(req.body),
+      );
       const participant = (await sequelize.models.Participant.create(
         participantParams,
       )) as any as ParticipantParams;
@@ -158,7 +161,9 @@ routerPublic.put(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { participantId } = req.params;
-      const newData = participantSchema.validateSync(req.body);
+      const newData = sanitizeNullBytes(
+        participantSchema.validateSync(req.body),
+      );
       const participantWhere = fullParticipantSchema
         .pick(["participantId"])
         .validateSync({ participantId });
@@ -253,7 +258,7 @@ routerPublic.post(
   "/study",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const studyParams = studySchema.validateSync(req.body);
+      const studyParams = sanitizeNullBytes(studySchema.validateSync(req.body));
       const study = (await sequelize.models.Study.create(
         studyParams,
       )) as any as StudyParams;
@@ -346,8 +351,9 @@ routerPublic.post(
       };
 
       // Keep only proper fields for the database
-      const sessionParams: CreateSessionParams =
-        sessionSchema.validateSync(requestParams);
+      const sessionParams: CreateSessionParams = sanitizeNullBytes(
+        sessionSchema.validateSync(requestParams),
+      );
       const session = (await sequelize.models.Session.create(
         sessionParams,
       )) as any as SessionParams;
@@ -449,9 +455,9 @@ routerPublic.put(
       const sessionWhere = fullSessionSchema
         .pick(["sessionId"])
         .validateSync({ sessionId });
-      const sessionParams = sessionSchema
-        .omit(["studyId", "participantId"])
-        .validateSync(req.body);
+      const sessionParams = sanitizeNullBytes(
+        sessionSchema.omit(["studyId", "participantId"]).validateSync(req.body),
+      );
 
       const updatedRows = await sequelize.models.Session.update(sessionParams, {
         where: sessionWhere,
@@ -548,7 +554,9 @@ routerPublic.post(
   "/response",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const responseParams = responseSchema.validateSync(req.body);
+      const responseParams = sanitizeNullBytes(
+        responseSchema.validateSync(req.body),
+      );
       const response = (await sequelize.models.Response.create(
         responseParams,
       )) as any as ResponseParams;
@@ -830,12 +838,12 @@ routerPublic.post(
       const { leaderboardId } = leaderboardScoreSchema
         .pick(["leaderboardId"])
         .validateSync(req.params);
-      scoreParams = {
+      scoreParams = sanitizeNullBytes({
         leaderboardId,
         ...leaderboardScoreSchema
           .omit(["leaderboardId"])
           .validateSync(req.body),
-      };
+      });
 
       const score = (await sequelize.models.LeaderboardScore.create(
         scoreParams,
@@ -919,9 +927,10 @@ routerPublic.put(
         .omit(["leaderboardId"])
         .noUnknown()
         .validateSync(req.body);
+      const sanitizedScoreParams = sanitizeNullBytes(scoreParams);
 
       const updatedRow = await sequelize.models.LeaderboardScore.update(
-        scoreParams,
+        sanitizedScoreParams,
         {
           where: {
             leaderboardId,

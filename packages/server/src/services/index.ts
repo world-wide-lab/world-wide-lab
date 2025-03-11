@@ -1,6 +1,6 @@
 import config from "../config.js";
-import { alertsService } from "./alerts-service.js";
-import { instancesService } from "./instances-service.js";
+import { alertsService } from "./service-alerts.js";
+import { instancesService } from "./service-instances.js";
 import type Service from "./service.js";
 
 /**

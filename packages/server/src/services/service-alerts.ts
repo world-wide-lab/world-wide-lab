@@ -3,7 +3,7 @@ import config from "../config.js";
 import sequelize from "../db/index.js";
 import { logger } from "../logger.js";
 import { type Alert, ScalingAlert, SessionsAlert } from "./alerts/index.js";
-import { instancesService } from "./instances-service.js";
+import { instancesService } from "./service-instances.js";
 import Service from "./service.js";
 
 class AlertsService extends Service {
