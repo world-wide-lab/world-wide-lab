@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/server",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "World-Wide-Lab is an application to collect, store and administer data from online experiments and studies.",
   "repository": {
     "type": "git",
