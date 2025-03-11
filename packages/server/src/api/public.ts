@@ -29,7 +29,7 @@ import {
   sessionCreationRequestSchema,
   sessionSchema,
   studySchema,
-} from "../schemas.js";
+} from "../validation/schemas.js";
 
 const routerPublic = express.Router();
 
