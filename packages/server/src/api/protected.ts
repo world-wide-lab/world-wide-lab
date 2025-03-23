@@ -135,10 +135,11 @@ routerProtectedWithoutAuthentication.get(
             include: {
               model: sequelize.models.Session,
               where: { studyId },
-              attributes: ["sessionId"],
+              attributes: [],
             },
+            subQuery: false,
+            group: ["Participant.participantId"],
             raw: true,
-
             offset,
             limit,
           });

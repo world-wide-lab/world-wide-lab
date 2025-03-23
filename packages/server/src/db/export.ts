@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { json2csv } from "json-2-csv";
 import { QueryTypes, type Sequelize } from "sequelize";
 import config from "../config.js";
+import { logger } from "../logger.js";
 
 // Export data from the database in chunks
 async function paginatedExport(
@@ -123,6 +124,12 @@ async function chunkedQuery({
       throw new Error("Data is always expected to be returned as an Array");
     }
     nRowsResult = data.length;
+
+    if (nRowsResult > pageSize) {
+      logger.warn(
+        `Query returned more rows (${nRowsResult}) than the page size (${pageSize}). This will lead to a premature exit.`,
+      );
+    }
 
     // Do something with the data (usually returning it to the user)
     if (nRowsResult > 0) {
