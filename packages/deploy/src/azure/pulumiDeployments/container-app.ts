@@ -149,7 +149,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
     }
 
     // Create an Azure Resource Group
-    const resourceGroup = new ResourceGroup("wwlResourceGroup", {
+    const resourceGroup = new ResourceGroup(stackConfig.resourceGroupName, {
       location: this.config.location,
     });
 
