@@ -1,4 +1,5 @@
-import * as aws from "@pulumi/aws";
+import { Policy, Target } from "@pulumi/aws/appautoscaling";
+import { Cluster } from "@pulumi/aws/ecs";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 
@@ -6,10 +7,10 @@ import { WwlAwsBaseDeployment, type WwlAwsDeploymentConfig } from "./_base";
 
 export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
   readonly loadbalancer: awsx.lb.ApplicationLoadBalancer;
-  readonly cluster: aws.ecs.Cluster;
+  readonly cluster: Cluster;
   readonly service: awsx.ecs.FargateService;
-  readonly scalingTarget: aws.appautoscaling.Target;
-  readonly scalingPolicy: aws.appautoscaling.Policy;
+  readonly scalingTarget: Target;
+  readonly scalingPolicy: Policy;
 
   /**
    * Create a new deployment of WWL on AWS ECS.
@@ -27,7 +28,7 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
     );
 
     // An ECS cluster to deploy into
-    this.cluster = new aws.ecs.Cluster("wwl-cluster", {});
+    this.cluster = new Cluster("wwl-cluster", {});
 
     // Deploy an ECS Service on Fargate to host the application container
     this.service = new awsx.ecs.FargateService("wwl-server-service", {
@@ -91,7 +92,7 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
     });
 
     // Define an Application Auto Scaling Target. This specifies the ECS service we want to scale.
-    this.scalingTarget = new aws.appautoscaling.Target(
+    this.scalingTarget = new Target(
       "app-scaling-target",
       {
         maxCapacity: this.config.maxCapacity,
@@ -104,7 +105,7 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
     );
 
     // Define Application Auto Scaling Policy. This specifies how the Target should be scaled.
-    this.scalingPolicy = new aws.appautoscaling.Policy(
+    this.scalingPolicy = new Policy(
       "app-scaling-policy",
       {
         policyType: "TargetTrackingScaling",
