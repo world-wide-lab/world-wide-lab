@@ -1,6 +1,6 @@
 {
   "name": "@world-wide-lab/integration-jspsych",
-  "version": "0.7.1",
+  "version": "0.7.3",
   "description": "",
   "type": "module",
   "main": "dist/index.cjs",
@@ -36,7 +36,7 @@
     "jspsych": ">=7.0.0"
   },
   "devDependencies": {
-    "@jspsych/config": "^3.0.1",
+    "@jspsych/config": "^2.0.2",
     "@jspsych/plugin-html-keyboard-response": "^2.0.0",
     "@jspsych/test-utils": "1.1.2",
     "@types/jest": "^29.5.12",
@@ -45,6 +45,6 @@
     "ts-jest": "^29.1.1"
   },
   "dependencies": {
-    "@world-wide-lab/client": "^0.7.0"
+    "@world-wide-lab/client": "^0.7.1"
   }
 }

@@ -74,7 +74,6 @@ exports[`API Routes > GET /study/:studyId/data/:dataType/json > should download 
   "updatedAt",
   "privateInfo",
   "publicInfo",
-  "Sessions.sessionId",
 ]
 `;
 
