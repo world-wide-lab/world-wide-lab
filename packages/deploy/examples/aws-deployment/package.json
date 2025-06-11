@@ -1,14 +1,15 @@
 {
   "name": "wwl-deployment",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "My package description",
   "main": "index.ts",
   "scripts": {
     "login": "pulumi login --local",
-    "deploy": "pulumi up"
+    "deploy": "pulumi up",
+    "remove-deployment": "pulumi down"
   },
   "dependencies": {
-    "@world-wide-lab/deploy": "^0.1.0"
+    "@world-wide-lab/deploy": "^0.2.0"
   },
   "license": "MIT",
   "private": true
