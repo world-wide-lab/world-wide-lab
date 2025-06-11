@@ -4,5 +4,5 @@ import { WwlAwsEcsDeployment } from "./pulumiDeployments/ecs";
 export {
   WwlAwsAppRunnerDeployment,
   WwlAwsEcsDeployment,
-  WwlAwsEcsDeployment as WwlAwsDeployment,
+  WwlAwsAppRunnerDeployment as WwlAwsDeployment,
 };
