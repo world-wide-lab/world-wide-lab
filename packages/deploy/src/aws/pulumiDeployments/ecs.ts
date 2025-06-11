@@ -123,8 +123,8 @@ export class WwlAwsEcsDeployment extends WwlAwsBaseDeployment {
 
     // The URL at which the container's HTTP endpoint will be available
     this.url = pulumi.interpolate`http://${this.loadbalancer.loadBalancer.dnsName}`;
-    if (typeof this.url === "string") {
-      console.log(`Running at: ${this.url}`);
-    }
+    this.url.apply((url) => {
+      pulumi.log.info(`Running at: ${url}`);
+    });
   }
 }
