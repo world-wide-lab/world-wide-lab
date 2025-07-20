@@ -821,6 +821,36 @@ describe("API Routes", () => {
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty("error");
     });
+
+    it("should filter responses using created_after with date string format", async () => {
+      const today = new Date();
+      const todayDateString = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-raw/json?created_after=${todayDateString}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4); // Should include all responses
+
+      // Test with tomorrow's date to exclude all data
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDateString = tomorrow.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-raw/json?created_after=${tomorrowDateString}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.body.length).toBe(0); // Should exclude all responses
+    });
   });
 
   describe("PUT /leaderboard/:leaderboardId/score", () => {
