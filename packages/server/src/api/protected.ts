@@ -67,6 +67,13 @@ const routerProtectedWithoutAuthentication = express.Router();
  *         required: true
  *         description: >
  *           In which format should data be downloaded.
+ *       - in: query
+ *         name: created_after
+ *         example: 2000-01-01T00:00:00Z
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Only retrieve data created after this date-time
  *     responses:
  *       '200':
  *         description: Successfully downloaded study data
@@ -94,6 +101,10 @@ routerProtectedWithoutAuthentication.get(
         format: string().oneOf(["json", "csv"]).required(),
       }).validateSync(req.params);
 
+      const { created_after } = object({
+        created_after: date(),
+      }).validateSync(req.query);
+
       // Verify whether the study exists
       const study = await sequelize.models.Study.findOne({
         where: { studyId },
@@ -114,17 +125,29 @@ routerProtectedWithoutAuthentication.get(
               attributes: ["participantId"],
             },
             raw: true,
-
             offset,
             limit,
+            ...(created_after && {
+              where: {
+                createdAt: {
+                  [Sequelize.Op.gte]: created_after,
+                },
+              },
+            }),
           });
         };
       } else if (dataType === "sessions-raw") {
         dataQueryFunction = async (offset: number, limit: number) => {
           return await sequelize.models.Session.findAll({
-            where: { studyId },
+            where: {
+              studyId,
+              ...(created_after && {
+                createdAt: {
+                  [Sequelize.Op.gte]: created_after,
+                },
+              }),
+            },
             raw: true,
-
             offset,
             limit,
           });
@@ -142,12 +165,20 @@ routerProtectedWithoutAuthentication.get(
             raw: true,
             offset,
             limit,
+            ...(created_after && {
+              where: {
+                createdAt: {
+                  [Sequelize.Op.gte]: created_after,
+                },
+              },
+            }),
           });
         };
       } else if (dataType === "responses-extracted-payload") {
         const exportQuery = await generateExtractedPayloadQuery(
           sequelize,
           studyId,
+          { created_after },
         );
 
         if (sequelize.getDialect() === "postgres" && format === "csv") {
@@ -189,7 +220,10 @@ routerProtectedWithoutAuthentication.get(
             `${exportQuery} LIMIT ${limit} OFFSET ${offset}`,
             {
               type: Sequelize.QueryTypes.SELECT,
-              replacements: { studyId },
+              replacements: {
+                studyId,
+                ...(created_after && { created_after }),
+              },
             },
           );
         };
