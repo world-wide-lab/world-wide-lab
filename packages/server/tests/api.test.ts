@@ -661,6 +661,166 @@ describe("API Routes", () => {
       expect(response.status).toBe(400);
       expect(response.body).toMatchSnapshot();
     });
+
+    it("should filter responses using created_after parameter", async () => {
+      // Get current time and subtract 1 hour to include all existing data
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-raw/json?created_after=${oneHourAgo.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4); // Should include all responses
+
+      // Test with future date to exclude all data
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-raw/json?created_after=${oneHourFromNow.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.body.length).toBe(0); // Should exclude all responses
+    });
+
+    it("should filter sessions using created_after parameter", async () => {
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/sessions-raw/json?created_after=${oneHourAgo.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4); // Should include all sessions
+
+      // Test with future date
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/sessions-raw/json?created_after=${oneHourFromNow.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.body.length).toBe(0);
+    });
+
+    it("should filter participants using created_after parameter", async () => {
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/participants-raw/json?created_after=${oneHourAgo.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(1); // Should include all participants
+
+      // Test with future date
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/participants-raw/json?created_after=${oneHourFromNow.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.body.length).toBe(0);
+    });
+
+    it("should filter extracted payload data using created_after parameter", async () => {
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 12);
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-extracted-payload/json?created_after=${oneHourAgo.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(4); // Should include all responses
+      expect(response.body[0].key_1).toBe("value 1");
+
+      // Test with future date
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-extracted-payload/json?created_after=${oneHourFromNow.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.body.length).toBe(0);
+    });
+
+    it("should filter extracted payload data in CSV format using created_after parameter", async () => {
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 12);
+
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-extracted-payload/csv?created_after=${oneHourAgo.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(200);
+      const lines = response.text.split(/\r\n|\r|\n/);
+      expect(lines.length).toBe(4 + 1); // 4 data rows + 1 header row
+
+      // Test with future date
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const futureResponse = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-extracted-payload/csv?created_after=${oneHourFromNow.toISOString()}`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(futureResponse.status).toBe(200);
+      expect(futureResponse.text).toBe(""); // Should be empty
+    });
+
+    it("should handle invalid created_after date format", async () => {
+      const response = await endpoint
+        .get(
+          `/v1/study/${studyId}/data/responses-raw/json?created_after=invalid-date`,
+        )
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    });
   });
 
   describe("PUT /leaderboard/:leaderboardId/score", () => {
