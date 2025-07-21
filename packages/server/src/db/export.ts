@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { json2csv } from "json-2-csv";
 import { QueryTypes, type Sequelize } from "sequelize";
 import config from "../config.js";
+import { AppError } from "../errors.js";
 import { logger } from "../logger.js";
 
 // Export data from the database in chunks
@@ -153,7 +154,18 @@ async function chunkedQuery({
 async function generateExtractedPayloadQuery(
   sequelize: Sequelize,
   studyId: string,
+  options: { created_after?: Date } = {},
 ): Promise<string> {
+  const keysQueryConditions = ['wwl_sessions."studyId" = :studyId'];
+  if (options.created_after) {
+    // Verify that the created_after option is a Date
+    if (!(options.created_after instanceof Date)) {
+      throw new AppError("created_after must be a Date object", 400);
+    }
+
+    keysQueryConditions.push('wwl_responses."createdAt" >= :created_after');
+  }
+
   // Get all keys which are present in the payloads of the responses
   const keysResult = await sequelize.query(
     `
@@ -163,12 +175,15 @@ async function generateExtractedPayloadQuery(
         wwl_responses
           INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId"),
         json_each(payload) payload_json
-      WHERE wwl_sessions."studyId" = :studyId
+      WHERE ${keysQueryConditions.join(" AND ")}
       ORDER BY key ASC;
     `,
     {
       type: QueryTypes.SELECT,
-      replacements: { studyId },
+      replacements: {
+        studyId,
+        ...(options.created_after && { created_after: options.created_after }),
+      },
     },
   );
 
@@ -195,12 +210,17 @@ async function generateExtractedPayloadQuery(
       : `${tableFieldsString}`;
 
   // Create the final query
+  const finalQueryConditions = ['wwl_sessions."studyId" = :studyId'];
+  if (options.created_after) {
+    finalQueryConditions.push('wwl_responses."createdAt" >= :created_after');
+  }
+
   return `
     SELECT
       ${fieldsString}
     FROM wwl_responses
       INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId")
-    WHERE wwl_sessions."studyId" = :studyId
+    WHERE ${finalQueryConditions.join(" AND ")}
   `;
 }
 
