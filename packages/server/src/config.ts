@@ -73,6 +73,8 @@ const config = {
 
   version: VERSION,
 
+  requestMaxSize: getValueFromEnv("REQUEST_MAX_SIZE") || "256mb",
+
   electronApp,
 
   logging: {
