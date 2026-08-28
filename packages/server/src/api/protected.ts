@@ -12,7 +12,11 @@ import { to as copyTo } from "pg-copy-streams";
 import { date, number, object, string } from "yup";
 import config from "../config.js";
 import {
+  type Cursor,
+  KEYSET_CURSOR_COLUMN,
+  type PageQuery,
   generateExtractedPayloadQuery,
+  keysetExport,
   paginatedExport,
 } from "../db/export.js";
 import sequelize from "../db/index.js";
@@ -115,29 +119,42 @@ routerProtectedWithoutAuthentication.get(
       }
 
       // Standard data export functions
-      let dataQueryFunction;
+      // Every export is paginated via a keyset (or "cursor") on a unique
+      // column, so that pages neither get slower the further we go, nor risk
+      // duplicating or skipping rows in between them.
+      let queryPage: PageQuery | undefined;
+      let cursorField: string | undefined;
+      let hideCursorField = false;
+
       if (dataType === "responses-raw") {
-        dataQueryFunction = async (offset: number, limit: number) => {
+        cursorField = "responseId";
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Response.findAll({
             include: {
               model: sequelize.models.Session,
               where: { studyId },
               attributes: ["participantId"],
             },
-            raw: true,
-            offset,
-            limit,
-            ...(created_after && {
-              where: {
+            where: {
+              ...(created_after && {
                 createdAt: {
                   [Sequelize.Op.gte]: created_after,
                 },
-              },
-            }),
+              }),
+              ...(cursor !== undefined && {
+                responseId: {
+                  [Sequelize.Op.gt]: cursor,
+                },
+              }),
+            },
+            order: [["responseId", "ASC"]],
+            raw: true,
+            limit,
           });
         };
       } else if (dataType === "sessions-raw") {
-        dataQueryFunction = async (offset: number, limit: number) => {
+        cursorField = "sessionId";
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Session.findAll({
             where: {
               studyId,
@@ -146,36 +163,47 @@ routerProtectedWithoutAuthentication.get(
                   [Sequelize.Op.gte]: created_after,
                 },
               }),
+              ...(cursor !== undefined && {
+                sessionId: {
+                  [Sequelize.Op.gt]: cursor,
+                },
+              }),
             },
+            order: [["sessionId", "ASC"]],
             raw: true,
-            offset,
             limit,
           });
         };
       } else if (dataType === "participants-raw") {
-        dataQueryFunction = async (offset: number, limit: number) => {
+        cursorField = "participantId";
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Participant.findAll({
             include: {
               model: sequelize.models.Session,
               where: { studyId },
               attributes: [],
             },
-            subQuery: false,
-            group: ["Participant.participantId"],
-            raw: true,
-            offset,
-            limit,
-            ...(created_after && {
-              where: {
+            where: {
+              ...(created_after && {
                 createdAt: {
                   [Sequelize.Op.gte]: created_after,
                 },
-              },
-            }),
+              }),
+              ...(cursor !== undefined && {
+                participantId: {
+                  [Sequelize.Op.gt]: cursor,
+                },
+              }),
+            },
+            subQuery: false,
+            group: ["Participant.participantId"],
+            order: [["participantId", "ASC"]],
+            raw: true,
+            limit,
           });
         };
       } else if (dataType === "responses-extracted-payload") {
-        const exportQuery = await generateExtractedPayloadQuery(
+        const { query, pageQuery } = await generateExtractedPayloadQuery(
           sequelize,
           studyId,
           { created_after },
@@ -183,27 +211,36 @@ routerProtectedWithoutAuthentication.get(
 
         if (sequelize.getDialect() === "postgres" && format === "csv") {
           // Special case for postgres, use COPY to format & stream data
+
+          // Manually replace the query's placeholders, as pg-copy-stream
+          // doesn't support query parameters. Care should be taken here
+          // to prevent SQL injection, which is why the studyId is sanitized
+          // and created_after is re-serialized from its parsed Date.
+          let copyQuery = query.replace(
+            ":studyId",
+            `'${sanitizeStudyId(studyId)}'`,
+          );
+          if (created_after) {
+            copyQuery = copyQuery.replace(
+              ":created_after",
+              `'${created_after.toISOString()}'`,
+            );
+          }
+
           const connection = (await sequelize.connectionManager.getConnection({
             type: "read",
           })) as Client;
           const stream = connection.query(
             copyTo(
-              // Manually replace the studyId placeholder, as pg-copy-stream
-              // doesn't support query parameters. Care should be taken here
-              // to prevent SQL injection.
               `
                 COPY
-                  (${exportQuery.replace(
-                    ":studyId",
-                    `'${sanitizeStudyId(studyId)}'`,
-                  )})
+                  (${copyQuery})
                 TO
                   STDOUT WITH (
                     FORMAT CSV, HEADER, FORCE_QUOTE *
                   );
               `,
             ),
-            [studyId],
           );
           // Set headers
           res.status(200).contentType("text/csv");
@@ -215,28 +252,36 @@ routerProtectedWithoutAuthentication.get(
           sequelize.connectionManager.releaseConnection(connection);
           return;
         }
-        dataQueryFunction = async (offset: number, limit: number) => {
-          return await sequelize.query(
-            `${exportQuery} LIMIT ${limit} OFFSET ${offset}`,
-            {
-              type: Sequelize.QueryTypes.SELECT,
-              replacements: {
-                studyId,
-                ...(created_after && { created_after }),
-              },
+
+        // The cursor is selected under a reserved alias, which is hidden from
+        // the exported data again, since a payload key could otherwise shadow
+        // the responseId column it is based on.
+        cursorField = KEYSET_CURSOR_COLUMN;
+        hideCursorField = true;
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
+          return await sequelize.query(pageQuery(cursor !== undefined), {
+            type: Sequelize.QueryTypes.SELECT,
+            replacements: {
+              studyId,
+              limit,
+              ...(cursor !== undefined && { cursor }),
+              ...(created_after && { created_after }),
             },
-          );
+          });
         };
       } else {
         throw new Error(`Unknown dataType: ${dataType}`);
       }
 
-      if (dataQueryFunction !== undefined) {
-        // Do a pagninated (or chunked) export of the data using the specified
-        // dataQueryFunction to retrieve chunks of data.
-        paginatedExport(res, dataQueryFunction, format);
+      if (queryPage !== undefined && cursorField !== undefined) {
+        // Do a chunked export of the data, using the specified queryPage
+        // function to retrieve one page of data at a time.
+        await keysetExport(res, queryPage, format, {
+          cursorField,
+          hideCursorField,
+        });
       } else {
-        throw new Error("Missing dataQueryFunction");
+        throw new Error("Missing queryPage function");
       }
     } catch (error) {
       next(error);
