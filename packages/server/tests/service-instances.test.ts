@@ -1,17 +1,5 @@
-// Set up fake environment variables
-import "./setup_env.js";
-
-import config from "../src/config.js";
-import sequelize from "../src/db/index.js";
-import { up } from "../src/db/migrate.js";
-import { instancesService } from "../src/services/service-instances.js";
-
-// Override the config to ensure instances are enabled for tests
-config.instances.enabled = true;
-config.instances.visible = true;
-
-// Add vi import for mocking
 import {
+  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -21,37 +9,27 @@ import {
   vi,
 } from "vitest";
 
-// Mock os.networkInterfaces to return a consistent IP
-vi.mock("node:os", async () => {
-  const originalModule = await vi.importActual("node:os");
-  const mockedModule = {
-    ...originalModule,
-    networkInterfaces: () => ({
-      eth0: [
-        {
-          address: "192.168.1.2",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          mac: "00:00:00:00:00:00",
-          internal: false,
-          cidr: "192.168.1.2/24",
-        },
-      ],
-    }),
-    hostname: () => "test-host",
-  };
+import os from "node:os";
 
-  // Ensure default export is handled properly
-  return Object.defineProperty(mockedModule, "default", {
-    value: mockedModule,
-    enumerable: false,
-  });
-});
+import config from "../src/config.js";
+import sequelize from "../src/db/index.js";
+import { instancesService } from "../src/services/service-instances.js";
+import { useTestDatabase } from "./helpers/index.js";
+
+// Config is shared across test files, so the overrides are undone afterwards.
+const originalInstancesConfig = { ...config.instances };
 
 describe("Instances Service", () => {
   beforeAll(async () => {
-    // Initialize Database
-    await up();
+    await useTestDatabase();
+
+    // Ensure instances are enabled for these tests
+    config.instances.enabled = true;
+    config.instances.visible = true;
+  });
+
+  afterAll(() => {
+    Object.assign(config.instances, originalInstancesConfig);
   });
 
   beforeEach(async () => {
@@ -76,9 +54,12 @@ describe("Instances Service", () => {
     const instances = await sequelize.models.Instance.findAll();
     expect(instances.length).toBe(1);
 
+    // The service records where it is running. Asserting against the host it
+    // actually runs on keeps this free of a `node:os` module mock, which would
+    // otherwise leak into every other test file sharing this worker.
     const instance = instances[0];
-    expect(instance.getDataValue("ipAddress")).toBe("192.168.1.2");
-    expect(instance.getDataValue("hostname")).toBe("test-host");
+    expect(instance.getDataValue("ipAddress")).toMatch(/^\d+\.\d+\.\d+\.\d+$/);
+    expect(instance.getDataValue("hostname")).toBe(os.hostname());
     expect(instance.getDataValue("port").toString()).toBe(
       config.port.toString(),
     );

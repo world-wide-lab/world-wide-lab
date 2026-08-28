@@ -49,12 +49,19 @@ describe("Client", () => {
   });
 
   it("should start a new session (without a linked participant)", async () => {
-    global.window = {
+    // Simulate a browser. Both globals need stubbing: node provides its own
+    // `navigator` from v21 on, which would otherwise leak the machine's real
+    // locale into the snapshot below.
+    vi.stubGlobal("window", {
       location: {
         href: "https://worldwidelab.org/?myId=123&otherId=test",
         search: "?myId=123&otherId=test",
       },
-    } as any;
+    });
+    vi.stubGlobal("navigator", {
+      language: "en-US",
+      languages: ["en-US"],
+    });
 
     const session = await client.createSession({ studyId: "example" });
 
@@ -69,6 +76,8 @@ describe("Client", () => {
 
     sessionParams.clientMetadata.version = "VERSION";
     expect(sessionParams).toMatchSnapshot();
+
+    vi.unstubAllGlobals();
   });
 
   it("should start a new session (with a linked participant)", async () => {

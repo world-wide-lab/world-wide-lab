@@ -1,21 +1,5 @@
-// Set up fake environment variables
-import "./setup_env.js";
-
-import config from "../src/config.js";
-import sequelize from "../src/db/index.js";
-import { up } from "../src/db/migrate.js";
-import { alertsService } from "../src/services/service-alerts.js";
-import { instancesService } from "../src/services/service-instances.js";
-
-// Override the config for testing
-config.alerts.webhook_url = "https://fake-webhook.test";
-config.alerts.cooldown = 1; // 1 second
-config.alerts.check_interval = 0.5; // 0.5 seconds
-config.alerts.scaling_threshold = 1; // Alert when more than 1 instance
-config.alerts.sessions_threshold = 2; // Alert when more than 2 sessions
-config.alerts.sessions_window = 60; // 1 minute window
-
 import {
+  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -25,33 +9,49 @@ import {
   vi,
 } from "vitest";
 
-// Mock fetch for webhook testing
-const fetchMock = vi.fn();
-global.fetch = fetchMock;
+import config from "../src/config.js";
+import sequelize from "../src/db/index.js";
+import { alertsService } from "../src/services/service-alerts.js";
+import { instancesService } from "../src/services/service-instances.js";
+import { resetDatabase, useTestDatabase } from "./helpers/index.js";
 
-// Mock instances service
-vi.mock("../src/services/service-instances.js", async () => {
-  const originalModule = await vi.importActual(
-    "../src/services/service-instances.js",
-  );
-  return {
-    ...originalModule,
-    instancesService: {
-      isPrimaryInstance: vi.fn().mockReturnValue(true), // Default to primary
-    },
-  };
-});
+// Config and globals are shared across test files, so everything this test
+// changes is restored again in afterAll instead of being left behind.
+const originalAlertsConfig = { ...config.alerts };
+const originalFetch = global.fetch;
+
+const fetchMock = vi.fn();
+
+// Stubbing the method (rather than mocking the whole module) keeps the change
+// local to this file and undoable.
+const isPrimaryInstance = vi.spyOn(instancesService, "isPrimaryInstance");
 
 describe("Alerts Service", () => {
   beforeAll(async () => {
-    // Initialize Database
-    await up();
+    await useTestDatabase();
+
+    Object.assign(config.alerts, {
+      webhook_url: "https://fake-webhook.test",
+      cooldown: 1, // 1 second
+      check_interval: 0.5, // 0.5 seconds
+      scaling_threshold: 1, // Alert when more than 1 instance
+      sessions_threshold: 2, // Alert when more than 2 sessions
+      sessions_window: 60, // 1 minute window
+    });
+    global.fetch = fetchMock;
+  });
+
+  afterAll(() => {
+    Object.assign(config.alerts, originalAlertsConfig);
+    global.fetch = originalFetch;
+    isPrimaryInstance.mockRestore();
   });
 
   beforeEach(async () => {
-    // Clear tables before each test
-    await sequelize.models.Instance.destroy({ where: {} });
-    await sequelize.models.Session.destroy({ where: {} });
+    // These tests assert on global counts (how many instances / how many
+    // recent sessions exist), so unlike most tests they need an empty
+    // database rather than just their own fixtures.
+    await resetDatabase();
 
     // Reset the mocks
     vi.useFakeTimers();
@@ -59,9 +59,8 @@ describe("Alerts Service", () => {
     fetchMock.mockImplementation(() =>
       Promise.resolve({ ok: true, status: 200, statusText: "OK" }),
     );
-
-    // Reset the spy history
-    vi.clearAllMocks();
+    // Alerts are only sent from the primary instance
+    isPrimaryInstance.mockReturnValue(true);
   });
 
   afterEach(async () => {
@@ -71,7 +70,7 @@ describe("Alerts Service", () => {
 
   it("should only send alerts when running on primary instance", async () => {
     // Configure instances service to not be primary
-    vi.mocked(instancesService.isPrimaryInstance).mockReturnValue(false);
+    isPrimaryInstance.mockReturnValue(false);
 
     await alertsService.onStart();
 
@@ -113,7 +112,7 @@ describe("Alerts Service", () => {
     expect(fetchMock).not.toHaveBeenCalled();
 
     // Now set to primary and check again
-    vi.mocked(instancesService.isPrimaryInstance).mockReturnValue(true);
+    isPrimaryInstance.mockReturnValue(true);
 
     // @ts-ignore - Accessing private method for testing
     await alertsService.checkAlerts();
