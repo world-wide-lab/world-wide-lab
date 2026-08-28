@@ -67,26 +67,26 @@ jobs:
             # Always set the dev tag
             type=raw,value=dev
 
-      # Install dependencies and build the server itself
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Build the server
-        run: npm run build --prefix packages/server/
-
       # Build and push the actual Docker image
+      # The server is built from source inside the image, so no local Node.js
+      # setup is required here.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ./packages/server/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Re-use the layers (and the npm cache) of previous runs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Test docker image
       - name: Test Docker image
-        run: docker compose -f docker/docker-compose.testing.yml run test-server
+        # Test the image that was just built, referenced by its digest
+        env:
+          WWL_SERVER_IMAGE: ghcr.io/world-wide-lab/server@${{ steps.build.outputs.digest }}
+        run: docker compose -f docker/docker-compose.testing.yml run --rm test-server

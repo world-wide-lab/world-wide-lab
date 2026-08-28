@@ -11,7 +11,8 @@ services:
       POSTGRES_PASSWORD: example_db_password
 
   wwl-server:
-    image: ghcr.io/world-wide-lab/server:latest
+    # Which image to test, so that CI can point this at the image it just built
+    image: ${WWL_SERVER_IMAGE:-ghcr.io/world-wide-lab/server:latest}
     ports:
       - 8787:8787
     depends_on:
