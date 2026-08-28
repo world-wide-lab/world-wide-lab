@@ -73,6 +73,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -85,4 +86,7 @@ jobs:
 
       # Test docker image
       - name: Test Docker image
-        run: docker compose -f docker/docker-compose.testing.yml run test-server
+        # Test the image that was just built, referenced by its digest
+        env:
+          WWL_SERVER_IMAGE: ghcr.io/world-wide-lab/server@${{ steps.build.outputs.digest }}
+        run: docker compose -f docker/docker-compose.testing.yml run --rm test-server
