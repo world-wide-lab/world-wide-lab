@@ -27,11 +27,23 @@ describe("Database Migrations", () => {
   });
 
   it("should still enforce primary keys after adding the replication indexes", async () => {
-    // The composite ("updatedAt", primary key) index used for replication also
-    // covers the primary key column, and sequelize's describeTable() lets the
-    // last index covering a column decide its "unique" flag. That makes the
-    // primary keys *look* non-unique in the snapshot below, so assert that the
-    // database still enforces them.
+    // The snapshot below reports the primary keys of wwl_studies,
+    // wwl_participants and wwl_sessions as "unique": false. That is an
+    // artifact of how sequelize derives that flag, not a schema change:
+    // describeTable() walks the table's indexes and assigns
+    //   data[column].unique = index.unique
+    // for every column of every index, so the last index it looks at wins.
+    // Its sqlite handleShowIndexesQuery() reverses PRAGMA INDEX_LIST (which
+    // is newest first), so "last" means the most recently created index --
+    // which is now the composite ("updatedAt", primary key) index used for
+    // replication. That index is not unique and it covers the primary key
+    // column, so it overwrites the "unique" the table's own
+    // sqlite_autoindex had set. Before it existed the newest index only
+    // covered "updatedAt", which is why this surfaces now.
+    // wwl_responses is unaffected because its INTEGER PRIMARY KEY is a rowid
+    // alias and has no autoindex to overwrite in the first place.
+    //
+    // The constraint itself is untouched, so assert that directly.
     const studyId = "primary-key-uniqueness-check";
     await sequelize.models.Study.create({ studyId });
 
