@@ -17,12 +17,18 @@ import {
   type PageQuery,
   generateExtractedPayloadQuery,
   keysetExport,
-  paginatedExport,
 } from "../db/export.js";
 import sequelize from "../db/index.js";
-import { findModelByTableName, runReplication } from "../db/replication.js";
+import {
+  castPrimaryKey,
+  findModelByTableName,
+  getColumnName,
+  getPrimaryKeyAttribute,
+  runReplication,
+} from "../db/replication.js";
 import { sanitizeStudyId } from "../db/util.js";
 import { AppError } from "../errors.js";
+import { logger } from "../logger.js";
 import { requireAuthMiddleware } from "./authMiddleware.js";
 
 const routerProtectedWithoutAuthentication = express.Router();
@@ -123,11 +129,11 @@ routerProtectedWithoutAuthentication.get(
       // column, so that pages neither get slower the further we go, nor risk
       // duplicating or skipping rows in between them.
       let queryPage: PageQuery | undefined;
-      let cursorField: string | undefined;
-      let hideCursorField = false;
+      let cursorFields: string[] | undefined;
+      let hiddenCursorFields: string[] = [];
 
       if (dataType === "responses-raw") {
-        cursorField = "responseId";
+        cursorFields = ["responseId"];
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Response.findAll({
             include: {
@@ -143,7 +149,7 @@ routerProtectedWithoutAuthentication.get(
               }),
               ...(cursor !== undefined && {
                 responseId: {
-                  [Sequelize.Op.gt]: cursor,
+                  [Sequelize.Op.gt]: cursor[0],
                 },
               }),
             },
@@ -153,7 +159,7 @@ routerProtectedWithoutAuthentication.get(
           });
         };
       } else if (dataType === "sessions-raw") {
-        cursorField = "sessionId";
+        cursorFields = ["sessionId"];
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Session.findAll({
             where: {
@@ -165,7 +171,7 @@ routerProtectedWithoutAuthentication.get(
               }),
               ...(cursor !== undefined && {
                 sessionId: {
-                  [Sequelize.Op.gt]: cursor,
+                  [Sequelize.Op.gt]: cursor[0],
                 },
               }),
             },
@@ -175,7 +181,7 @@ routerProtectedWithoutAuthentication.get(
           });
         };
       } else if (dataType === "participants-raw") {
-        cursorField = "participantId";
+        cursorFields = ["participantId"];
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.models.Participant.findAll({
             include: {
@@ -191,7 +197,7 @@ routerProtectedWithoutAuthentication.get(
               }),
               ...(cursor !== undefined && {
                 participantId: {
-                  [Sequelize.Op.gt]: cursor,
+                  [Sequelize.Op.gt]: cursor[0],
                 },
               }),
             },
@@ -256,15 +262,15 @@ routerProtectedWithoutAuthentication.get(
         // The cursor is selected under a reserved alias, which is hidden from
         // the exported data again, since a payload key could otherwise shadow
         // the responseId column it is based on.
-        cursorField = KEYSET_CURSOR_COLUMN;
-        hideCursorField = true;
+        cursorFields = [KEYSET_CURSOR_COLUMN];
+        hiddenCursorFields = [KEYSET_CURSOR_COLUMN];
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
           return await sequelize.query(pageQuery(cursor !== undefined), {
             type: Sequelize.QueryTypes.SELECT,
             replacements: {
               studyId,
               limit,
-              ...(cursor !== undefined && { cursor }),
+              ...(cursor !== undefined && { cursor: cursor[0] }),
               ...(created_after && { created_after }),
             },
           });
@@ -273,12 +279,12 @@ routerProtectedWithoutAuthentication.get(
         throw new Error(`Unknown dataType: ${dataType}`);
       }
 
-      if (queryPage !== undefined && cursorField !== undefined) {
+      if (queryPage !== undefined && cursorFields !== undefined) {
         // Do a chunked export of the data, using the specified queryPage
         // function to retrieve one page of data at a time.
         await keysetExport(res, queryPage, format, {
-          cursorField,
-          hideCursorField,
+          cursorFields,
+          hiddenCursorFields,
         });
       } else {
         throw new Error("Missing queryPage function");
@@ -360,37 +366,101 @@ routerProtectedWithoutAuthentication.get(
       }
 
       const { table } = req.params;
-      const { updated_after, limit, offset } = object({
-        updated_after: date(),
-        limit: number().required(),
-        offset: number().default(0),
-      }).validateSync(req.query);
+      const { updated_after, limit, offset, after_updated_at, after_id } =
+        object({
+          updated_after: date(),
+          limit: number().required(),
+          offset: number().default(0),
+          after_updated_at: date(),
+          after_id: string(),
+        }).validateSync(req.query);
 
       // Find the correct model for the table
       const model = findModelByTableName(table);
+      const primaryKey = getPrimaryKeyAttribute(model);
 
-      const dataQueryFunction = async (
-        queryOffset: number,
+      // Rows are always ordered by ("updatedAt", primary key). "updatedAt"
+      // alone is not unique, so on its own it cannot tell the database where
+      // one page ends and the next one begins.
+      const baseWhere = {
+        ...(updated_after && {
+          updatedAt: {
+            [Sequelize.Op.gte]: updated_after,
+          },
+        }),
+      };
+
+      const usesKeyset =
+        after_updated_at !== undefined || after_id !== undefined;
+      if (
+        usesKeyset &&
+        (after_updated_at === undefined || after_id === undefined)
+      ) {
+        throw new AppError(
+          "after_updated_at and after_id have to be supplied together",
+          400,
+        );
+      }
+      if (!usesKeyset && offset > 0) {
+        logger.warn(
+          `Replication source received an offset-paginated request for "${table}". Offsets get slower the further they go and cannot guarantee a stable order; the destination should be updated to use after_updated_at / after_id instead.`,
+        );
+      }
+
+      // Continue right after the row identified by the caller's cursor. This
+      // is a row value comparison on purpose: it is the form the database can
+      // answer with a single seek into the ("updatedAt", primary key) index,
+      // whereas the equivalent "a > x OR (a = x AND b > y)" makes it scan and
+      // discard everything before the cursor instead.
+      const quote = (attribute: string) =>
+        sequelize
+          .getQueryInterface()
+          .quoteIdentifier(getColumnName(model, attribute));
+      const cursorCondition = Sequelize.literal(
+        `(${quote("updatedAt")}, ${quote(primaryKey)}) > (:afterUpdatedAt, :afterId)`,
+      );
+
+      const initialCursor: Cursor | undefined = usesKeyset
+        ? [
+            after_updated_at as Date,
+            castPrimaryKey(model, primaryKey, after_id as string),
+          ]
+        : undefined;
+
+      const queryPage = async (
+        cursor: Cursor | undefined,
         pageSize: number,
       ) => {
-        return await model.findAll({
-          offset: queryOffset,
-          limit: pageSize,
-          raw: true,
-          order: [["updatedAt", "ASC"]],
+        // The first page continues from the cursor the caller supplied (if
+        // any), every page after that from the previous page's last row.
+        const after = cursor ?? initialCursor;
 
-          ...(updated_after && {
-            where: {
-              updatedAt: {
-                [Sequelize.Op.gte]: updated_after,
-              },
-            },
+        return await model.findAll({
+          where: after
+            ? { [Sequelize.Op.and]: [baseWhere, cursorCondition] }
+            : baseWhere,
+          ...(after && {
+            replacements: { afterUpdatedAt: after[0], afterId: after[1] },
           }),
+          order: [
+            ["updatedAt", "ASC"],
+            [primaryKey, "ASC"],
+          ],
+          raw: true,
+          limit: pageSize,
+          // Legacy, offset-paginated callers still get their requested
+          // offset, but only on the first page. Every page after that
+          // continues from the previous page's last row, so the offset is
+          // paid once instead of once per chunk.
+          ...(!usesKeyset && cursor === undefined && offset > 0 && { offset }),
         });
       };
 
-      // Do a pagninated (or chunked) export of the data
-      await paginatedExport(res, dataQueryFunction, "json", limit, offset);
+      // Do a chunked export of the data
+      await keysetExport(res, queryPage, "json", {
+        cursorFields: ["updatedAt", primaryKey],
+        limit,
+      });
     } catch (error) {
       next(error);
     }

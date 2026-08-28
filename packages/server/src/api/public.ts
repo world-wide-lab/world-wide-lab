@@ -72,6 +72,13 @@ routerPublic.get(
       res.type("json").send({
         version: config.version,
         db_version: await getDbVersion(),
+        // What this instance supports, so that instances of different
+        // versions can still replicate with each other
+        capabilities: {
+          // Pagination modes accepted by the replication source endpoint.
+          // Instances without this field only understand "offset".
+          replication_pagination: ["offset", "keyset"],
+        },
       });
     } catch (error) {
       next(error);

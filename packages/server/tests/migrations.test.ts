@@ -26,6 +26,22 @@ describe("Database Migrations", () => {
     expect(tableNames).toMatchSnapshot();
   });
 
+  it("should still enforce primary keys after adding the replication indexes", async () => {
+    // The composite ("updatedAt", primary key) index used for replication also
+    // covers the primary key column, and sequelize's describeTable() lets the
+    // last index covering a column decide its "unique" flag. That makes the
+    // primary keys *look* non-unique in the snapshot below, so assert that the
+    // database still enforces them.
+    const studyId = "primary-key-uniqueness-check";
+    await sequelize.models.Study.create({ studyId });
+
+    await expect(
+      sequelize.models.Study.create({ studyId }),
+    ).rejects.toThrowError();
+
+    await sequelize.models.Study.destroy({ where: { studyId } });
+  });
+
   it("should always create the same table structures", async () => {
     const tableNames: Array<string> = await sequelize
       .getQueryInterface()
