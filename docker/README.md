@@ -17,22 +17,20 @@ docker run -p 8787:8787 \
   world-wide-lab/server
 ```
 
-The server inside the container does not run as `root`, but as the unprivileged `node` user (uid `1000`). If you mount a directory from your host into the container, e.g. to keep the server's logs, make sure that this directory is writable for that user.
-
 ## Development
 
 ### Building the Container
 
-The container is built from the `Dockerfile` in the root of the repository and compiles the server itself, so there's no need to build the project beforehand. To build the container for your current platform, run the following command from the root of the repository.
+The container compiles the server itself, so there's no need to build the project beforehand. To build the container for your current platform, run the following command from the root of the repository.
 
 ```bash
-docker build -t world-wide-lab/server .
+docker build -t world-wide-lab/server packages/server/
 ```
 
 If you plan to deploy the container into the cloud, you may need to use `docker buildx` to build it for a different architecture as e.g. modern Macs use a different chip architecture compared to most cloud providers. You can build for the two most common architectures (amd64 and arm64) using the following command:
 
 ```bash
-docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64/v8 .
+docker buildx build -t world-wide-lab/server --platform=linux/amd64,linux/arm64/v8 packages/server/
 ```
 
 ### Pushing the Container to a Registry

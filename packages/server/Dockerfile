@@ -4,7 +4,7 @@
 #
 # The image builds the server from source, so it can be built from a clean
 # checkout of the repository without any local setup:
-#   docker build -t world-wide-lab/server .
+#   docker build -t world-wide-lab/server packages/server/
 #
 # Only the server's production dependencies and its compiled output end up in
 # the final image, all build tooling stays behind in the intermediate stages.
@@ -24,10 +24,10 @@ ENV NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false \
     NPM_CONFIG_UPDATE_NOTIFIER=false
 
-# The server is a self-contained package within this monorepo, so it is
-# installed on its own, without the other workspaces. This keeps the image free
-# of dependencies that are only relevant to the other packages.
-COPY packages/server/package.json ./
+# The server is installed on its own, without the other workspaces of the
+# monorepo. This keeps the image free of dependencies that are only relevant to
+# the other packages.
+COPY package.json ./
 
 # The optional @world-wide-lab/deploy dependency lives in another workspace and
 # is only needed for the automated cloud deployments from the admin UI. It is
@@ -69,8 +69,8 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm install
 
-COPY packages/server/tsconfig.json packages/server/tsconfig-build.json ./
-COPY packages/server/src ./src
+COPY tsconfig.json tsconfig-build.json ./
+COPY src ./src
 
 RUN npm run build
 
@@ -93,17 +93,10 @@ RUN apt-get update \
 
 ENV NODE_ENV=production
 
-# The server writes its logs and the bundled admin panel relative to its working
-# directory, so these need to be writable by the (unprivileged) user below.
-RUN mkdir -p logs .adminjs && chown -R node:node /usr/src/app
-
-COPY --from=prod-deps --chown=node:node /usr/src/app/node_modules ./node_modules
-COPY --from=build --chown=node:node /usr/src/app/dist ./dist
-COPY --chown=node:node packages/server/static ./static
-COPY --chown=node:node packages/server/certs ./certs
-
-# Do not run the server as root
-USER node
+COPY --from=prod-deps /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
+COPY static ./static
+COPY certs ./certs
 
 # Expose the app's port
 ENV PORT=8787
