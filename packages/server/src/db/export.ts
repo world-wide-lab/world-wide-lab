@@ -7,9 +7,15 @@ import { logger } from "../logger.js";
 
 type ExportFormat = "json" | "csv";
 
-// Value used to continue keyset pagination after a given row. Cursors have to
-// be unique and strictly increasing across the pages of an export.
-type Cursor = number | string;
+// A single component of a keyset cursor. Dates are kept as Dates rather than
+// stringified, so that each dialect can escape them into the format it
+// actually stores them in (which is not ISO 8601 for sqlite).
+type CursorValue = number | string | Date;
+
+// Values used to continue keyset pagination after a given row, one per cursor
+// column. Taken together they have to be unique and strictly increasing (in
+// lexicographic order) across the pages of an export.
+type Cursor = CursorValue[];
 
 // Retrieve one page of data, starting after the given cursor. The cursor is
 // undefined for the very first page.
@@ -93,33 +99,16 @@ function createExportWriter(res: Response, format: ExportFormat) {
   return { onStart, onData, onEnd };
 }
 
-// Export data from the database in chunks, using offset-based pagination.
-// Prefer keysetExport() where possible, see keysetQuery() for why.
-async function paginatedExport(
-  res: Response,
-  queryData: (offset: number, limit: number) => Promise<object[]>,
-  format: ExportFormat,
-  limit: number = Number.POSITIVE_INFINITY,
-  initialOffset = 0,
-) {
-  const { onStart, onData, onEnd } = createExportWriter(res, format);
-
-  return await chunkedQuery({
-    queryData,
-    onData,
-    onStart,
-    onEnd,
-    limit,
-    initialOffset,
-  });
-}
-
 // Export data from the database in chunks, using keyset pagination
 async function keysetExport(
   res: Response,
   queryPage: PageQuery,
   format: ExportFormat,
-  options: { cursorField: string; hideCursorField?: boolean },
+  options: {
+    cursorFields: string[];
+    hiddenCursorFields?: string[];
+    limit?: number;
+  },
 ) {
   const { onStart, onData, onEnd } = createExportWriter(res, format);
 
@@ -132,92 +121,41 @@ async function keysetExport(
   });
 }
 
-async function chunkedQuery({
-  queryData,
-  onData,
-  onStart = () => {},
-  onEnd = () => {},
-  limit = Number.POSITIVE_INFINITY,
-  initialOffset = 0,
-}: {
-  queryData: (offset: number, limit: number) => Promise<object[]>;
-  onData: (data: object[]) => Promise<void>;
-  onStart?: () => void;
-  onEnd?: () => void;
-  limit?: number;
-  initialOffset?: number;
-}) {
-  let pageSize = config.database.chunkSize;
-  let offset = initialOffset;
-  const absoluteLimit = initialOffset + limit;
+// Read the cursor of a row and verify that we can keep paginating with it
+function getCursor(row: object, cursorFields: string[]): Cursor {
+  return cursorFields.map((cursorField) => {
+    const value = (row as Record<string, unknown>)[cursorField];
 
-  let nRowsResult: number;
-  let isFirstIteration = true;
-  if (limit < pageSize) {
-    pageSize = limit;
-  }
-
-  do {
-    // If we'd overshoot with the next page, reduce the page size to exactly fit the limit
-    if (offset + pageSize > absoluteLimit) {
-      pageSize = absoluteLimit - offset;
-    }
-
-    // Retrieve the data
-    const data = await queryData(offset, pageSize);
-    if (!Array.isArray(data)) {
-      throw new Error("Data is always expected to be returned as an Array");
-    }
-    nRowsResult = data.length;
-
-    if (isFirstIteration) {
-      // Call onStart after we received data for the first time to still allow
-      // sending error status codes if query code fails.
-      onStart();
-      isFirstIteration = false;
-    }
-
-    if (nRowsResult > pageSize) {
-      logger.warn(
-        `Query returned more rows (${nRowsResult}) than the page size (${pageSize}). This will lead to a premature exit.`,
+    if (
+      typeof value !== "number" &&
+      typeof value !== "string" &&
+      !(value instanceof Date)
+    ) {
+      throw new Error(
+        `Expected the cursor column "${cursorField}" to hold a number, a string or a Date, but got: ${value}`,
       );
     }
-
-    // Do something with the data (usually returning it to the user)
-    if (nRowsResult > 0) {
-      await onData(data);
-    }
-
-    // Increase the offset in case we will continue
-    offset += pageSize;
-
-    // Check whether we already got all data
-    // e.g. we either got an empty result or our result was less than the limit
-  } while (
-    nRowsResult > 0 &&
-    nRowsResult === pageSize &&
-    offset < absoluteLimit
-  );
-
-  onEnd();
+    return value;
+  });
 }
 
-// Read the cursor of a row and verify that we can keep paginating with it
-function getCursor(row: object, cursorField: string): Cursor {
-  const cursor = (row as Record<string, unknown>)[cursorField];
-
-  if (typeof cursor !== "number" && typeof cursor !== "string") {
-    throw new Error(
-      `Expected the cursor column "${cursorField}" to hold a number or a string, but got: ${cursor}`,
-    );
+// Compare two cursors lexicographically, i.e. by their first differing column
+function compareCursors(a: Cursor, b: Cursor): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] < b[i]) {
+      return -1;
+    }
+    if (a[i] > b[i]) {
+      return 1;
+    }
   }
-  return cursor;
+  return a.length - b.length;
 }
 
 // Retrieve data in chunks using keyset pagination, i.e. every page continues
 // right after the last row of the previous one (WHERE key > lastKey).
 //
-// This is preferable to the OFFSET-based chunkedQuery() for two reasons:
+// This is preferable to LIMIT / OFFSET pagination for two reasons:
 // 1. Speed: OFFSET forces the database to walk over (and throw away) all rows
 //    before the offset, so every page gets slower than the last one and a full
 //    export ends up scanning the table once per chunk.
@@ -226,29 +164,42 @@ function getCursor(row: object, cursorField: string): Cursor {
 //    exported twice or skipped entirely in between chunks.
 async function keysetQuery({
   queryPage,
-  cursorField,
-  hideCursorField = false,
+  cursorFields,
+  hiddenCursorFields = [],
   onData,
   onStart = () => {},
   onEnd = () => {},
+  limit = Number.POSITIVE_INFINITY,
 }: {
   queryPage: PageQuery;
-  // Name of the column holding the cursor. It has to be unique and the query
-  // has to be ordered by it in ascending order.
-  cursorField: string;
-  // Whether to remove the cursor column from the data before passing it on
-  hideCursorField?: boolean;
+  // Names of the columns making up the cursor. Taken together they have to be
+  // unique and the query has to be ordered by them in ascending order.
+  cursorFields: string[];
+  // Cursor columns to remove from the data before passing it on, for cursors
+  // which are not supposed to show up in the result themselves
+  hiddenCursorFields?: string[];
   onData: (data: object[]) => Promise<void>;
   onStart?: () => void;
   onEnd?: () => void;
+  // Maximum number of rows to retrieve in total, across all pages
+  limit?: number;
 }) {
-  const pageSize = config.database.chunkSize;
+  let pageSize = config.database.chunkSize;
+  if (limit < pageSize) {
+    pageSize = limit;
+  }
 
   let cursor: Cursor | undefined = undefined;
+  let nRowsTotal = 0;
   let nRowsResult: number;
   let isFirstIteration = true;
 
   do {
+    // If we'd overshoot with the next page, reduce it to exactly fit the limit
+    if (nRowsTotal + pageSize > limit) {
+      pageSize = limit - nRowsTotal;
+    }
+
     // Retrieve the next page, continuing after the last row we have seen
     const data = await queryPage(cursor, pageSize);
     if (!Array.isArray(data)) {
@@ -272,19 +223,23 @@ async function keysetQuery({
     if (nRowsResult > 0) {
       // Remember where to continue before the cursor is (possibly) removed
       const previousCursor = cursor;
-      cursor = getCursor(data[nRowsResult - 1], cursorField);
+      cursor = getCursor(data[nRowsResult - 1], cursorFields);
+      nRowsTotal += nRowsResult;
 
       // Guard against queries which do not actually advance the cursor, as
       // those would otherwise export the same page over and over again.
-      if (previousCursor !== undefined && cursor <= previousCursor) {
+      if (
+        previousCursor !== undefined &&
+        compareCursors(cursor, previousCursor) <= 0
+      ) {
         throw new Error(
-          `The cursor column "${cursorField}" did not advance (${previousCursor} -> ${cursor}). It has to be unique and sorted in ascending order.`,
+          `The cursor (${cursorFields.join(", ")}) did not advance (${previousCursor} -> ${cursor}). It has to be unique and sorted in ascending order.`,
         );
       }
 
-      if (hideCursorField) {
+      for (const hiddenCursorField of hiddenCursorFields) {
         for (const row of data) {
-          delete (row as Record<string, unknown>)[cursorField];
+          delete (row as Record<string, unknown>)[hiddenCursorField];
         }
       }
 
@@ -293,7 +248,7 @@ async function keysetQuery({
     }
 
     // A page that isn't full means that we have reached the end of the data
-  } while (nRowsResult === pageSize);
+  } while (nRowsResult === pageSize && nRowsTotal < limit);
 
   onEnd();
 }
@@ -403,10 +358,5 @@ async function generateExtractedPayloadQuery(
   return { query, pageQuery };
 }
 
-export {
-  KEYSET_CURSOR_COLUMN,
-  generateExtractedPayloadQuery,
-  keysetExport,
-  paginatedExport,
-};
-export type { Cursor, ExportFormat, PageQuery };
+export { KEYSET_CURSOR_COLUMN, generateExtractedPayloadQuery, keysetExport };
+export type { Cursor, CursorValue, ExportFormat, PageQuery };

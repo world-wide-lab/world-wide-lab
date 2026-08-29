@@ -205,6 +205,22 @@ describe("Replication", () => {
   });
 
   describe("API of Replication Destination", () => {
+    // Every source URL the destination requested, in order
+    const requestedUrls: string[] = [];
+
+    // The source paginates on ("updatedAt", primary key), so the mock needs to
+    // know which column is the primary key of the table being requested.
+    const primaryKeyForEndpoint = (endpoint: string) => {
+      const primaryKeys: Record<string, string> = {
+        wwl_studies: "studyId",
+        wwl_participants: "participantId",
+        wwl_sessions: "sessionId",
+        wwl_responses: "responseId",
+      };
+      const table = endpoint.match(/get-table\/([^/?]+)/)?.[1] as string;
+      return primaryKeys[table];
+    };
+
     beforeAll(async () => {
       const REPLICATION_SOURCE_URL = "https://wwl-test";
 
@@ -383,21 +399,51 @@ describe("Replication", () => {
           throw new Error(`No mock response for "${endpoint}" "${method}"`);
         }
 
+        requestedUrls.push(endpoint);
+
         let data: Array<object> | object;
         if (typeof matchingRespone === "function") {
           // Function => execute it
           data = matchingRespone({ endpoint });
         } else if (Array.isArray(matchingRespone)) {
-          // Array => get slices via limit and offset
+          // Array => return the requested page of it, the same way the real
+          // source endpoint would
           const url = new URL(endpoint, "http://localhost");
           const limit = Number.parseInt(
             url.searchParams.get("limit") as string,
           );
-          const offset = Number.parseInt(
-            url.searchParams.get("offset") as string,
+          const afterUpdatedAt = url.searchParams.get("after_updated_at");
+          const afterId = url.searchParams.get("after_id");
+
+          // The source always returns rows ordered by ("updatedAt", pk)
+          const primaryKey = primaryKeyForEndpoint(endpoint);
+          const rows = [...matchingRespone].sort((a: any, b: any) =>
+            a.updatedAt === b.updatedAt
+              ? String(a[primaryKey]) < String(b[primaryKey])
+                ? -1
+                : 1
+              : a.updatedAt < b.updatedAt
+                ? -1
+                : 1,
           );
 
-          data = matchingRespone.slice(offset, offset + limit);
+          let start: number;
+          if (afterUpdatedAt !== null || afterId !== null) {
+            // Keyset pagination => continue right after the given row
+            start =
+              rows.findIndex(
+                (row: any) =>
+                  new Date(row.updatedAt).toISOString() === afterUpdatedAt &&
+                  String(row[primaryKey]) === afterId,
+              ) + 1;
+          } else {
+            // Offset pagination (what older destinations use), or the very
+            // first keyset page, which carries no cursor yet
+            start =
+              Number.parseInt(url.searchParams.get("offset") as string) || 0;
+          }
+
+          data = rows.slice(start, start + limit);
         } else {
           // Else just return as is
           data = matchingRespone;
