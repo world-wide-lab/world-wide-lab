@@ -18,26 +18,37 @@ const maxsize = 2 * 1024 * 1024; // 5MB
 // Maximum number of files to keep
 const maxFiles = 3;
 
+// "silent" is not a real winston level, it is our way of turning the console
+// transport off entirely (e.g. while running tests).
+const consoleSilent = config.logging.consoleLevel === "silent";
+
+const fileTransports = config.logging.file
+  ? [
+      new winston.transports.File({
+        filename: path.join(config.logging.dir, "default.log"),
+        maxsize,
+        maxFiles,
+      }),
+      new winston.transports.File({
+        filename: path.join(config.logging.dir, "verbose.log"),
+        level: "verbose",
+        maxsize,
+        maxFiles,
+      }),
+    ]
+  : [];
+
 const logger = winston.createLogger({
   level: "info",
   format: winston.format.json(),
   transports: [
     new winston.transports.Console({
       format: winston.format.simple(),
-      level: config.logging.consoleLevel, // defaults to 'info'
+      level: consoleSilent ? "error" : config.logging.consoleLevel, // defaults to 'info'
+      silent: consoleSilent,
     }),
 
-    new winston.transports.File({
-      filename: path.join(config.logging.dir, "default.log"),
-      maxsize,
-      maxFiles,
-    }),
-    new winston.transports.File({
-      filename: path.join(config.logging.dir, "verbose.log"),
-      level: "verbose",
-      maxsize,
-      maxFiles,
-    }),
+    ...fileTransports,
   ],
   levels: customLevels,
 });

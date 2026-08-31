@@ -42,7 +42,7 @@ function getNonPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
 async function importTableData(tableName: string, tableData: any[]) {
   const model = findModelByTableName(tableName);
 
-  console.log(`Importing ${tableData.length} rows into ${tableName}`);
+  logger.info(`Importing ${tableData.length} rows into ${tableName}`);
 
   await model.bulkCreate(tableData, {
     updateOnDuplicate: getNonPrimaryKeyColumns(model),

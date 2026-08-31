@@ -3,8 +3,6 @@ import cors from "cors";
 import express, { type Request, type Response } from "express";
 import helmet from "helmet";
 
-import { admin, adminRouter } from "./admin/index.js";
-import apiDocs from "./api-docs/index.js";
 import api from "./api/index.js";
 import { routerProtectedWithoutAuthentication } from "./api/protected.js";
 import config from "./config.js";
@@ -61,12 +59,22 @@ app.get("/", async (req: Request, res: Response) => {
 app.use("/v1", api);
 
 // Mount the api-docs
+// Generating the OpenAPI spec parses the annotated source files, so this is
+// only imported when the docs are actually served.
 if (config.apiDocs.enabled) {
+  const { default: apiDocs } = await import("./api-docs/index.js");
+
   app.use("/api-docs", apiDocs);
 }
 
 // Use adminJS
+// The admin UI pulls in AdminJS and its React components, which is by far the
+// most expensive import of the whole server. Loading it lazily keeps startup
+// (and the test suite, which runs with ADMIN_UI=false) fast when it is not
+// needed.
 if (config.admin.enabled) {
+  const { admin, adminRouter } = await import("./admin/index.js");
+
   // Make protected API routes available in Admin UI
   adminRouter.use("/wwl/", routerProtectedWithoutAuthentication);
 

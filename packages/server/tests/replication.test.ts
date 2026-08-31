@@ -1,6 +1,3 @@
-// Set up fake environment variables
-import "./setup_env";
-
 import { URL } from "node:url";
 import { Op } from "sequelize";
 import request from "supertest";
@@ -8,8 +5,8 @@ import app from "../src/app";
 import config from "../src/config";
 import sequelize from "../src/db";
 import { generateExampleData } from "../src/db/exampleData";
-import { up } from "../src/db/migrate";
 import { UnknownTableError, findModelByTableName } from "../src/db/replication";
+import { resetDatabase, useTestDatabase } from "./helpers/index.js";
 
 const endpoint = request(app);
 
@@ -17,31 +14,37 @@ const API_KEY = process.env.DEFAULT_API_KEY;
 
 const updatedAfter = new Date("2000-01-01T00:00:00Z").toISOString();
 
+// Config is shared across test files, so the overrides these tests make are
+// undone again afterwards.
+const originalReplicationConfig = { ...config.replication };
+const originalChunkSize = config.database.chunkSize;
+
 describe("Replication", () => {
+  // Unlike most tests, these assert on exact row counts and on offsets into
+  // the full tables, so they need the database to themselves rather than just
+  // their own fixtures. Seeding happens in beforeAll so that no test depends on
+  // another test having run first.
   beforeAll(async () => {
-    // Initialize Database
-    await up();
-    await sequelize.sync();
+    await useTestDatabase();
+    await resetDatabase();
+
+    // Generate example data twice
+    // TODO: Mock dates to allow for testing the function of updated_after
+    await generateExampleData(sequelize);
+    await generateExampleData(sequelize, "example2");
+  });
+
+  afterAll(() => {
+    Object.assign(config.replication, originalReplicationConfig);
+    config.database.chunkSize = originalChunkSize;
   });
 
   describe("Setup (Example Data)", () => {
-    it("should create example data", async () => {
-      // Generate example data twice
-      // TODO: Mock dates to allow for testing the function of updated_after
-      await generateExampleData(sequelize);
-      await generateExampleData(sequelize, "example2");
-
-      const nStudies = await sequelize.models.Study.count();
-      expect(nStudies).toBe(1 * 2);
-
-      const nParticipants = await sequelize.models.Participant.count();
-      expect(nParticipants).toBe(4 * 2);
-
-      const nSessions = await sequelize.models.Session.count();
-      expect(nSessions).toBe(8 * 2);
-
-      const nResponses = await sequelize.models.Response.count();
-      expect(nResponses).toBe(20 * 2);
+    it("should have seeded the expected example data", async () => {
+      expect(await sequelize.models.Study.count()).toBe(1 * 2);
+      expect(await sequelize.models.Participant.count()).toBe(4 * 2);
+      expect(await sequelize.models.Session.count()).toBe(8 * 2);
+      expect(await sequelize.models.Response.count()).toBe(20 * 2);
     });
   });
 

@@ -1,4 +1,5 @@
 import pathLib from "node:path";
+import type { Sequelize } from "sequelize";
 import { SequelizeStorage, Umzug } from "umzug";
 
 import process from "node:process";
@@ -9,46 +10,56 @@ import sequelize from "./index.js";
 
 const dirname = getDirectory(import.meta.url);
 
-const dialect = sequelize.getDialect();
+/**
+ * Build the migration runner for a given database connection.
+ *
+ * Tests use this to run the migrations against their own connection, without
+ * touching the connection the rest of the application shares.
+ */
+function createUmzug(db: Sequelize) {
+  const dialect = db.getDialect();
 
-const umzug = new Umzug({
-  // Support both common and dialect-specific migrations
-  migrations: {
-    glob: [`migrations/*.@(common|${dialect}).@(js|ts)`, { cwd: dirname }],
-    resolve: ({ name, path, context }) => {
-      const getMigration = async () => import(path as string);
-      const nameWithoutExtension = pathLib.parse(path as string).name;
+  return new Umzug({
+    // Support both common and dialect-specific migrations
+    migrations: {
+      glob: [`migrations/*.@(common|${dialect}).@(js|ts)`, { cwd: dirname }],
+      resolve: ({ name, path, context }) => {
+        const getMigration = async () => import(path as string);
+        const nameWithoutExtension = pathLib.parse(path as string).name;
 
-      // adjust the parameters Umzug will
-      // pass to migration methods when called
-      return {
-        // Remove extension of migration names (to avoid double applying between js and ts)
-        name: nameWithoutExtension,
-        up: async () => {
-          const migration = await getMigration();
-          await migration.up({ context });
-        },
-        down: async () => {
-          const migration = await getMigration();
-          await migration.down({ context });
-        },
-      };
+        // adjust the parameters Umzug will
+        // pass to migration methods when called
+        return {
+          // Remove extension of migration names (to avoid double applying between js and ts)
+          name: nameWithoutExtension,
+          up: async () => {
+            const migration = await getMigration();
+            await migration.up({ context });
+          },
+          down: async () => {
+            const migration = await getMigration();
+            await migration.down({ context });
+          },
+        };
+      },
     },
-  },
-  context: sequelize.getQueryInterface(),
-  storage: new SequelizeStorage({
-    sequelize,
-    modelName: "InternalMigrations",
-    tableName: "wwl_internal_migrations",
-  }),
-  // Map winston onto the umzug internal logger version
-  logger: {
-    info: (message) => logger.info,
-    warn: (message) => logger.warn,
-    error: (message) => logger.error,
-    debug: (message) => logger.info,
-  },
-});
+    context: db.getQueryInterface(),
+    storage: new SequelizeStorage({
+      sequelize: db,
+      modelName: "InternalMigrations",
+      tableName: "wwl_internal_migrations",
+    }),
+    // Map winston onto the umzug internal logger version
+    logger: {
+      info: (message) => logger.info,
+      warn: (message) => logger.warn,
+      error: (message) => logger.error,
+      debug: (message) => logger.info,
+    },
+  });
+}
+
+const umzug = createUmzug(sequelize);
 
 async function up() {
   const pending = await umzug.pending();
@@ -92,4 +103,4 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 // export the type helper exposed by umzug, which will have the `context` argument typed correctly
 export type Migration = typeof umzug._types.migration;
 
-export { umzug, up, getLatestMigration };
+export { createUmzug, umzug, up, getLatestMigration };

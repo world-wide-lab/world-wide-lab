@@ -32,6 +32,12 @@ exports[`Client > should start a new session (without a linked participant) 1`] 
 {
   "clientMetadata": {
     "library": "@world-wide-lab/client",
+    "navigator": {
+      "language": "en-US",
+      "languages": [
+        "en-US",
+      ],
+    },
     "searchParams": {
       "myId": "123",
       "otherId": "test",

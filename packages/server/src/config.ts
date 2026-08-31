@@ -79,8 +79,12 @@ const config = {
 
   logging: {
     dir: getValueFromEnv("LOGGING_DIR") || "logs",
-    // Change to 'verbose' to log SQL queries
+    // Change to 'verbose' to log SQL queries, or to 'silent' to turn the
+    // console output off completely (used by the test suite).
     consoleLevel: getValueFromEnv("LOGGING_LEVEL_CONSOLE") || "info",
+    // Whether to write log files to disk. Disabling this is useful for tests
+    // and other short-lived processes.
+    file: getBooleanFromEnv("LOGGING_FILE", true),
     http: getBooleanFromEnv("LOGGING_HTTP", true),
     sql: getBooleanFromEnv("LOGGING_SQL", true),
   },
