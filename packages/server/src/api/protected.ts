@@ -23,6 +23,7 @@ import sequelize from "../db/index.js";
 import { findModelByTableName, runReplication } from "../db/replication.js";
 import { sanitizeStudyId } from "../db/util.js";
 import { AppError } from "../errors.js";
+import { privateIpWhitelistMiddleware } from "../ipWhitelist.js";
 import { requireAuthMiddleware } from "./authMiddleware.js";
 
 const routerProtectedWithoutAuthentication = express.Router();
@@ -442,6 +443,8 @@ routerProtectedWithoutAuthentication.get(
 );
 
 const routerProtected = express.Router();
+// Restrict access to these endpoints by IP, before even checking the API key
+routerProtected.use(privateIpWhitelistMiddleware);
 routerProtected.use(requireAuthMiddleware);
 routerProtected.use(routerProtectedWithoutAuthentication);
 

@@ -25,3 +25,42 @@ _Coming soon..._
 | `CREATE_STUDIES`                                                 | Shorthand to automatically create empty studies. This can be useful when you set up a local World-Wide-Lab for testing in e.g. a docker-compose file.                                                                                                                | `""` (no studies created) |
 | `CREATE_LEADERBOARDS`                                            | Shorthand to automatically create empty leaderboards. This can be useful when you set up a local World-Wide-Lab for testing in e.g. a docker-compose file.                                                                                                           | `""` (no leaderboards)    |
 | `WWL_ELECTRON_APP`                                               | **Internal.** Is World-Wide-Lab running as the Desktop App or Server. Do not set or modify this variable, it is automatically set to the correct value.                                                                                                              | `false`                   |
+| `PUBLIC_IP_WHITELIST`                                            | Restrict access to _all_ endpoints to the listed IPs and / or subnets (in CIDR notation). Multiple entries can be separated by commas, e.g. `"127.0.0.1,10.0.0.0/8"`. Requests from other IPs are ignored completely, without any response being sent. If empty, access is not restricted.                                                              | `""` (no restriction)     |
+| `PRIVATE_IP_WHITELIST`                                           | The same as `PUBLIC_IP_WHITELIST`, but only restricting access to the private endpoints i.e. the Admin UI and the API endpoints requiring an API key. Both whitelists can be used on their own or in combination, in which case requests to private endpoints have to match both.                                                                       | `""` (no restriction)     |
+| `TRUST_PROXY`                                                    | Whether to trust proxy headers such as `X-Forwarded-For` when determining the IP a request originated from. Can be `true` / `false`, the number of proxies in front of World-Wide-Lab, or a list of trusted IPs / subnets. Only relevant if World-Wide-Lab runs behind a proxy or load balancer, see the section below.                                 | `false`                   |
+
+## Restricting Access by IP
+
+Access to World-Wide-Lab can be restricted to certain IP addresses and / or
+subnets via two environment variables:
+
+- `PUBLIC_IP_WHITELIST` restricts access to _all_ endpoints.
+- `PRIVATE_IP_WHITELIST` restricts access to the private endpoints only, i.e.
+  the Admin UI and the API endpoints requiring an API key. Note that
+  participants taking part in a study only use public endpoints, so these
+  remain accessible.
+
+Both variables accept a comma-separated list of IP addresses (e.g.
+`127.0.0.1` or `::1`) and subnets in CIDR notation (e.g. `10.0.0.0/8` or
+`2001:db8::/32`). They can be used on their own or in combination: the public
+whitelist always applies to the private endpoints as well, but not the other
+way around.
+
+```sh
+# Only allow access from the office network, with the Admin UI and data
+# downloads being restricted to a single computer within it
+PUBLIC_IP_WHITELIST="203.0.113.0/24"
+PRIVATE_IP_WHITELIST="203.0.113.42"
+```
+
+Requests from IPs that are not on the corresponding whitelist are ignored
+completely: their connection is closed without any response being sent, which
+also makes it more difficult to scan the server for vulnerabilities.
+
+::: warning
+If World-Wide-Lab runs behind a proxy or load balancer, all requests will
+appear to come from that proxy, unless you also set `TRUST_PROXY`. Please
+make sure to only trust proxies you control, since the headers used to
+determine the original IP (e.g. `X-Forwarded-For`) can otherwise simply be
+spoofed by whoever is sending a request.
+:::
