@@ -15,8 +15,9 @@
     "build": "npm run build:wwl && npm run package",
     "build:dev": "npm run build:wwl && npm run package:dev",
     "build:wwl": "npm run build --prefix ../packages/deploy/ && npm run build --prefix ../packages/server/ && npm run bundle:adminjs --prefix ../packages/server/",
-    "package": "electron-builder",
-    "package:dev": "electron-builder --dir",
+    "check:pulumi-modules": "node check-pulumi-modules.js",
+    "package": "npm run check:pulumi-modules && electron-builder",
+    "package:dev": "npm run check:pulumi-modules && electron-builder --dir",
     "test:playwright": "npm run build:wwl && npx playwright test"
   },
   "author": "",
