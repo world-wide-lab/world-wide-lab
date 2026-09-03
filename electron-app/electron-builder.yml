@@ -4,6 +4,23 @@ asar: true
 artifactName: "${productName}-${os}-${arch}.${ext}"
 directories:
   buildResources: resources
+# Without an explicit list, electron-builder ships every file of every
+# production dependency. Around 44% of that payload is never read at runtime,
+# the bulk of it coming from the generated Pulumi SDKs (see #97).
+files:
+  - "**/*"
+  # Type declarations are only consumed by the TypeScript compiler (~291 MB).
+  - "!**/*.d.ts"
+  - "!**/*.d.mts"
+  - "!**/*.d.cts"
+  # Source maps (~52 MB).
+  - "!**/*.map"
+  # Incremental-build artefacts accidentally published by some packages (~8 MB).
+  - "!**/tsconfig.tsbuildinfo"
+  # Documentation (~10 MB). Licence files are deliberately kept, they only
+  # rarely carry a .md extension and are re-included below where they do.
+  - "!**/*.md"
+  - "**/{LICENSE,LICENCE,COPYING,NOTICE}*"
 mac:
   hardenedRuntime: true
   entitlements: "build/entitlements.mac.plist"
