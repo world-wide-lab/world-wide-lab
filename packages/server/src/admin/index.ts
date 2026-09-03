@@ -7,7 +7,11 @@ import config from "../config.js";
 import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
-import { analysesHandler } from "./handlers/analyses.js";
+import {
+  ANALYSES_PAGE_NAME,
+  analysesHandler,
+  viewStudyAnalysesHandler,
+} from "./handlers/analyses.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
@@ -26,7 +30,7 @@ AdminJS.registerAdapter({
 });
 
 const pages: AdminPages = {};
-pages.Analyses = {
+pages[ANALYSES_PAGE_NAME] = {
   component: Components.AnalysesPage,
   icon: "BarChart",
   handler: analysesHandler,
@@ -327,6 +331,13 @@ const admin = new AdminJS({
             handler: downloadStudyDataHandler,
             component: Components.StudyDownloadAction,
           },
+          viewAnalyses: {
+            actionType: "record",
+            label: "View Analyses",
+            icon: "BarChart",
+            component: false,
+            handler: viewStudyAnalysesHandler,
+          },
         },
       },
     },
@@ -566,6 +577,7 @@ const admin = new AdminJS({
               show: "Study Info",
               edit: "Edit Study",
               delete: "Delete Study",
+              viewAnalyses: "Analyses for this Study",
             },
           },
           wwl_participants: {

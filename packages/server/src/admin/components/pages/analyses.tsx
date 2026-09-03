@@ -4,6 +4,7 @@ import {
   H4,
   H5,
   Label,
+  Link,
   Loader,
   MessageBox,
   Select,
@@ -36,8 +37,15 @@ const N_BARS_IN_HISTOGRAM = 25;
 const N_TRANSITIONS = 8;
 const CHART_HEIGHT = 200;
 
+// Explanations of the web technologies behind some of the analyses
+const MDN_REFERRER =
+  "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referer";
+const MDN_QUERY_STRING =
+  "https://developer.mozilla.org/en-US/docs/Glossary/Query_string";
+
 const api = new ApiClient();
 
+const DEFAULT_DAYS = 30;
 const timeframeOptions = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
@@ -45,6 +53,41 @@ const timeframeOptions = [
   { value: 365, label: "Last 365 days" },
 ];
 const ALL_STUDIES = { value: "", label: "All studies" };
+
+// The selected filters are kept in the page's URL, so that the analyses of a
+// single study can be linked to, e.g. from the page of that study.
+function getFiltersFromUrl(): { studyId: string; days: number } {
+  if (typeof window === "undefined") {
+    return { studyId: ALL_STUDIES.value, days: DEFAULT_DAYS };
+  }
+  const params = new URLSearchParams(window.location.search);
+  const days = Number(params.get("days"));
+  return {
+    studyId: params.get("studyId") ?? ALL_STUDIES.value,
+    days: timeframeOptions.some((option) => option.value === days)
+      ? days
+      : DEFAULT_DAYS,
+  };
+}
+
+function updateUrl(studyId: string, days: number) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const params = new URLSearchParams();
+  if (studyId) {
+    params.set("studyId", studyId);
+  }
+  if (days !== DEFAULT_DAYS) {
+    params.set("days", String(days));
+  }
+  const query = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    query ? `?${query}` : window.location.pathname,
+  );
+}
 
 const Card = styled(Box)`
   position: relative;
@@ -116,6 +159,15 @@ function fillHistogram(
   return filled;
 }
 
+const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({
+  href,
+  children,
+}) => (
+  <Link href={href} target="_blank" rel="noreferrer">
+    {children}
+  </Link>
+);
+
 const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <Box width={[1 / 2, 1 / 2, 1 / 4]} pr="lg" pb="default">
     <Text variant="sm">{label}</Text>
@@ -158,7 +210,7 @@ const DataTable: React.FC<{
 
 const Breakdown: React.FC<{
   title: string;
-  hint: string;
+  hint: React.ReactNode;
   breakdown: RecruitmentBreakdown;
 }> = ({ title, hint, breakdown }) => (
   <Box width={[1, 1, 1 / 3]} pr="lg">
@@ -191,13 +243,18 @@ const Row: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 export const AnalysesPage: React.FC = () => {
-  const [studyId, setStudyId] = useState<string>(ALL_STUDIES.value);
-  const [days, setDays] = useState<number>(30);
+  const initialFilters = getFiltersFromUrl();
+  const [studyId, setStudyId] = useState<string>(initialFilters.studyId);
+  const [days, setDays] = useState<number>(initialFilters.days);
   const [analyses, setAnalyses] = useState<Analyses | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let outdated = false;
+
+    // Keep the filters in the URL, so that the current view can be
+    // bookmarked and shared
+    updateUrl(studyId, days);
 
     api
       .getPage<Analyses>({
@@ -231,11 +288,12 @@ export const AnalysesPage: React.FC = () => {
     ...(analyses?.studyIds ?? []).map((id) => ({ value: id, label: id })),
   ];
   const selectedStudy =
-    studyOptions.find((option) => option.value === studyId) ?? ALL_STUDIES;
+    studyOptions.find((option) => option.value === studyId) ??
+    (studyId ? { value: studyId, label: studyId } : ALL_STUDIES);
   const selectedTimeframe =
     timeframeOptions.find((option) => option.value === days) ??
     timeframeOptions[1];
-  const studyLabel = studyId ? `study ${studyId}` : "all studies";
+  const studyLabel = studyId ? `the study ${studyId}` : "all studies";
 
   const durationsByStudy = new Map(
     (analyses?.durationByStudy ?? []).map((entry) => [entry.studyId, entry]),
@@ -268,14 +326,16 @@ export const AnalysesPage: React.FC = () => {
               value={selectedTimeframe}
               options={timeframeOptions}
               onChange={(selected: { value: number }) =>
-                setDays(selected?.value ?? 30)
+                setDays(selected?.value ?? DEFAULT_DAYS)
               }
             />
           </Box>
         </Box>
         <Text variant="sm" mt="default" mb="lg">
-          Sessions over time, dropout and recruitment cover the selected study
-          and timeframe, the other analyses cover all studies.
+          Sessions over time, dropout and recruitment are based on {studyLabel}{" "}
+          within the selected timeframe. The comparison between studies and the
+          analyses of participants always cover all studies and all of your
+          data.
         </Text>
 
         {error && <MessageBox variant="danger" message={error} mb="lg" />}
@@ -291,7 +351,10 @@ export const AnalysesPage: React.FC = () => {
                 <Half>
                   <H4>Sessions over Time</H4>
                   <Text variant="sm">
-                    Sessions started and finished in {studyLabel}.
+                    How many sessions of {studyLabel} were started each day and
+                    how many of them were finished. A session only counts as
+                    finished once your study calls the client's finish()
+                    function at its end.
                   </Text>
                   <SessionsOverTimeChart
                     data={analyses.sessionsOverTime}
@@ -301,7 +364,8 @@ export const AnalysesPage: React.FC = () => {
                 <Half>
                   <H4>Completion Rate over Time</H4>
                   <Text variant="sm">
-                    Share of finished sessions, days without sessions show 0%.
+                    The share of each day's sessions which were finished. Days
+                    without any sessions are shown as 0%.
                   </Text>
                   <LineChart
                     labels={analyses.sessionsOverTime.map(
@@ -324,11 +388,17 @@ export const AnalysesPage: React.FC = () => {
             </Card>
 
             <Card>
-              <H4 mb="default">Studies</H4>
+              <H4>Studies</H4>
+              <Text variant="sm" mb="default">
+                How many sessions each of your studies has collected, how many
+                of them were finished and how long a session took. A session's
+                duration is measured from its start until its last response, so
+                sessions without any responses are not included in it.
+              </Text>
               <Row>
                 <Half>
                   <DataTable
-                    headers={["Study", "Sessions", "Finished", "Ø Duration"]}
+                    headers={["Study", "Sessions", "Finished", "Mean Duration"]}
                     rows={analyses.completionByStudy.map((entry) => {
                       const duration = durationsByStudy.get(entry.studyId);
                       return [
@@ -347,17 +417,20 @@ export const AnalysesPage: React.FC = () => {
                 </Half>
                 <Half>
                   {analyses.completionByStudy.length > 0 && (
-                    <BarChart
-                      labels={analyses.completionByStudy
-                        .slice(0, N_STUDIES_IN_CHARTS)
-                        .map((entry) => entry.studyId)}
-                      values={analyses.completionByStudy
-                        .slice(0, N_STUDIES_IN_CHARTS)
-                        .map((entry) => (entry.completionRate ?? 0) * 100)}
-                      name="Completion Rate (%)"
-                      height={CHART_HEIGHT}
-                      formatValue={(value) => `${value.toFixed(1)}%`}
-                    />
+                    <>
+                      <H5>Completion Rate per Study</H5>
+                      <BarChart
+                        labels={analyses.completionByStudy
+                          .slice(0, N_STUDIES_IN_CHARTS)
+                          .map((entry) => entry.studyId)}
+                        values={analyses.completionByStudy
+                          .slice(0, N_STUDIES_IN_CHARTS)
+                          .map((entry) => (entry.completionRate ?? 0) * 100)}
+                        name="Completion Rate (%)"
+                        height={CHART_HEIGHT}
+                        formatValue={(value) => `${value.toFixed(1)}%`}
+                      />
+                    </>
                   )}
                 </Half>
               </Row>
@@ -366,8 +439,9 @@ export const AnalysesPage: React.FC = () => {
             <Card>
               <H4>Dropout</H4>
               <Text variant="sm" mb="default">
-                How many responses the sessions in {studyLabel} contain, i.e.
-                how far participants get before they leave.
+                How many responses the sessions of {studyLabel} contain. If your
+                study stores one response per trial or page, this shows how far
+                participants usually get before they drop out.
               </Text>
               <Row>
                 <Stat
@@ -401,6 +475,10 @@ export const AnalysesPage: React.FC = () => {
               <Row>
                 <Half>
                   <H5>Sessions still going after n Responses</H5>
+                  <Text variant="sm">
+                    The share of sessions with at least n responses. The steeper
+                    this drops, the earlier participants leave.
+                  </Text>
                   <LineChart
                     labels={analyses.responsesPerSession.retention.map(
                       (entry) => String(entry.nResponses),
@@ -426,6 +504,9 @@ export const AnalysesPage: React.FC = () => {
                 </Half>
                 <Half>
                   <H5>Number of Responses per Session</H5>
+                  <Text variant="sm">
+                    How many sessions have exactly n responses.
+                  </Text>
                   <BarChart
                     labels={histogram.map((entry) => String(entry.nResponses))}
                     values={histogram.map((entry) => entry.nSessions)}
@@ -439,8 +520,10 @@ export const AnalysesPage: React.FC = () => {
             <Card>
               <H4>Participants</H4>
               <Text variant="sm" mb="default">
-                How often participants take part. Only sessions which are linked
-                to a participant are counted here.
+                How often the same person takes part in your studies. This is
+                only possible for sessions which are linked to a participant,
+                e.g. via the linkParticipant option of the client, so sessions
+                without a participant are not counted here.
               </Text>
               <Row>
                 <Stat
@@ -457,13 +540,13 @@ export const AnalysesPage: React.FC = () => {
                   )}
                 />
                 <Stat
-                  label="Repeating a Study"
+                  label="Took the same Study twice"
                   value={formatNumber(
                     analyses.participantLinking.nParticipantsRepeatingAStudy,
                   )}
                 />
                 <Stat
-                  label="In multiple Studies"
+                  label="Took part in multiple Studies"
                   value={formatNumber(
                     analyses.participantLinking
                       .nParticipantsWithMultipleStudies,
@@ -472,7 +555,10 @@ export const AnalysesPage: React.FC = () => {
               </Row>
               <Row>
                 <Box width={[1, 1, 1 / 3]} pr="lg">
-                  <H5 mb="default">Sessions per Participant</H5>
+                  <H5>Sessions per Participant</H5>
+                  <Text variant="sm" mb="default">
+                    How many participants took part n times.
+                  </Text>
                   <DataTable
                     headers={["Sessions", "Participants"]}
                     rows={analyses.participantLinking.sessionsPerParticipant.map(
@@ -485,7 +571,10 @@ export const AnalysesPage: React.FC = () => {
                   />
                 </Box>
                 <Box width={[1, 1, 1 / 3]} pr="lg">
-                  <H5 mb="default">Studies per Participant</H5>
+                  <H5>Studies per Participant</H5>
+                  <Text variant="sm" mb="default">
+                    How many participants took part in n different studies.
+                  </Text>
                   <DataTable
                     headers={["Studies", "Participants"]}
                     rows={analyses.participantLinking.studiesPerParticipant.map(
@@ -498,7 +587,11 @@ export const AnalysesPage: React.FC = () => {
                   />
                 </Box>
                 <Box width={[1, 1, 1 / 3]}>
-                  <H5 mb="default">Moving between Studies</H5>
+                  <H5>Moving between Studies</H5>
+                  <Text variant="sm" mb="default">
+                    How often a participant's next session was in a different
+                    study than the one before.
+                  </Text>
                   <DataTable
                     headers={["From", "To", "Participants"]}
                     rows={analyses.participantLinking.studyTransitions
@@ -524,23 +617,53 @@ export const AnalysesPage: React.FC = () => {
             <Card>
               <H4>Recruitment</H4>
               <Text variant="sm" mb="default">
-                Where the sessions in {studyLabel} are coming from, based on the
-                information collected when a session is started.
+                Where the participants of {studyLabel} came from. This is based
+                on information the World-Wide-Lab client collects automatically
+                whenever a session is started. Sessions for which it is missing,
+                e.g. sessions created directly via the API, are counted as
+                (unknown).
               </Text>
               <Row>
                 <Breakdown
                   title="Source URL"
-                  hint="The page a study ran on, without query parameters."
+                  hint={
+                    <>
+                      The address of the page your study ran on, without its{" "}
+                      <ExternalLink href={MDN_QUERY_STRING}>
+                        query string
+                      </ExternalLink>
+                      .
+                    </>
+                  }
                   breakdown={analyses.recruitment.bySourceUrl}
                 />
                 <Breakdown
                   title="Referrer"
-                  hint="The website participants came from."
+                  hint={
+                    <>
+                      The page participants clicked the link to your study on,
+                      taken from the{" "}
+                      <ExternalLink href={MDN_REFERRER}>
+                        Referer header
+                      </ExternalLink>
+                      . Participants who entered the address directly show up as
+                      (none / direct).
+                    </>
+                  }
                   breakdown={analyses.recruitment.byReferrer}
                 />
                 <Breakdown
                   title="Source Parameter"
-                  hint="The source, utm_source or ref parameter in the URL."
+                  hint={
+                    <>
+                      The source, utm_source or ref{" "}
+                      <ExternalLink href={MDN_QUERY_STRING}>
+                        query parameter
+                      </ExternalLink>{" "}
+                      of your study's address, e.g. ?source=newsletter. Use it
+                      to tell your recruitment channels apart.
+                    </>
+                  }
                   breakdown={analyses.recruitment.bySourceParameter}
                 />
               </Row>

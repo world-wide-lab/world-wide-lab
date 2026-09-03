@@ -70,7 +70,7 @@ test("Update Screenshots for docs", async ({ page }) => {
   // Analyses
   // The page is a lot longer than the others, so it gets a taller window to
   // fit all of its sections into one screenshot.
-  await page.setViewportSize({ width: 1280, height: 2300 });
+  await page.setViewportSize({ width: 1280, height: 2650 });
   await goAndTakeScreenshot(page, "admin/pages/Analyses", async (page) => {
     // Wait for the charts to load
     await page.locator(".frappe-chart").first().waitFor();
