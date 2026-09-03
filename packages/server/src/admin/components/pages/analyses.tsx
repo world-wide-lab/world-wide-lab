@@ -32,6 +32,8 @@ const PAGE_NAME = "Analyses";
 const N_STUDIES_IN_CHARTS = 10;
 // Number of bars shown in the responses per session chart
 const N_BARS_IN_HISTOGRAM = 25;
+// Number of rows shown in the table of transitions between studies
+const N_TRANSITIONS = 8;
 const CHART_HEIGHT = 200;
 
 const api = new ApiClient();
@@ -81,6 +83,12 @@ function formatDuration(seconds: number): string {
     return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
   }
   return `${Math.floor(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
+}
+
+// URLs are shown without their scheme, since they are displayed in a rather
+// narrow column
+function shortenUrl(value: string): string {
+  return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
 const LargeNumber = styled(Box)`
@@ -161,7 +169,7 @@ const Breakdown: React.FC<{
     <DataTable
       headers={["Value", "Sessions", "Share"]}
       rows={breakdown.entries.map((entry) => [
-        entry.value,
+        shortenUrl(entry.value),
         formatNumber(entry.nSessions),
         formatShare(entry.share),
       ])}
@@ -493,15 +501,22 @@ export const AnalysesPage: React.FC = () => {
                   <H5 mb="default">Moving between Studies</H5>
                   <DataTable
                     headers={["From", "To", "Participants"]}
-                    rows={analyses.participantLinking.studyTransitions.map(
-                      (entry) => [
+                    rows={analyses.participantLinking.studyTransitions
+                      .slice(0, N_TRANSITIONS)
+                      .map((entry) => [
                         entry.fromStudyId,
                         entry.toStudyId,
                         formatNumber(entry.nTransitions),
-                      ],
-                    )}
+                      ])}
                     emptyMessage="No participant has moved from one study to another yet."
                   />
+                  {analyses.participantLinking.studyTransitions.length >
+                    N_TRANSITIONS && (
+                    <Text variant="sm" mt="default">
+                      Only the {N_TRANSITIONS} most common transitions are
+                      shown.
+                    </Text>
+                  )}
                 </Box>
               </Row>
             </Card>
