@@ -32,6 +32,7 @@ const PAGE_NAME = "Analyses";
 const N_STUDIES_IN_CHARTS = 10;
 // Number of bars shown in the responses per session chart
 const N_BARS_IN_HISTOGRAM = 25;
+const CHART_HEIGHT = 200;
 
 const api = new ApiClient();
 
@@ -50,8 +51,16 @@ const Card = styled(Box)`
 Card.defaultProps = {
   variant: "white",
   boxShadow: "card",
-  mb: "xl",
-  p: "xl",
+  mb: "lg",
+  p: "lg",
+};
+
+// Half of a card's width on wider screens, e.g. for two charts next to
+// each other
+const Half = styled(Box)``;
+Half.defaultProps = {
+  width: [1, 1, 1 / 2],
+  pr: "lg",
 };
 
 const numberFormat = new Intl.NumberFormat("en-US");
@@ -75,7 +84,7 @@ function formatDuration(seconds: number): string {
 }
 
 const LargeNumber = styled(Box)`
-  font-size: 2.5rem;
+  font-size: 1.75rem;
   line-height: 1.2;
 `;
 
@@ -100,8 +109,8 @@ function fillHistogram(
 }
 
 const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <Box width={[1, 1 / 2, 1 / 4]} p="lg">
-    <Text>{label}</Text>
+  <Box width={[1 / 2, 1 / 2, 1 / 4]} pr="lg" pb="default">
+    <Text variant="sm">{label}</Text>
     <LargeNumber>{value}</LargeNumber>
   </Box>
 );
@@ -116,7 +125,7 @@ const DataTable: React.FC<{
   emptyMessage = "There is no data to show here yet.",
 }) =>
   rows.length === 0 ? (
-    <Text mt="lg">{emptyMessage}</Text>
+    <Text variant="sm">{emptyMessage}</Text>
   ) : (
     <Table>
       <TableHead>
@@ -141,12 +150,14 @@ const DataTable: React.FC<{
 
 const Breakdown: React.FC<{
   title: string;
-  description: string;
+  hint: string;
   breakdown: RecruitmentBreakdown;
-}> = ({ title, description, breakdown }) => (
-  <Box width={[1, 1, 1 / 3]} p="lg">
+}> = ({ title, hint, breakdown }) => (
+  <Box width={[1, 1, 1 / 3]} pr="lg">
     <H5>{title}</H5>
-    <Text mb="lg">{description}</Text>
+    <Text variant="sm" mb="default">
+      {hint}
+    </Text>
     <DataTable
       headers={["Value", "Sessions", "Share"]}
       rows={breakdown.entries.map((entry) => [
@@ -158,10 +169,16 @@ const Breakdown: React.FC<{
     {breakdown.truncated && (
       <MessageBox
         variant="info"
-        message="Only the most common values are counted here, since there are very many different ones."
-        mt="lg"
+        message="Only the most common values are counted, since there are very many different ones."
+        mt="default"
       />
     )}
+  </Box>
+);
+
+const Row: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box flex flexDirection="row" flexWrap="wrap">
+    {children}
   </Box>
 );
 
@@ -222,43 +239,38 @@ export const AnalysesPage: React.FC = () => {
 
   return (
     <Box variant="grey">
-      <Box mx={[0, 0, 0, "auto"]} width={[1, 1, 1, 1024]} py="xl">
-        <H2>Analyses</H2>
-        <Text mb="xl">
-          An overview of the data collected on this instance of World-Wide-Lab.
+      <Box mx={[0, 0, 0, "auto"]} width={[1, 1, 1, 1024]} py="lg" px="lg">
+        <Box flex flexDirection="row" flexWrap="wrap" alignItems="flex-end">
+          <Box flexGrow={1} pr="lg">
+            <H2>Analyses</H2>
+          </Box>
+          <Box width={[1 / 2, 1 / 2, 200]} pr="lg">
+            <Label>Study</Label>
+            <Select
+              value={selectedStudy}
+              options={studyOptions}
+              onChange={(selected: { value: string }) =>
+                setStudyId(selected?.value ?? "")
+              }
+            />
+          </Box>
+          <Box width={[1 / 2, 1 / 2, 200]}>
+            <Label>Timeframe</Label>
+            <Select
+              value={selectedTimeframe}
+              options={timeframeOptions}
+              onChange={(selected: { value: number }) =>
+                setDays(selected?.value ?? 30)
+              }
+            />
+          </Box>
+        </Box>
+        <Text variant="sm" mt="default" mb="lg">
+          Sessions over time, dropout and recruitment cover the selected study
+          and timeframe, the other analyses cover all studies.
         </Text>
 
-        <Card>
-          <Box flex flexDirection="row" flexWrap="wrap">
-            <Box width={[1, 1 / 2]} p="lg">
-              <Label>Study</Label>
-              <Select
-                value={selectedStudy}
-                options={studyOptions}
-                onChange={(selected: { value: string }) =>
-                  setStudyId(selected?.value ?? "")
-                }
-              />
-            </Box>
-            <Box width={[1, 1 / 2]} p="lg">
-              <Label>Timeframe</Label>
-              <Select
-                value={selectedTimeframe}
-                options={timeframeOptions}
-                onChange={(selected: { value: number }) =>
-                  setDays(selected?.value ?? 30)
-                }
-              />
-            </Box>
-          </Box>
-          <Text px="lg">
-            Analyses of sessions over time, dropout and recruitment are limited
-            to the selected study and timeframe. Comparisons between studies and
-            the analyses of participants always cover all studies.
-          </Text>
-        </Card>
-
-        {error && <MessageBox variant="danger" message={error} mb="xl" />}
+        {error && <MessageBox variant="danger" message={error} mb="lg" />}
 
         {!analyses ? (
           <Card>
@@ -267,91 +279,89 @@ export const AnalysesPage: React.FC = () => {
         ) : (
           <>
             <Card>
-              <H4>Sessions over Time</H4>
-              <Text>
-                Sessions which have been started and finished in {studyLabel}.
-              </Text>
-              <SessionsOverTimeChart data={analyses.sessionsOverTime} />
-
-              <H5 mt="xl">Completion Rate over Time</H5>
-              <Text>
-                Share of sessions which have been finished. Days without any
-                sessions are shown as 0%.
-              </Text>
-              <LineChart
-                labels={analyses.sessionsOverTime.map((entry) => entry.date)}
-                datasets={[
-                  {
-                    name: "Completion Rate (%)",
-                    values: analyses.sessionsOverTime.map(
-                      (entry) => (entry.completionRate ?? 0) * 100,
-                    ),
-                  },
-                ]}
-                colors={["green"]}
-                formatValue={(value) => `${value.toFixed(1)}%`}
-              />
+              <Row>
+                <Half>
+                  <H4>Sessions over Time</H4>
+                  <Text variant="sm">
+                    Sessions started and finished in {studyLabel}.
+                  </Text>
+                  <SessionsOverTimeChart
+                    data={analyses.sessionsOverTime}
+                    height={CHART_HEIGHT}
+                  />
+                </Half>
+                <Half>
+                  <H4>Completion Rate over Time</H4>
+                  <Text variant="sm">
+                    Share of finished sessions, days without sessions show 0%.
+                  </Text>
+                  <LineChart
+                    labels={analyses.sessionsOverTime.map(
+                      (entry) => entry.date,
+                    )}
+                    datasets={[
+                      {
+                        name: "Completion Rate (%)",
+                        values: analyses.sessionsOverTime.map(
+                          (entry) => (entry.completionRate ?? 0) * 100,
+                        ),
+                      },
+                    ]}
+                    colors={["green"]}
+                    height={CHART_HEIGHT}
+                    formatValue={(value) => `${value.toFixed(1)}%`}
+                  />
+                </Half>
+              </Row>
             </Card>
 
             <Card>
-              <H4>Completion between Studies</H4>
-              <Text mb="lg">
-                How many sessions have been started for each study and how many
-                of them have been finished. Sessions are only counted as
-                finished if the study calls the session's finish() function at
-                its end.
-              </Text>
-              <DataTable
-                headers={[
-                  "Study",
-                  "Sessions",
-                  "Finished",
-                  "Completion Rate",
-                  "Mean Duration",
-                  "Timed Sessions",
-                ]}
-                rows={analyses.completionByStudy.map((entry) => {
-                  const duration = durationsByStudy.get(entry.studyId);
-                  return [
-                    entry.studyId,
-                    formatNumber(entry.nSessions),
-                    formatNumber(entry.nFinished),
-                    formatShare(entry.completionRate),
-                    duration
-                      ? formatDuration(duration.meanDurationSeconds)
-                      : "-",
-                    duration ? formatNumber(duration.nSessions) : "0",
-                  ];
-                })}
-                emptyMessage="There are no studies yet."
-              />
-              {analyses.completionByStudy.length > 1 && (
-                <BarChart
-                  labels={analyses.completionByStudy
-                    .slice(0, N_STUDIES_IN_CHARTS)
-                    .map((entry) => entry.studyId)}
-                  values={analyses.completionByStudy
-                    .slice(0, N_STUDIES_IN_CHARTS)
-                    .map((entry) => (entry.completionRate ?? 0) * 100)}
-                  name="Completion Rate (%)"
-                  formatValue={(value) => `${value.toFixed(1)}%`}
-                />
-              )}
-              <Text mt="lg">
-                The duration of a session is measured from its start until its
-                last response, so sessions without any responses can not be
-                timed and are not included in the mean duration.
-              </Text>
+              <H4 mb="default">Studies</H4>
+              <Row>
+                <Half>
+                  <DataTable
+                    headers={["Study", "Sessions", "Finished", "Ø Duration"]}
+                    rows={analyses.completionByStudy.map((entry) => {
+                      const duration = durationsByStudy.get(entry.studyId);
+                      return [
+                        entry.studyId,
+                        formatNumber(entry.nSessions),
+                        `${formatNumber(entry.nFinished)} (${formatShare(
+                          entry.completionRate,
+                        )})`,
+                        duration
+                          ? formatDuration(duration.meanDurationSeconds)
+                          : "-",
+                      ];
+                    })}
+                    emptyMessage="There are no studies yet."
+                  />
+                </Half>
+                <Half>
+                  {analyses.completionByStudy.length > 0 && (
+                    <BarChart
+                      labels={analyses.completionByStudy
+                        .slice(0, N_STUDIES_IN_CHARTS)
+                        .map((entry) => entry.studyId)}
+                      values={analyses.completionByStudy
+                        .slice(0, N_STUDIES_IN_CHARTS)
+                        .map((entry) => (entry.completionRate ?? 0) * 100)}
+                      name="Completion Rate (%)"
+                      height={CHART_HEIGHT}
+                      formatValue={(value) => `${value.toFixed(1)}%`}
+                    />
+                  )}
+                </Half>
+              </Row>
             </Card>
 
             <Card>
               <H4>Dropout</H4>
-              <Text mb="lg">
-                How many responses the sessions in {studyLabel} contain. This
-                shows where participants tend to drop out of a study, as long as
-                every part of the study stores a response.
+              <Text variant="sm" mb="default">
+                How many responses the sessions in {studyLabel} contain, i.e.
+                how far participants get before they leave.
               </Text>
-              <Box flex flexDirection="row" flexWrap="wrap" mb="lg">
+              <Row>
                 <Stat
                   label="Sessions"
                   value={formatNumber(analyses.responsesPerSession.nSessions)}
@@ -379,47 +389,52 @@ export const AnalysesPage: React.FC = () => {
                     )?.nSessions ?? 0,
                   )}
                 />
-              </Box>
-
-              <H5>Sessions still going after n Responses</H5>
-              <LineChart
-                labels={analyses.responsesPerSession.retention.map((entry) =>
-                  String(entry.nResponses),
-                )}
-                datasets={[
-                  {
-                    name: "Sessions (%)",
-                    values: analyses.responsesPerSession.retention.map(
-                      (entry) => entry.share * 100,
-                    ),
-                  },
-                ]}
-                colors={["green"]}
-                formatValue={(value) => `${value.toFixed(1)}%`}
-              />
-              {analyses.responsesPerSession.retentionTruncated && (
-                <MessageBox
-                  variant="info"
-                  message="Only the beginning of the curve is shown, since sessions in this study have very many responses."
-                />
-              )}
-
-              <H5 mt="xl">Number of Responses per Session</H5>
-              <BarChart
-                labels={histogram.map((entry) => String(entry.nResponses))}
-                values={histogram.map((entry) => entry.nSessions)}
-                name="Sessions"
-              />
+              </Row>
+              <Row>
+                <Half>
+                  <H5>Sessions still going after n Responses</H5>
+                  <LineChart
+                    labels={analyses.responsesPerSession.retention.map(
+                      (entry) => String(entry.nResponses),
+                    )}
+                    datasets={[
+                      {
+                        name: "Sessions (%)",
+                        values: analyses.responsesPerSession.retention.map(
+                          (entry) => entry.share * 100,
+                        ),
+                      },
+                    ]}
+                    colors={["green"]}
+                    height={CHART_HEIGHT}
+                    formatValue={(value) => `${value.toFixed(1)}%`}
+                  />
+                  {analyses.responsesPerSession.retentionTruncated && (
+                    <MessageBox
+                      variant="info"
+                      message="Only the beginning of the curve is shown, since sessions have very many responses."
+                    />
+                  )}
+                </Half>
+                <Half>
+                  <H5>Number of Responses per Session</H5>
+                  <BarChart
+                    labels={histogram.map((entry) => String(entry.nResponses))}
+                    values={histogram.map((entry) => entry.nSessions)}
+                    name="Sessions"
+                    height={CHART_HEIGHT}
+                  />
+                </Half>
+              </Row>
             </Card>
 
             <Card>
               <H4>Participants</H4>
-              <Text mb="lg">
-                How often participants take part in studies. This is only
-                possible for sessions which are linked to a participant, e.g.
-                via the client's linkParticipant option.
+              <Text variant="sm" mb="default">
+                How often participants take part. Only sessions which are linked
+                to a participant are counted here.
               </Text>
-              <Box flex flexDirection="row" flexWrap="wrap" mb="lg">
+              <Row>
                 <Stat
                   label="Linked Participants"
                   value={formatNumber(
@@ -446,11 +461,10 @@ export const AnalysesPage: React.FC = () => {
                       .nParticipantsWithMultipleStudies,
                   )}
                 />
-              </Box>
-
-              <Box flex flexDirection="row" flexWrap="wrap">
-                <Box width={[1, 1, 1 / 2]} p="lg">
-                  <H5>Sessions per Participant</H5>
+              </Row>
+              <Row>
+                <Box width={[1, 1, 1 / 3]} pr="lg">
+                  <H5 mb="default">Sessions per Participant</H5>
                   <DataTable
                     headers={["Sessions", "Participants"]}
                     rows={analyses.participantLinking.sessionsPerParticipant.map(
@@ -462,8 +476,8 @@ export const AnalysesPage: React.FC = () => {
                     emptyMessage="No sessions have been linked to a participant yet."
                   />
                 </Box>
-                <Box width={[1, 1, 1 / 2]} p="lg">
-                  <H5>Studies per Participant</H5>
+                <Box width={[1, 1, 1 / 3]} pr="lg">
+                  <H5 mb="default">Studies per Participant</H5>
                   <DataTable
                     headers={["Studies", "Participants"]}
                     rows={analyses.participantLinking.studiesPerParticipant.map(
@@ -475,51 +489,46 @@ export const AnalysesPage: React.FC = () => {
                     emptyMessage="No sessions have been linked to a participant yet."
                   />
                 </Box>
-              </Box>
-
-              <Box p="lg">
-                <H5>Moving from one Study to another</H5>
-                <Text mb="lg">
-                  How often a participant's next session was in a different
-                  study than the one before.
-                </Text>
-                <DataTable
-                  headers={["From", "To", "Participants"]}
-                  rows={analyses.participantLinking.studyTransitions.map(
-                    (entry) => [
-                      entry.fromStudyId,
-                      entry.toStudyId,
-                      formatNumber(entry.nTransitions),
-                    ],
-                  )}
-                  emptyMessage="No participant has moved from one study to another yet."
-                />
-              </Box>
+                <Box width={[1, 1, 1 / 3]}>
+                  <H5 mb="default">Moving between Studies</H5>
+                  <DataTable
+                    headers={["From", "To", "Participants"]}
+                    rows={analyses.participantLinking.studyTransitions.map(
+                      (entry) => [
+                        entry.fromStudyId,
+                        entry.toStudyId,
+                        formatNumber(entry.nTransitions),
+                      ],
+                    )}
+                    emptyMessage="No participant has moved from one study to another yet."
+                  />
+                </Box>
+              </Row>
             </Card>
 
             <Card>
               <H4>Recruitment</H4>
-              <Text mb="lg">
+              <Text variant="sm" mb="default">
                 Where the sessions in {studyLabel} are coming from, based on the
                 information collected when a session is started.
               </Text>
-              <Box flex flexDirection="row" flexWrap="wrap">
+              <Row>
                 <Breakdown
                   title="Source URL"
-                  description="The page a study has been running on, without any query parameters."
+                  hint="The page a study ran on, without query parameters."
                   breakdown={analyses.recruitment.bySourceUrl}
                 />
                 <Breakdown
                   title="Referrer"
-                  description="The website participants have visited before starting a session."
+                  hint="The website participants came from."
                   breakdown={analyses.recruitment.byReferrer}
                 />
                 <Breakdown
                   title="Source Parameter"
-                  description="The source, utm_source or ref parameter in the URL of a study."
+                  hint="The source, utm_source or ref parameter in the URL."
                   breakdown={analyses.recruitment.bySourceParameter}
                 />
-              </Box>
+              </Row>
             </Card>
           </>
         )}
