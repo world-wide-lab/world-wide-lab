@@ -53,6 +53,27 @@ function getArrayFromEnv(key: string): string[] {
   return strValue.split(",").map((s) => s.trim());
 }
 
+function getTrustProxyFromEnv(key: string): boolean | number | string {
+  const value = getValueFromEnv(key);
+  if (value === undefined) {
+    return false;
+  }
+  const stringValue = value.toLowerCase();
+  if (stringValue === "true") {
+    return true;
+  }
+  if (stringValue === "false") {
+    return false;
+  }
+  // A number is interpreted as the number of proxies in front of the server,
+  // any other value as a list of trusted IPs / subnets (or presets such as
+  // "loopback"), see https://expressjs.com/en/guide/behind-proxies.html
+  if (/^\d+$/.test(value)) {
+    return Number.parseInt(value, 10);
+  }
+  return value;
+}
+
 function getIntFromEnv(key: string): number | undefined {
   const strValue = getValueFromEnv(key);
   if (strValue === undefined) return undefined;
@@ -74,6 +95,18 @@ const config = {
   version: VERSION,
 
   requestMaxSize: getValueFromEnv("REQUEST_MAX_SIZE") || "256mb",
+
+  // Which proxies (if any) to trust when determining the IP of a request,
+  // see https://expressjs.com/en/guide/behind-proxies.html
+  trustProxy: getTrustProxyFromEnv("TRUST_PROXY"),
+
+  ipWhitelist: {
+    // Restricts access to all endpoints
+    public: getArrayFromEnv("PUBLIC_IP_WHITELIST"),
+    // Restricts access to private endpoints only (Admin UI and API endpoints
+    // requiring an API key)
+    private: getArrayFromEnv("PRIVATE_IP_WHITELIST"),
+  },
 
   electronApp,
 
