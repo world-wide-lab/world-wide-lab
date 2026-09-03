@@ -1,9 +1,10 @@
 import type { Response } from "express";
 import { json2csv } from "json-2-csv";
-import { QueryTypes, type Sequelize } from "sequelize";
+import type { Sequelize } from "sequelize";
 import config from "../config.js";
 import { AppError } from "../errors.js";
 import { logger } from "../logger.js";
+import { getPayloadKeys } from "./payloadKeyCache.js";
 
 type ExportFormat = "json" | "csv";
 
@@ -309,41 +310,17 @@ async function generateExtractedPayloadQuery(
   // :limit replacement and, if hasCursor is set, a :cursor replacement.
   pageQuery: (hasCursor: boolean) => string;
 }> {
-  const keysQueryConditions = ['wwl_sessions."studyId" = :studyId'];
-  if (options.created_after) {
+  if (options.created_after && !(options.created_after instanceof Date)) {
     // Verify that the created_after option is a Date
-    if (!(options.created_after instanceof Date)) {
-      throw new AppError("created_after must be a Date object", 400);
-    }
-
-    keysQueryConditions.push('wwl_responses."createdAt" >= :created_after');
+    throw new AppError("created_after must be a Date object", 400);
   }
 
-  // Get all keys which are present in the payloads of the responses
-  const keysResult = await sequelize.query(
-    `
-      SELECT DISTINCT
-        payload_json.key as key
-      FROM
-        wwl_responses
-          INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId"),
-        json_each(payload) payload_json
-      WHERE ${keysQueryConditions.join(" AND ")}
-      ORDER BY key ASC;
-    `,
-    {
-      type: QueryTypes.SELECT,
-      replacements: {
-        studyId,
-        ...(options.created_after && { created_after: options.created_after }),
-      },
-    },
-  );
-
-  // Create a the list of keys in the payload in a safe format
-  const jsonKeys = keysResult
-    .map((row) => ("key" in row ? row.key : undefined))
-    .filter((key) => key !== undefined);
+  // Get all keys which are present in the payloads of the responses. This is
+  // backed by a cache in the database, since scanning every payload again is
+  // by far the slowest part of this export.
+  const jsonKeys = await getPayloadKeys(sequelize, studyId, {
+    created_after: options.created_after,
+  });
   const jsonFieldsString = jsonKeys
     .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
     .join(", ");
