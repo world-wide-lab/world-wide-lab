@@ -80,11 +80,15 @@ jobs:
             echo '| --- | --- |'
             # Installers (what users download)
             for f in dist/*.dmg dist/*.exe dist/*.AppImage; do
-              [ -f "$f" ] && printf '| %s | %s |\n' "$(basename "$f")" "$(du -h "$f" | cut -f1)"
+              if [ -f "$f" ]; then
+                printf '| %s | %s |\n' "$(basename "$f")" "$(du -h "$f" | cut -f1)"
+              fi
             done
             # Unpacked trees (what users end up with on disk, see #97)
             for d in dist/*-unpacked dist/mac dist/mac-arm64; do
-              [ -d "$d" ] && printf '| %s/ (installed) | %s |\n' "$(basename "$d")" "$(du -sh "$d" | cut -f1)"
+              if [ -d "$d" ]; then
+                printf '| %s/ (installed) | %s |\n' "$(basename "$d")" "$(du -sh "$d" | cut -f1)"
+              fi
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
