@@ -66,4 +66,10 @@ test("Update Screenshots for docs", async ({ page }) => {
     page,
     "admin/resources/wwl_studies/records/my-awesome-study-id/downloadData",
   );
+
+  // Analyses (wait for the charts to load)
+  await goAndTakeScreenshot(page, "admin/pages/Analyses", async (page) => {
+    await page.locator(".frappe-chart").first().waitFor();
+    await page.waitForTimeout(1000);
+  });
 });

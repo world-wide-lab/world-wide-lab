@@ -7,6 +7,7 @@ import config from "../config.js";
 import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
+import { analysesHandler } from "./handlers/analyses.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
@@ -25,6 +26,11 @@ AdminJS.registerAdapter({
 });
 
 const pages: AdminPages = {};
+pages.Analyses = {
+  component: Components.AnalysesPage,
+  icon: "BarChart",
+  handler: analysesHandler,
+} as AdminPage;
 if (config.apiDocs.enabled) {
   pages["Public API"] = {
     component: Components.ApiDocsPage,

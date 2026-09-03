@@ -16,6 +16,7 @@ export const override = (
 
 export const Components = {
   Dashboard: add("Dashboard", "./pages/dashboard"),
+  AnalysesPage: add("AnalysesPage", "./pages/analyses"),
   ApiDocsPage: add("ApiDocsPage", "./pages/api-docs"),
   StudyDownloadAction: add("StudyDownloadAction", "./StudyDownloadAction"),
   StudyShowAction: add("StudyShowAction", "./StudyShowAction"),
