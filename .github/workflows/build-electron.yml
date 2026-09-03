@@ -53,9 +53,12 @@ jobs:
 
       - name: Build Electron App
         working-directory: ./electron-app
+        # bash on every platform, so that $PUBLISH_POLICY expands on Windows too
+        shell: bash
         run: |
           npm run prebuild
           npm run build:wwl
+          npm run check:pulumi-modules
           npx electron-builder --publish "$PUBLISH_POLICY"
         env:
           # electron-builder's default policy is "onTagOrDraft", which uploads

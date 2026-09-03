@@ -21,6 +21,21 @@ files:
   # rarely carry a .md extension and are re-included below where they do.
   - "!**/*.md"
   - "**/{LICENSE,LICENCE,COPYING,NOTICE}*"
+  # The Pulumi SDKs are generated and ship one directory per cloud service:
+  # 236 for Azure, 217 for AWS. @world-wide-lab/deploy uses a handful, so drop
+  # the service directories and re-include the ones we need. Everything at the
+  # top level of the package (index.js, utilities.js, provider.js, ...) is
+  # untouched, as is types/, which the services require.
+  #
+  # The keep-lists below are verified against the imports of
+  # @world-wide-lab/deploy by check-pulumi-modules.js on every build. Do not
+  # edit them by hand without running it.
+  - "!node_modules/@pulumi/azure-native/*/**"
+  - "node_modules/@pulumi/azure-native/{app,dbforpostgresql,resources}/**"
+  - "node_modules/@pulumi/azure-native/types/**"
+  - "!node_modules/@pulumi/aws/*/**"
+  - "node_modules/@pulumi/aws/{apprunner,ec2,rds}/**"
+  - "node_modules/@pulumi/aws/types/**"
 mac:
   hardenedRuntime: true
   entitlements: "build/entitlements.mac.plist"
