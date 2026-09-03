@@ -65,6 +65,26 @@ jobs:
           PUBLISH_POLICY: ${{ startsWith(github.ref, 'refs/tags/v') && 'onTagOrDraft' || 'never' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Report app size
+        if: always()
+        working-directory: ./electron-app
+        shell: bash
+        run: |
+          {
+            echo "### Packaged size — ${{ matrix.os }}"
+            echo
+            echo '| What | Size |'
+            echo '| --- | --- |'
+            # Installers (what users download)
+            for f in dist/*.dmg dist/*.exe dist/*.AppImage; do
+              [ -f "$f" ] && printf '| %s | %s |\n' "$(basename "$f")" "$(du -h "$f" | cut -f1)"
+            done
+            # Unpacked trees (what users end up with on disk, see #97)
+            for d in dist/*-unpacked dist/mac dist/mac-arm64; do
+              [ -d "$d" ] && printf '| %s/ (installed) | %s |\n' "$(basename "$d")" "$(du -sh "$d" | cut -f1)"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
