@@ -26,7 +26,19 @@ jobs:
       # runner would otherwise hide whether the other two are fine.
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        # windows-2022 rather than windows-latest: sqlite3 has no prebuilt
+        # binary for Electron, so it is always compiled from source, using the
+        # node-gyp 8.x it pins in its own optionalDependencies. That node-gyp
+        # only recognises Visual Studio up to 2022, and windows-latest now
+        # ships Visual Studio 18 (2026), which it reports as
+        # `unknown version "undefined"` before failing the build.
+        #
+        # Recognising VS 2026 needs node-gyp >= 12, which in turn needs
+        # Node >= 20.17 - so on this repo's Node 18 there is no node-gyp that
+        # can drive the newer toolchain, and overriding sqlite3's pin does not
+        # help. Until Node is bumped, build against an image that still has
+        # Visual Studio 2022. See the PR for the longer-term options.
+        os: [macos-latest, ubuntu-latest, windows-2022]
 
     steps:
       - name: Check out Git repository
