@@ -10,7 +10,7 @@ import {
   toNumber,
 } from "./sql.js";
 
-// Default number of days shown in the analyses over time
+// Default number of days shown in the statistics over time
 const DEFAULT_TIMEFRAME = 30;
 // Highest number of days that can be requested at once
 const MAX_TIMEFRAME = 365;
@@ -19,7 +19,7 @@ const MAX_RETENTION_POINTS = 50;
 // Number of distinct values retrieved for the recruitment analyses. Anything
 // beyond this is not counted, which is indicated via truncated: true.
 const MAX_DISTINCT_VALUES = 1000;
-// Number of values shown per recruitment analysis, the rest is grouped
+// Number of values shown per recruitment breakdown, the rest is grouped
 // together into a single entry.
 const N_TOP_VALUES = 10;
 
@@ -27,10 +27,10 @@ const LABEL_OTHER = "(other)";
 const LABEL_UNKNOWN = "(unknown)";
 const LABEL_NO_REFERRER = "(none / direct)";
 
-type AnalysisOptions = {
-  // Restrict the analysis to a single study
+type StatsOptions = {
+  // Restrict the statistics to a single study
   studyId?: string;
-  // Number of days to include in analyses over time
+  // Number of days to include in the statistics over time
   days?: number;
 };
 
@@ -42,14 +42,17 @@ type SessionsOverTimeEntry = {
   completionRate: number | null;
 };
 
-type StudyCompletionEntry = {
+type StudyStatsEntry = {
   studyId: string;
   nSessions: number;
   nFinished: number;
   completionRate: number | null;
+  // Sessions with at least one response, only those can be timed
+  nTimedSessions: number;
+  meanDurationSeconds: number | null;
 };
 
-type ResponsesPerSessionAnalysis = {
+type ResponsesPerSessionStats = {
   nSessions: number;
   nResponses: number;
   meanResponsesPerSession: number | null;
@@ -61,15 +64,7 @@ type ResponsesPerSessionAnalysis = {
   retentionTruncated: boolean;
 };
 
-type StudyDurationEntry = {
-  studyId: string;
-  // Only sessions with at least one response can be timed
-  nSessions: number;
-  meanDurationSeconds: number;
-  maxDurationSeconds: number;
-};
-
-type ParticipantLinkingAnalysis = {
+type ParticipantLinkingStats = {
   // Participants with at least one session
   nParticipants: number;
   nParticipantsWithMultipleSessions: number;
@@ -97,38 +92,43 @@ type ValueCountEntry = {
 
 type RecruitmentBreakdown = {
   entries: Array<ValueCountEntry>;
-  nDistinctValues: number;
   truncated: boolean;
 };
 
-type RecruitmentAnalysis = {
+type RecruitmentStats = {
   bySourceUrl: RecruitmentBreakdown;
   byReferrer: RecruitmentBreakdown;
   bySourceParameter: RecruitmentBreakdown;
 };
 
-type Analyses = {
+type Stats = {
   options: { studyId: string | null; days: number };
   studyIds: Array<string>;
   sessionsOverTime: Array<SessionsOverTimeEntry>;
-  completionByStudy: Array<StudyCompletionEntry>;
-  responsesPerSession: ResponsesPerSessionAnalysis;
-  durationByStudy: Array<StudyDurationEntry>;
-  participantLinking: ParticipantLinkingAnalysis;
-  recruitment: RecruitmentAnalysis;
+  studies: Array<StudyStatsEntry>;
+  responsesPerSession: ResponsesPerSessionStats;
+  participantLinking: ParticipantLinkingStats;
+  recruitment: RecruitmentStats;
 };
 
-// Restrict a query to a single study, if one has been selected
-function studyFilter(
-  options: AnalysisOptions,
-  column = '"studyId"',
-): { sql: string; replacements: { studyId?: string } } {
-  return options.studyId
-    ? {
-        sql: `AND ${column} = :studyId`,
-        replacements: { studyId: options.studyId },
-      }
-    : { sql: "", replacements: {} };
+// Restrict a query to the sessions of the selected study and timeframe
+function sessionFilter(
+  options: StatsOptions,
+  columns: { createdAt: string; studyId: string } = {
+    createdAt: '"createdAt"',
+    studyId: '"studyId"',
+  },
+): { sql: string; replacements: Record<string, unknown> } {
+  const { firstDate } = getDates(options.days ?? DEFAULT_TIMEFRAME);
+
+  const conditions = [`${columns.createdAt} >= :firstDate`];
+  const replacements: Record<string, unknown> = { firstDate };
+  if (options.studyId) {
+    conditions.push(`${columns.studyId} = :studyId`);
+    replacements.studyId = options.studyId;
+  }
+
+  return { sql: `WHERE ${conditions.join(" AND ")}`, replacements };
 }
 
 // List of days (as YYYY-MM-DD in UTC) covered by the given timeframe
@@ -155,11 +155,11 @@ function share(part: number, total: number): number | null {
 // Number of sessions (and how many of them have been finished) per day
 async function getSessionsOverTime(
   sequelize: Sequelize,
-  options: AnalysisOptions = {},
+  options: StatsOptions = {},
 ): Promise<Array<SessionsOverTimeEntry>> {
   const dialect = getDialect(sequelize);
-  const { firstDate, dates } = getDates(options.days ?? DEFAULT_TIMEFRAME);
-  const study = studyFilter(options);
+  const { dates } = getDates(options.days ?? DEFAULT_TIMEFRAME);
+  const filter = sessionFilter(options);
   const dateColumn = sqlDateString(dialect, '"createdAt"');
 
   const rows = await sequelize.query<{
@@ -173,14 +173,10 @@ async function getSessionsOverTime(
         COUNT(*) AS "nSessions",
         ${sqlCountIf('"finished"')} AS "nFinished"
       FROM "wwl_sessions"
-      WHERE "createdAt" >= :firstDate
-      ${study.sql}
+      ${filter.sql}
       GROUP BY ${dateColumn}
     `,
-    {
-      replacements: { firstDate, ...study.replacements },
-      type: QueryTypes.SELECT,
-    },
+    { replacements: filter.replacements, type: QueryTypes.SELECT },
   );
 
   // Days without any sessions are missing from the query above, so the
@@ -199,25 +195,50 @@ async function getSessionsOverTime(
   });
 }
 
-// Number of sessions and share of finished sessions per study
-async function getCompletionByStudy(
+// Sessions, completion and duration of every study. A session's duration is
+// measured from its start until its last response, so sessions without any
+// responses can not be timed.
+async function getStudyStats(
   sequelize: Sequelize,
-): Promise<Array<StudyCompletionEntry>> {
+): Promise<Array<StudyStatsEntry>> {
+  const duration = sqlSecondsBetween(
+    getDialect(sequelize),
+    'MAX("wwl_responses"."createdAt")',
+    '"wwl_sessions"."createdAt"',
+  );
+
   const rows = await sequelize.query<{
     studyId: string;
     nSessions: number | string;
     nFinished: number | string | null;
+    nTimedSessions: number | string;
+    meanDurationSeconds: number | string | null;
   }>(
     `
       SELECT
         "wwl_studies"."studyId" AS "studyId",
-        COUNT("wwl_sessions"."sessionId") AS "nSessions",
-        ${sqlCountIf('"wwl_sessions"."finished"')} AS "nFinished"
+        COUNT("sessions"."sessionId") AS "nSessions",
+        ${sqlCountIf('"sessions"."finished"')} AS "nFinished",
+        COUNT("sessions"."durationSeconds") AS "nTimedSessions",
+        AVG("sessions"."durationSeconds") AS "meanDurationSeconds"
       FROM "wwl_studies"
-      LEFT JOIN "wwl_sessions"
-        ON "wwl_sessions"."studyId" = "wwl_studies"."studyId"
+      LEFT JOIN (
+        SELECT
+          "wwl_sessions"."sessionId" AS "sessionId",
+          "wwl_sessions"."studyId" AS "studyId",
+          "wwl_sessions"."finished" AS "finished",
+          ${duration} AS "durationSeconds"
+        FROM "wwl_sessions"
+        LEFT JOIN "wwl_responses"
+          ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
+        GROUP BY
+          "wwl_sessions"."sessionId",
+          "wwl_sessions"."studyId",
+          "wwl_sessions"."finished",
+          "wwl_sessions"."createdAt"
+      ) AS "sessions" ON "sessions"."studyId" = "wwl_studies"."studyId"
       GROUP BY "wwl_studies"."studyId"
-      ORDER BY COUNT("wwl_sessions"."sessionId") DESC, "wwl_studies"."studyId"
+      ORDER BY COUNT("sessions"."sessionId") DESC, "wwl_studies"."studyId"
     `,
     { type: QueryTypes.SELECT },
   );
@@ -230,6 +251,11 @@ async function getCompletionByStudy(
       nSessions,
       nFinished,
       completionRate: share(nFinished, nSessions),
+      nTimedSessions: toNumber(row.nTimedSessions),
+      meanDurationSeconds:
+        row.meanDurationSeconds === null
+          ? null
+          : toNumber(row.meanDurationSeconds),
     };
   });
 }
@@ -238,9 +264,12 @@ async function getCompletionByStudy(
 // dropped out of a study
 async function getResponsesPerSession(
   sequelize: Sequelize,
-  options: AnalysisOptions = {},
-): Promise<ResponsesPerSessionAnalysis> {
-  const study = studyFilter(options, '"wwl_sessions"."studyId"');
+  options: StatsOptions = {},
+): Promise<ResponsesPerSessionStats> {
+  const filter = sessionFilter(options, {
+    createdAt: '"wwl_sessions"."createdAt"',
+    studyId: '"wwl_sessions"."studyId"',
+  });
 
   const rows = await sequelize.query<{
     nResponses: number | string;
@@ -255,14 +284,13 @@ async function getResponsesPerSession(
         FROM "wwl_sessions"
         LEFT JOIN "wwl_responses"
           ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
-        WHERE 1 = 1
-        ${study.sql}
+        ${filter.sql}
         GROUP BY "wwl_sessions"."sessionId"
       ) AS "sessions"
       GROUP BY "nResponses"
       ORDER BY "nResponses"
     `,
-    { replacements: study.replacements, type: QueryTypes.SELECT },
+    { replacements: filter.replacements, type: QueryTypes.SELECT },
   );
 
   const histogram = rows.map((row) => ({
@@ -304,164 +332,115 @@ async function getResponsesPerSession(
   };
 }
 
-// How long sessions take, measured from the start of a session until its last
-// response. Sessions without any responses can not be timed and are skipped.
-async function getDurationByStudy(
+// How many participants there are per number of sessions, studies, ... The
+// aggregate is computed per participant, e.g. COUNT(*) for their sessions.
+async function countParticipantsPer(
   sequelize: Sequelize,
-): Promise<Array<StudyDurationEntry>> {
-  const dialect = getDialect(sequelize);
-  const duration = sqlSecondsBetween(
-    dialect,
-    'MAX("wwl_responses"."createdAt")',
-    '"wwl_sessions"."createdAt"',
-  );
-
+  aggregate: string,
+): Promise<Array<{ value: number; nParticipants: number }>> {
   const rows = await sequelize.query<{
-    studyId: string;
-    nSessions: number | string;
-    meanDurationSeconds: number | string | null;
-    maxDurationSeconds: number | string | null;
+    value: number | string;
+    nParticipants: number | string;
   }>(
     `
-      SELECT
-        "studyId",
-        COUNT(*) AS "nSessions",
-        AVG("durationSeconds") AS "meanDurationSeconds",
-        MAX("durationSeconds") AS "maxDurationSeconds"
+      SELECT "value", COUNT(*) AS "nParticipants"
       FROM (
-        SELECT
-          "wwl_sessions"."studyId" AS "studyId",
-          ${duration} AS "durationSeconds"
+        SELECT "participantId", ${aggregate} AS "value"
         FROM "wwl_sessions"
-        INNER JOIN "wwl_responses"
-          ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
-        GROUP BY
-          "wwl_sessions"."sessionId",
-          "wwl_sessions"."studyId",
-          "wwl_sessions"."createdAt"
-      ) AS "durations"
-      GROUP BY "studyId"
-      ORDER BY AVG("durationSeconds") DESC, "studyId"
+        WHERE "participantId" IS NOT NULL
+        GROUP BY "participantId"
+      ) AS "participants"
+      GROUP BY "value"
+      ORDER BY "value"
     `,
     { type: QueryTypes.SELECT },
   );
 
   return rows.map((row) => ({
-    studyId: row.studyId,
-    nSessions: toNumber(row.nSessions),
-    meanDurationSeconds: toNumber(row.meanDurationSeconds),
-    maxDurationSeconds: toNumber(row.maxDurationSeconds),
+    value: toNumber(row.value),
+    nParticipants: toNumber(row.nParticipants),
   }));
 }
 
 // How participants are linked across sessions and studies
 async function getParticipantLinking(
   sequelize: Sequelize,
-): Promise<ParticipantLinkingAnalysis> {
-  const [sessionsPerParticipantRows, studiesPerParticipantRows] =
+): Promise<ParticipantLinkingStats> {
+  const [sessionCounts, studyCounts, repeatedStudyRows, transitionRows] =
     await Promise.all([
-      sequelize.query<{
-        nSessions: number | string;
-        nParticipants: number | string;
-      }>(
+      countParticipantsPer(sequelize, "COUNT(*)"),
+      countParticipantsPer(sequelize, 'COUNT(DISTINCT "studyId")'),
+      // Participants who have taken part in the same study more than once
+      sequelize.query<{ nParticipants: number | string }>(
         `
-          SELECT "nSessions", COUNT(*) AS "nParticipants"
+          SELECT COUNT(DISTINCT "participantId") AS "nParticipants"
           FROM (
-            SELECT "participantId", COUNT(*) AS "nSessions"
+            SELECT "participantId"
             FROM "wwl_sessions"
             WHERE "participantId" IS NOT NULL
-            GROUP BY "participantId"
-          ) AS "participants"
-          GROUP BY "nSessions"
-          ORDER BY "nSessions"
+            GROUP BY "participantId", "studyId"
+            HAVING COUNT(*) > 1
+          ) AS "repeated"
         `,
         { type: QueryTypes.SELECT },
       ),
+      // Sessions which are in a different study than a participant's
+      // previous one
       sequelize.query<{
-        nStudies: number | string;
-        nParticipants: number | string;
+        fromStudyId: string;
+        toStudyId: string;
+        nTransitions: number | string;
       }>(
         `
-          SELECT "nStudies", COUNT(*) AS "nParticipants"
+          SELECT
+            "previousStudyId" AS "fromStudyId",
+            "studyId" AS "toStudyId",
+            COUNT(*) AS "nTransitions"
           FROM (
-            SELECT "participantId", COUNT(DISTINCT "studyId") AS "nStudies"
+            SELECT
+              "studyId",
+              LAG("studyId") OVER (
+                PARTITION BY "participantId" ORDER BY "createdAt"
+              ) AS "previousStudyId"
             FROM "wwl_sessions"
             WHERE "participantId" IS NOT NULL
-            GROUP BY "participantId"
-          ) AS "participants"
-          GROUP BY "nStudies"
-          ORDER BY "nStudies"
+          ) AS "transitions"
+          WHERE "previousStudyId" IS NOT NULL
+            AND "previousStudyId" <> "studyId"
+          GROUP BY "previousStudyId", "studyId"
+          ORDER BY COUNT(*) DESC, "previousStudyId", "studyId"
         `,
         { type: QueryTypes.SELECT },
       ),
     ]);
 
-  const [repeatedStudyRows, transitionRows] = await Promise.all([
-    sequelize.query<{ nParticipants: number | string }>(
-      `
-        SELECT COUNT(DISTINCT "participantId") AS "nParticipants"
-        FROM (
-          SELECT "participantId"
-          FROM "wwl_sessions"
-          WHERE "participantId" IS NOT NULL
-          GROUP BY "participantId", "studyId"
-          HAVING COUNT(*) > 1
-        ) AS "repeated"
-      `,
-      { type: QueryTypes.SELECT },
-    ),
-    sequelize.query<{
-      fromStudyId: string;
-      toStudyId: string;
-      nTransitions: number | string;
-    }>(
-      `
-        SELECT
-          "previousStudyId" AS "fromStudyId",
-          "studyId" AS "toStudyId",
-          COUNT(*) AS "nTransitions"
-        FROM (
-          SELECT
-            "studyId",
-            LAG("studyId") OVER (
-              PARTITION BY "participantId" ORDER BY "createdAt"
-            ) AS "previousStudyId"
-          FROM "wwl_sessions"
-          WHERE "participantId" IS NOT NULL
-        ) AS "transitions"
-        WHERE "previousStudyId" IS NOT NULL
-          AND "previousStudyId" <> "studyId"
-        GROUP BY "previousStudyId", "studyId"
-        ORDER BY COUNT(*) DESC, "previousStudyId", "studyId"
-      `,
-      { type: QueryTypes.SELECT },
-    ),
-  ]);
-
-  const sessionsPerParticipant = sessionsPerParticipantRows.map((row) => ({
-    nSessions: toNumber(row.nSessions),
-    nParticipants: toNumber(row.nParticipants),
-  }));
-  const studiesPerParticipant = studiesPerParticipantRows.map((row) => ({
-    nStudies: toNumber(row.nStudies),
-    nParticipants: toNumber(row.nParticipants),
-  }));
-
   const countParticipants = (
-    entries: Array<{ nParticipants: number }>,
-  ): number => entries.reduce((sum, entry) => sum + entry.nParticipants, 0);
+    entries: Array<{ value: number; nParticipants: number }>,
+    where: (value: number) => boolean = () => true,
+  ): number =>
+    entries
+      .filter((entry) => where(entry.value))
+      .reduce((sum, entry) => sum + entry.nParticipants, 0);
 
   return {
-    nParticipants: countParticipants(sessionsPerParticipant),
+    nParticipants: countParticipants(sessionCounts),
     nParticipantsWithMultipleSessions: countParticipants(
-      sessionsPerParticipant.filter((entry) => entry.nSessions > 1),
+      sessionCounts,
+      (value) => value > 1,
     ),
     nParticipantsRepeatingAStudy: toNumber(repeatedStudyRows[0]?.nParticipants),
     nParticipantsWithMultipleStudies: countParticipants(
-      studiesPerParticipant.filter((entry) => entry.nStudies > 1),
+      studyCounts,
+      (value) => value > 1,
     ),
-    sessionsPerParticipant,
-    studiesPerParticipant,
+    sessionsPerParticipant: sessionCounts.map((entry) => ({
+      nSessions: entry.value,
+      nParticipants: entry.nParticipants,
+    })),
+    studiesPerParticipant: studyCounts.map((entry) => ({
+      nStudies: entry.value,
+      nParticipants: entry.nParticipants,
+    })),
     studyTransitions: transitionRows.map((row) => ({
       fromStudyId: row.fromStudyId,
       toStudyId: row.toStudyId,
@@ -474,9 +453,9 @@ async function getParticipantLinking(
 async function countMetadataValues(
   sequelize: Sequelize,
   expression: string,
-  options: AnalysisOptions,
+  options: StatsOptions,
 ): Promise<Array<{ value: string | null; nSessions: number }>> {
-  const study = studyFilter(options);
+  const filter = sessionFilter(options);
 
   const rows = await sequelize.query<{
     value: string | null;
@@ -487,14 +466,13 @@ async function countMetadataValues(
       FROM (
         SELECT ${expression} AS "value"
         FROM "wwl_sessions"
-        WHERE 1 = 1
-        ${study.sql}
+        ${filter.sql}
       ) AS "values"
       GROUP BY "value"
       ORDER BY COUNT(*) DESC
       LIMIT ${MAX_DISTINCT_VALUES}
     `,
-    { replacements: study.replacements, type: QueryTypes.SELECT },
+    { replacements: filter.replacements, type: QueryTypes.SELECT },
   );
 
   return rows.map((row) => ({
@@ -548,11 +526,7 @@ function summarizeValues(
     });
   }
 
-  return {
-    entries,
-    nDistinctValues: sorted.length,
-    truncated: rows.length >= MAX_DISTINCT_VALUES,
-  };
+  return { entries, truncated: rows.length >= MAX_DISTINCT_VALUES };
 }
 
 // Reduce a referrer to the website it points to, since the exact page
@@ -569,8 +543,8 @@ function getOrigin(url: string): string {
 // session is started
 async function getRecruitment(
   sequelize: Sequelize,
-  options: AnalysisOptions = {},
-): Promise<RecruitmentAnalysis> {
+  options: StatsOptions = {},
+): Promise<RecruitmentStats> {
   const dialect: SupportedDialect = getDialect(sequelize);
   const jsonValue = (path: Array<string>) =>
     sqlJsonValue(dialect, '"metadata"', path);
@@ -614,58 +588,51 @@ function sanitizeTimeframe(days: unknown): number {
   return Math.min(parsed, MAX_TIMEFRAME);
 }
 
-// Run all analyses at once
-async function getAnalyses(
+// Compute all statistics at once
+async function getStats(
   sequelize: Sequelize,
-  options: AnalysisOptions = {},
-): Promise<Analyses> {
+  options: StatsOptions = {},
+): Promise<Stats> {
   const days = sanitizeTimeframe(options.days);
-  const analysisOptions = { ...options, days };
+  const statsOptions = { ...options, days };
 
   const [
     sessionsOverTime,
-    completionByStudy,
+    studies,
     responsesPerSession,
-    durationByStudy,
     participantLinking,
     recruitment,
   ] = await Promise.all([
-    getSessionsOverTime(sequelize, analysisOptions),
-    getCompletionByStudy(sequelize),
-    getResponsesPerSession(sequelize, analysisOptions),
-    getDurationByStudy(sequelize),
+    getSessionsOverTime(sequelize, statsOptions),
+    getStudyStats(sequelize),
+    getResponsesPerSession(sequelize, statsOptions),
     getParticipantLinking(sequelize),
-    getRecruitment(sequelize, analysisOptions),
+    getRecruitment(sequelize, statsOptions),
   ]);
 
   return {
     options: { studyId: options.studyId ?? null, days },
-    studyIds: completionByStudy.map((entry) => entry.studyId),
+    studyIds: studies.map((entry) => entry.studyId),
     sessionsOverTime,
-    completionByStudy,
+    studies,
     responsesPerSession,
-    durationByStudy,
     participantLinking,
     recruitment,
   };
 }
 
 export {
-  type AnalysisOptions,
-  type Analyses,
-  type ParticipantLinkingAnalysis,
-  type RecruitmentAnalysis,
+  type StatsOptions,
+  type Stats,
+  type ParticipantLinkingStats,
+  type RecruitmentStats,
   type RecruitmentBreakdown,
-  type ResponsesPerSessionAnalysis,
+  type ResponsesPerSessionStats,
   type SessionsOverTimeEntry,
-  type StudyCompletionEntry,
-  type StudyDurationEntry,
+  type StudyStatsEntry,
   type ValueCountEntry,
-  DEFAULT_TIMEFRAME,
-  MAX_TIMEFRAME,
-  getAnalyses,
-  getCompletionByStudy,
-  getDurationByStudy,
+  getStats,
+  getStudyStats,
   getParticipantLinking,
   getRecruitment,
   getResponsesPerSession,

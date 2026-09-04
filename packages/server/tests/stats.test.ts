@@ -1,21 +1,20 @@
 // Set up fake environment variables
 import "./setup_env";
 
+import sequelize from "../src/db";
 import {
-  getAnalyses,
-  getCompletionByStudy,
-  getDurationByStudy,
   getParticipantLinking,
   getRecruitment,
   getResponsesPerSession,
   getSessionsOverTime,
+  getStats,
+  getStudyStats,
   sanitizeTimeframe,
-} from "../src/analyses";
-import sequelize from "../src/db";
+} from "../src/stats";
 
-const STUDY_A = "analyses-a";
-const STUDY_B = "analyses-b";
-const STUDY_OLD = "analyses-old";
+const STUDY_A = "stats-a";
+const STUDY_B = "stats-b";
+const STUDY_OLD = "stats-old";
 
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
@@ -69,7 +68,7 @@ async function createParticipant(): Promise<string> {
   return participant.participantId;
 }
 
-// Set up a small, fully deterministic data set to run the analyses on
+// Set up a small, fully deterministic data set to compute the statistics on
 async function generateData() {
   for (const studyId of [STUDY_A, STUDY_B, STUDY_OLD]) {
     await sequelize.models.Study.create({ studyId });
@@ -152,7 +151,7 @@ async function generateData() {
     },
   });
 
-  // A session from long ago, to check the timeframe of analyses over time
+  // A session from long ago, to check the timeframe of the statistics
   await createSession({
     studyId: STUDY_OLD,
     finished: false,
@@ -164,7 +163,7 @@ function sumOf<T>(entries: Array<T>, key: keyof T): number {
   return entries.reduce((sum, entry) => sum + Number(entry[key]), 0);
 }
 
-describe("Analyses", () => {
+describe("Stats", () => {
   beforeAll(async () => {
     await sequelize.sync();
     await generateData();
@@ -220,67 +219,80 @@ describe("Analyses", () => {
     });
   });
 
-  describe("Completion between Studies", () => {
-    it("should compute the completion rate of every study", async () => {
-      const entries = await getCompletionByStudy(sequelize);
+  describe("Studies", () => {
+    it("should compute the sessions, completion and duration per study", async () => {
+      const entries = await getStudyStats(sequelize);
 
-      expect(entries).toEqual([
-        {
-          studyId: STUDY_A,
-          nSessions: 4,
-          nFinished: 3,
-          completionRate: 0.75,
-        },
-        {
-          studyId: STUDY_B,
-          nSessions: 2,
-          nFinished: 1,
-          completionRate: 0.5,
-        },
-        {
-          studyId: STUDY_OLD,
-          nSessions: 1,
-          nFinished: 0,
-          completionRate: 0,
-        },
+      expect(entries.map((entry) => entry.studyId)).toEqual([
+        STUDY_A,
+        STUDY_B,
+        STUDY_OLD,
       ]);
+
+      const [studyA, studyB, studyOld] = entries;
+      expect(studyA.nSessions).toBe(4);
+      expect(studyA.nFinished).toBe(3);
+      expect(studyA.completionRate).toBe(0.75);
+      // The session without any responses can not be timed
+      expect(studyA.nTimedSessions).toBe(3);
+      expect(studyA.meanDurationSeconds).toBeCloseTo((300 + 120 + 120) / 3, 3);
+
+      expect(studyB.nSessions).toBe(2);
+      expect(studyB.nFinished).toBe(1);
+      expect(studyB.completionRate).toBe(0.5);
+      expect(studyB.nTimedSessions).toBe(2);
+      expect(studyB.meanDurationSeconds).toBeCloseTo((120 + 60) / 2, 3);
+
+      // Studies without any responses have no duration at all
+      expect(studyOld.nSessions).toBe(1);
+      expect(studyOld.completionRate).toBe(0);
+      expect(studyOld.nTimedSessions).toBe(0);
+      expect(studyOld.meanDurationSeconds).toBe(null);
     });
   });
 
   describe("Responses per Session", () => {
     it("should compute how many responses sessions have", async () => {
-      const analysis = await getResponsesPerSession(sequelize);
+      const stats = await getResponsesPerSession(sequelize);
 
-      expect(analysis.nSessions).toBe(7);
-      expect(analysis.nResponses).toBe(10);
-      expect(analysis.meanResponsesPerSession).toBe(10 / 7);
-      expect(analysis.histogram).toEqual([
-        { nResponses: 0, nSessions: 2 },
+      // The session from 100 days ago is outside of the default timeframe
+      expect(stats.nSessions).toBe(6);
+      expect(stats.nResponses).toBe(10);
+      expect(stats.meanResponsesPerSession).toBe(10 / 6);
+      expect(stats.histogram).toEqual([
+        { nResponses: 0, nSessions: 1 },
         { nResponses: 1, nSessions: 1 },
         { nResponses: 2, nSessions: 3 },
         { nResponses: 3, nSessions: 1 },
       ]);
     });
 
-    it("should compute how many sessions make it past n responses", async () => {
-      const analysis = await getResponsesPerSession(sequelize);
+    it("should only count sessions within the timeframe", async () => {
+      const stats = await getResponsesPerSession(sequelize, { days: 365 });
 
-      expect(analysis.retentionTruncated).toBe(false);
-      expect(analysis.retention).toEqual([
-        { nResponses: 1, nSessions: 5, share: 5 / 7 },
-        { nResponses: 2, nSessions: 4, share: 4 / 7 },
-        { nResponses: 3, nSessions: 1, share: 1 / 7 },
+      expect(stats.nSessions).toBe(7);
+      expect(stats.histogram[0]).toEqual({ nResponses: 0, nSessions: 2 });
+    });
+
+    it("should compute how many sessions make it past n responses", async () => {
+      const stats = await getResponsesPerSession(sequelize);
+
+      expect(stats.retentionTruncated).toBe(false);
+      expect(stats.retention).toEqual([
+        { nResponses: 1, nSessions: 5, share: 5 / 6 },
+        { nResponses: 2, nSessions: 4, share: 4 / 6 },
+        { nResponses: 3, nSessions: 1, share: 1 / 6 },
       ]);
     });
 
     it("should only count sessions of the selected study", async () => {
-      const analysis = await getResponsesPerSession(sequelize, {
+      const stats = await getResponsesPerSession(sequelize, {
         studyId: STUDY_A,
       });
 
-      expect(analysis.nSessions).toBe(4);
-      expect(analysis.nResponses).toBe(7);
-      expect(analysis.histogram).toEqual([
+      expect(stats.nSessions).toBe(4);
+      expect(stats.nResponses).toBe(7);
+      expect(stats.histogram).toEqual([
         { nResponses: 0, nSessions: 1 },
         { nResponses: 2, nSessions: 2 },
         { nResponses: 3, nSessions: 1 },
@@ -288,56 +300,38 @@ describe("Analyses", () => {
     });
   });
 
-  describe("Session Duration", () => {
-    it("should compute the duration of sessions per study", async () => {
-      const entries = await getDurationByStudy(sequelize);
-
-      // Studies without any responses can not be timed at all
-      expect(entries.map((entry) => entry.studyId)).toEqual([STUDY_A, STUDY_B]);
-
-      const [studyA, studyB] = entries;
-      expect(studyA.nSessions).toBe(3);
-      expect(studyA.meanDurationSeconds).toBeCloseTo((300 + 120 + 120) / 3, 3);
-      expect(studyA.maxDurationSeconds).toBeCloseTo(300, 3);
-
-      expect(studyB.nSessions).toBe(2);
-      expect(studyB.meanDurationSeconds).toBeCloseTo((120 + 60) / 2, 3);
-      expect(studyB.maxDurationSeconds).toBeCloseTo(120, 3);
-    });
-  });
-
   describe("Participant Linking", () => {
     it("should count how often participants take part", async () => {
-      const analysis = await getParticipantLinking(sequelize);
+      const stats = await getParticipantLinking(sequelize);
 
-      expect(analysis.nParticipants).toBe(3);
-      expect(analysis.nParticipantsWithMultipleSessions).toBe(2);
-      expect(analysis.sessionsPerParticipant).toEqual([
+      expect(stats.nParticipants).toBe(3);
+      expect(stats.nParticipantsWithMultipleSessions).toBe(2);
+      expect(stats.sessionsPerParticipant).toEqual([
         { nSessions: 1, nParticipants: 1 },
         { nSessions: 2, nParticipants: 2 },
       ]);
     });
 
     it("should count participants repeating the same study", async () => {
-      const analysis = await getParticipantLinking(sequelize);
+      const stats = await getParticipantLinking(sequelize);
 
-      expect(analysis.nParticipantsRepeatingAStudy).toBe(1);
+      expect(stats.nParticipantsRepeatingAStudy).toBe(1);
     });
 
     it("should count participants taking part in different studies", async () => {
-      const analysis = await getParticipantLinking(sequelize);
+      const stats = await getParticipantLinking(sequelize);
 
-      expect(analysis.nParticipantsWithMultipleStudies).toBe(1);
-      expect(analysis.studiesPerParticipant).toEqual([
+      expect(stats.nParticipantsWithMultipleStudies).toBe(1);
+      expect(stats.studiesPerParticipant).toEqual([
         { nStudies: 1, nParticipants: 2 },
         { nStudies: 2, nParticipants: 1 },
       ]);
     });
 
     it("should count participants moving from one study to another", async () => {
-      const analysis = await getParticipantLinking(sequelize);
+      const stats = await getParticipantLinking(sequelize);
 
-      expect(analysis.studyTransitions).toEqual([
+      expect(stats.studyTransitions).toEqual([
         { fromStudyId: STUDY_A, toStudyId: STUDY_B, nTransitions: 1 },
       ]);
     });
@@ -349,9 +343,9 @@ describe("Analyses", () => {
 
       // Query parameters are stripped from the source URL
       expect(bySourceUrl.entries).toEqual([
-        { value: "https://study.org/a", nSessions: 3, share: 3 / 7 },
-        { value: "(unknown)", nSessions: 2, share: 2 / 7 },
-        { value: "https://study.org/b", nSessions: 2, share: 2 / 7 },
+        { value: "https://study.org/a", nSessions: 3, share: 3 / 6 },
+        { value: "https://study.org/b", nSessions: 2, share: 2 / 6 },
+        { value: "(unknown)", nSessions: 1, share: 1 / 6 },
       ]);
       expect(bySourceUrl.truncated).toBe(false);
     });
@@ -360,9 +354,9 @@ describe("Analyses", () => {
       const { byReferrer } = await getRecruitment(sequelize);
 
       expect(byReferrer.entries).toEqual([
-        { value: "(none / direct)", nSessions: 3, share: 3 / 7 },
-        { value: "https://example.org", nSessions: 3, share: 3 / 7 },
-        { value: "https://social.example", nSessions: 1, share: 1 / 7 },
+        { value: "https://example.org", nSessions: 3, share: 3 / 6 },
+        { value: "(none / direct)", nSessions: 2, share: 2 / 6 },
+        { value: "https://social.example", nSessions: 1, share: 1 / 6 },
       ]);
     });
 
@@ -370,9 +364,9 @@ describe("Analyses", () => {
       const { bySourceParameter } = await getRecruitment(sequelize);
 
       expect(bySourceParameter.entries).toEqual([
-        { value: "(unknown)", nSessions: 4, share: 4 / 7 },
-        { value: "newsletter", nSessions: 2, share: 2 / 7 },
-        { value: "social", nSessions: 1, share: 1 / 7 },
+        { value: "(unknown)", nSessions: 3, share: 3 / 6 },
+        { value: "newsletter", nSessions: 2, share: 2 / 6 },
+        { value: "social", nSessions: 1, share: 1 / 6 },
       ]);
     });
 
@@ -384,24 +378,22 @@ describe("Analyses", () => {
       expect(bySourceUrl.entries).toEqual([
         { value: "https://study.org/b", nSessions: 2, share: 1 },
       ]);
-      expect(bySourceUrl.nDistinctValues).toBe(1);
     });
   });
 
-  describe("All Analyses", () => {
-    it("should run every analysis at once", async () => {
-      const analyses = await getAnalyses(sequelize, { studyId: STUDY_A });
+  describe("All Stats", () => {
+    it("should compute every statistic at once", async () => {
+      const stats = await getStats(sequelize, { studyId: STUDY_A });
 
-      expect(analyses.options).toEqual({ studyId: STUDY_A, days: 30 });
-      expect(analyses.studyIds).toEqual([STUDY_A, STUDY_B, STUDY_OLD]);
-      expect(analyses.sessionsOverTime).toHaveLength(30);
-      expect(analyses.completionByStudy).toHaveLength(3);
-      expect(analyses.responsesPerSession.nSessions).toBe(4);
-      expect(analyses.durationByStudy).toHaveLength(2);
-      expect(analyses.participantLinking.nParticipants).toBe(3);
+      expect(stats.options).toEqual({ studyId: STUDY_A, days: 30 });
+      expect(stats.studyIds).toEqual([STUDY_A, STUDY_B, STUDY_OLD]);
+      expect(stats.sessionsOverTime).toHaveLength(30);
+      expect(stats.studies).toHaveLength(3);
+      expect(stats.responsesPerSession.nSessions).toBe(4);
+      expect(stats.participantLinking.nParticipants).toBe(3);
       // The URL used for the three sessions of study A plus the session
       // without any metadata
-      expect(analyses.recruitment.bySourceUrl.entries).toEqual([
+      expect(stats.recruitment.bySourceUrl.entries).toEqual([
         { value: "https://study.org/a", nSessions: 3, share: 0.75 },
         { value: "(unknown)", nSessions: 1, share: 0.25 },
       ]);

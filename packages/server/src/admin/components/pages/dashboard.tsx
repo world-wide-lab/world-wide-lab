@@ -12,7 +12,7 @@ import { styled } from "@adminjs/design-system/styled-components";
 import { ApiClient } from "adminjs";
 import type React from "react";
 import { useEffect, useState } from "react";
-import type { SessionsOverTimeEntry } from "../../../analyses/index.js";
+import type { SessionsOverTimeEntry } from "../../../stats/index.js";
 import { SessionsOverTimeChart } from "../charts/SessionsOverTimeChart.js";
 
 const pageHeaderHeight = 284;

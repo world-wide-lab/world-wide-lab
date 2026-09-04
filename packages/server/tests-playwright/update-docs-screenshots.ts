@@ -67,11 +67,11 @@ test("Update Screenshots for docs", async ({ page }) => {
     "admin/resources/wwl_studies/records/my-awesome-study-id/downloadData",
   );
 
-  // Analyses
+  // Stats
   // The page is a lot longer than the others, so it gets a taller window to
   // fit all of its sections into one screenshot.
-  await page.setViewportSize({ width: 1280, height: 2650 });
-  await goAndTakeScreenshot(page, "admin/pages/Analyses", async (page) => {
+  await page.setViewportSize({ width: 1280, height: 2900 });
+  await goAndTakeScreenshot(page, "admin/pages/Stats", async (page) => {
     // Wait for the charts to load
     await page.locator(".frappe-chart").first().waitFor();
     await page.waitForTimeout(1000);

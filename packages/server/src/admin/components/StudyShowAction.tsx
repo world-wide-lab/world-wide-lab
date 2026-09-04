@@ -165,11 +165,11 @@ session.finish();
         &nbsp; &nbsp;
         <Button
           as="a"
-          href={`/admin/pages/Analyses?studyId=${encodeURIComponent(studyId)}`}
+          href={`/admin/pages/Stats?studyId=${encodeURIComponent(studyId)}`}
           variant="contained"
           style={{ cursor: "pointer" }}
         >
-          <Icon icon="BarChart" /> View Analyses for this Study
+          <Icon icon="BarChart" /> View Stats for this Study
         </Button>
       </Box>
 

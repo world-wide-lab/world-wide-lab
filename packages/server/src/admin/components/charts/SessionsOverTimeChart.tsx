@@ -1,5 +1,5 @@
-import type { SessionsOverTimeEntry } from "../../../analyses/index.js";
-import { LineChart } from "./LineChart.js";
+import type { SessionsOverTimeEntry } from "../../../stats/index.js";
+import { Chart } from "./Chart.js";
 
 type SessionsOverTimeChartProps = {
   data: Array<SessionsOverTimeEntry> | null;
@@ -16,7 +16,8 @@ export const SessionsOverTimeChart: React.FC<SessionsOverTimeChartProps> = ({
   }
 
   return (
-    <LineChart
+    <Chart
+      type="line"
       labels={data.map((entry) => entry.date)}
       datasets={[
         {

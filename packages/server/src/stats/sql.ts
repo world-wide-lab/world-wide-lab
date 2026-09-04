@@ -1,7 +1,7 @@
 import type { Sequelize } from "sequelize";
 
 // World-Wide-Lab can run on top of both PostgreSQL and SQLite, which
-// unfortunately disagree about most of the SQL needed for the analyses. These
+// unfortunately disagree about most of the SQL needed for the statistics. These
 // helpers return the correct snippet for whichever dialect is currently used.
 
 type SupportedDialect = "postgres" | "sqlite";
@@ -9,7 +9,7 @@ type SupportedDialect = "postgres" | "sqlite";
 function getDialect(sequelize: Sequelize): SupportedDialect {
   const dialect = sequelize.getDialect();
   if (dialect !== "postgres" && dialect !== "sqlite") {
-    throw new Error(`Analyses are not supported on the ${dialect} dialect.`);
+    throw new Error(`Statistics are not supported on the ${dialect} dialect.`);
   }
   return dialect;
 }

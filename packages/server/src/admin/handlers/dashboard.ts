@@ -1,7 +1,7 @@
 import type { PageContext, PageHandler } from "adminjs";
-import { getSessionsOverTime } from "../../analyses/index.js";
 import config from "../../config.js";
 import sequelize from "../../db/index.js";
+import { getSessionsOverTime } from "../../stats/index.js";
 
 // Number of days shown in the dashboard's chart
 const DASHBOARD_TIMEFRAME = 7;

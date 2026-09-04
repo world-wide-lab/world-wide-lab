@@ -7,15 +7,15 @@ import config from "../config.js";
 import sequelize from "../db/index.js";
 import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
-import {
-  ANALYSES_PAGE_NAME,
-  analysesHandler,
-  viewStudyAnalysesHandler,
-} from "./handlers/analyses.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
 import { viewSessionHandler } from "./handlers/session.js";
+import {
+  STATS_PAGE_NAME,
+  statsHandler,
+  viewStudyStatsHandler,
+} from "./handlers/stats.js";
 import {
   deleteStudyHandler,
   downloadStudyDataHandler,
@@ -30,10 +30,10 @@ AdminJS.registerAdapter({
 });
 
 const pages: AdminPages = {};
-pages[ANALYSES_PAGE_NAME] = {
-  component: Components.AnalysesPage,
+pages[STATS_PAGE_NAME] = {
+  component: Components.StatsPage,
   icon: "BarChart",
-  handler: analysesHandler,
+  handler: statsHandler,
 } as AdminPage;
 if (config.apiDocs.enabled) {
   pages["Public API"] = {
@@ -331,12 +331,12 @@ const admin = new AdminJS({
             handler: downloadStudyDataHandler,
             component: Components.StudyDownloadAction,
           },
-          viewAnalyses: {
+          viewStats: {
             actionType: "record",
-            label: "View Analyses",
+            label: "View Stats",
             icon: "BarChart",
             component: false,
-            handler: viewStudyAnalysesHandler,
+            handler: viewStudyStatsHandler,
           },
         },
       },
@@ -577,7 +577,7 @@ const admin = new AdminJS({
               show: "Study Info",
               edit: "Edit Study",
               delete: "Delete Study",
-              viewAnalyses: "Analyses for this Study",
+              viewStats: "Stats for this Study",
             },
           },
           wwl_participants: {

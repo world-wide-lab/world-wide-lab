@@ -1,18 +1,18 @@
-# Analyses
+# Stats
 
-World-Wide-Lab automatically computes a set of basic analyses of the data you have already collected. To see them, click **Analyses** in the sidebar of the admin UI.
+World-Wide-Lab automatically computes a set of basic statistics about the data you have already collected. To see them, click **Stats** in the sidebar of the admin UI.
 
-![A screenshot of the analyses view in World-Wide-Lab](/img/screenshots/generated/admin_pages_Analyses.png){.screenshot}
+![A screenshot of the stats view in World-Wide-Lab](/img/screenshots/generated/admin_pages_Stats.png){.screenshot}
 
-At the top of the page you can pick a **study** and a **timeframe**. Sessions over time, dropout and recruitment are then based on that study and timeframe, while the comparison between studies and the analyses of participants always cover all of your data.
+At the top of the page you can pick a **study** and a **timeframe**. The numbers at the top as well as the sessions over time, dropout and recruitment are then based on that study and timeframe. The comparison between studies and the statistics about participants always cover all of your data.
 
-Your selection is kept in the address of the page, so you can bookmark or share the analyses of a particular study. To jump straight to the analyses of one study, open that study and click **View Analyses for this Study** (the same option is available via the `...` menu in the list of studies).
+Your selection is kept in the address of the page, so you can bookmark or share the stats of a particular study. To jump straight to the stats of one study, open that study and click **View Stats for this Study** (the same option is available via the `...` menu in the list of studies).
 
 ::: tip
-The analyses are meant to give you a quick overview of your data. If you want to run your own analyses, you can always [download the full data](/guides/download-data.md) of a study.
+The stats are meant to give you a quick overview of your data. If you want to run your own analyses, you can always [download the full data](/guides/download-data.md) of a study.
 :::
 
-## Sessions over Time
+## Over Time
 
 How many sessions were started per day and how many of them were finished, along with the share of finished sessions per day.
 

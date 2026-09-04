@@ -5,20 +5,20 @@ import {
   type PageContext,
   type PageHandler,
 } from "adminjs";
-import { getAnalyses, sanitizeTimeframe } from "../../analyses/index.js";
 import { cache } from "../../cache.js";
 import sequelize from "../../db/index.js";
+import { getStats, sanitizeTimeframe } from "../../stats/index.js";
 
 // Name of the page in the admin UI, also used to link to it
-const ANALYSES_PAGE_NAME = "Analyses";
+const STATS_PAGE_NAME = "Stats";
 
-// Analyses run across all data, which can take a moment on larger databases,
-// so their results are cached for a short while.
+// The statistics run across all collected data, which can take a moment on
+// larger databases, so their results are cached for a short while.
 const CACHE_TTL = 30 * 1000; /* milliseconds */
 
-export { ANALYSES_PAGE_NAME };
+export { STATS_PAGE_NAME };
 
-export const analysesHandler: PageHandler = async (
+export const statsHandler: PageHandler = async (
   request: any,
   response: any,
   context: PageContext,
@@ -32,14 +32,14 @@ export const analysesHandler: PageHandler = async (
   const days = sanitizeTimeframe(query.days);
 
   return await cache.wrap(
-    `analyses-${days}-${studyId}`,
-    () => getAnalyses(sequelize, { studyId, days }),
+    `stats-${days}-${studyId}`,
+    () => getStats(sequelize, { studyId, days }),
     CACHE_TTL,
   );
 };
 
-// Open the analyses page with the given study pre-selected
-export const viewStudyAnalysesHandler: ActionHandler<ActionResponse> = async (
+// Open the stats page with the given study pre-selected
+export const viewStudyStatsHandler: ActionHandler<ActionResponse> = async (
   request,
   response,
   context,
@@ -48,7 +48,7 @@ export const viewStudyAnalysesHandler: ActionHandler<ActionResponse> = async (
 
   if (!request.params.recordId || !record) {
     throw new NotFoundError(
-      'You have to pass "recordId" to the View Analyses Action',
+      'You have to pass "recordId" to the View Stats Action',
       "Action#handler",
     );
   }
@@ -56,6 +56,6 @@ export const viewStudyAnalysesHandler: ActionHandler<ActionResponse> = async (
   const studyId = encodeURIComponent(String(record.id()));
   return {
     record: record.toJSON(currentAdmin),
-    redirectUrl: `${h.pageUrl(ANALYSES_PAGE_NAME)}?studyId=${studyId}`,
+    redirectUrl: `${h.pageUrl(STATS_PAGE_NAME)}?studyId=${studyId}`,
   };
 };
