@@ -12,7 +12,8 @@ import { styled } from "@adminjs/design-system/styled-components";
 import { ApiClient } from "adminjs";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { DashboardLineChart } from "../charts/DashboardLineChart.js";
+import type { SessionsOverTimeEntry } from "../../../stats/index.js";
+import { SessionsOverTimeChart } from "../charts/SessionsOverTimeChart.js";
 
 const pageHeaderHeight = 284;
 const pageHeaderPaddingY = 74;
@@ -125,12 +126,13 @@ Card.defaultProps = {
 type DashboardResponse = {
   electronApp: boolean;
   studyCount: number;
-  fullSessionCounts: Array<object>;
+  sessionsOverTime: Array<SessionsOverTimeEntry>;
 };
 
 export const Dashboard: React.FC = () => {
   const [studyCountData, setStudyCountData] = useState("X");
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] =
+    useState<Array<SessionsOverTimeEntry> | null>(null);
   const [isElectron, setIsElectron] = useState<boolean | undefined>(undefined);
 
   // Retrieve data from dashboard handler
@@ -144,7 +146,7 @@ export const Dashboard: React.FC = () => {
 
         setIsElectron(response.data.electronApp);
         setStudyCountData(response.data.studyCount.toString());
-        setChartData(response.data.fullSessionCounts);
+        setChartData(response.data.sessionsOverTime);
       })
       .catch((error) => {
         // Handle errors here
@@ -171,7 +173,7 @@ export const Dashboard: React.FC = () => {
             <Box>
               <CardLabel>Started / Finished Sessions this Week</CardLabel>
             </Box>
-            <DashboardLineChart data={chartData} />
+            <SessionsOverTimeChart data={chartData} />
           </Card>
         </Box>
         <Box width={[1, 1 / 2, 1 / 2, 1 / 3]} p="lg">

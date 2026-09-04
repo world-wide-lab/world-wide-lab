@@ -12,6 +12,11 @@ import { deployDeploymentHandler } from "./handlers/deployment.js";
 import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
+  STATS_PAGE_NAME,
+  statsHandler,
+  viewStudyStatsHandler,
+} from "./handlers/stats.js";
+import {
   deleteStudyHandler,
   downloadStudyDataHandler,
   newStudyHandler,
@@ -25,6 +30,11 @@ AdminJS.registerAdapter({
 });
 
 const pages: AdminPages = {};
+pages[STATS_PAGE_NAME] = {
+  component: Components.StatsPage,
+  icon: "BarChart",
+  handler: statsHandler,
+} as AdminPage;
 if (config.apiDocs.enabled) {
   pages["Public API"] = {
     component: Components.ApiDocsPage,
@@ -321,6 +331,13 @@ const admin = new AdminJS({
             handler: downloadStudyDataHandler,
             component: Components.StudyDownloadAction,
           },
+          viewStats: {
+            actionType: "record",
+            label: "View Stats",
+            icon: "BarChart",
+            component: false,
+            handler: viewStudyStatsHandler,
+          },
         },
       },
     },
@@ -560,6 +577,7 @@ const admin = new AdminJS({
               show: "Study Info",
               edit: "Edit Study",
               delete: "Delete Study",
+              viewStats: "Stats for this Study",
             },
           },
           wwl_participants: {

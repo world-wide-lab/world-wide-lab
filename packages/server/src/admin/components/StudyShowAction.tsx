@@ -162,6 +162,15 @@ session.finish();
         >
           <Icon icon="Download" /> Download Data from this Study
         </Button>
+        &nbsp; &nbsp;
+        <Button
+          as="a"
+          href={`/admin/pages/Stats?studyId=${encodeURIComponent(studyId)}`}
+          variant="contained"
+          style={{ cursor: "pointer" }}
+        >
+          <Icon icon="BarChart" /> View Stats for this Study
+        </Button>
       </Box>
 
       <H3>Integrating the Study</H3>
