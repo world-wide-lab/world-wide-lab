@@ -21,7 +21,6 @@ import {
 } from "../db/export.js";
 import sequelize from "../db/index.js";
 import { findModelByTableName, runReplication } from "../db/replication.js";
-import { sanitizeStudyId } from "../db/util.js";
 import { AppError } from "../errors.js";
 import { requireAuthMiddleware } from "./authMiddleware.js";
 
@@ -203,7 +202,7 @@ routerProtectedWithoutAuthentication.get(
           });
         };
       } else if (dataType === "responses-extracted-payload") {
-        const { query, pageQuery } = await generateExtractedPayloadQuery(
+        const { copyQuery, pageQuery } = await generateExtractedPayloadQuery(
           sequelize,
           studyId,
           { created_after },
@@ -212,21 +211,8 @@ routerProtectedWithoutAuthentication.get(
         if (sequelize.getDialect() === "postgres" && format === "csv") {
           // Special case for postgres, use COPY to format & stream data
 
-          // Manually replace the query's placeholders, as pg-copy-stream
-          // doesn't support query parameters. Care should be taken here
-          // to prevent SQL injection, which is why the studyId is sanitized
-          // and created_after is re-serialized from its parsed Date.
-          let copyQuery = query.replace(
-            ":studyId",
-            `'${sanitizeStudyId(studyId)}'`,
-          );
-          if (created_after) {
-            copyQuery = copyQuery.replace(
-              ":created_after",
-              `'${created_after.toISOString()}'`,
-            );
-          }
-
+          // The query already has all of its values escaped into it, since
+          // pg-copy-stream doesn't support query parameters.
           const connection = (await sequelize.connectionManager.getConnection({
             type: "read",
           })) as Client;
@@ -259,14 +245,10 @@ routerProtectedWithoutAuthentication.get(
         cursorField = KEYSET_CURSOR_COLUMN;
         hideCursorField = true;
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
-          return await sequelize.query(pageQuery(cursor !== undefined), {
+          // The query already has all of its values escaped into it, so it is
+          // run without any replacements, see generateExtractedPayloadQuery.
+          return await sequelize.query(pageQuery(cursor, limit), {
             type: Sequelize.QueryTypes.SELECT,
-            replacements: {
-              studyId,
-              limit,
-              ...(cursor !== undefined && { cursor }),
-              ...(created_after && { created_after }),
-            },
           });
         };
       } else {
