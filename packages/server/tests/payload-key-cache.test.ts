@@ -178,4 +178,49 @@ describe("Caching of payload keys", () => {
     expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
     expect(await getCache(studyId)).toBe(null);
   });
+
+  it("should pick up responses that only became visible after a scan", async () => {
+    const studyId = "payload-key-cache-late-response";
+    const sessionId = await createStudy(studyId);
+    const firstResponse = await addResponse(sessionId, { key_1: 1 });
+    await addResponse(sessionId, { key_2: 2 });
+
+    expect(await getPayloadColumns(studyId)).toEqual(["key_1", "key_2"]);
+
+    // Imitate a response that has been committed only after a later one was
+    // already visible to the scan: it carries an updatedAt from before the
+    // position of that scan and a responseId below it, so only the overlap
+    // every scan reaches back can still pick it up.
+    await firstResponse.update({ payload: { key_1: 1, late_key: 3 } });
+    const { lastUpdatedAt } = await getCache(studyId);
+    await sequelize.query(
+      'UPDATE wwl_responses SET "updatedAt" = :updatedAt WHERE "responseId" = :responseId',
+      {
+        replacements: {
+          updatedAt: new Date(new Date(lastUpdatedAt).getTime() - 30 * 1000),
+          responseId: firstResponse.responseId,
+        },
+      },
+    );
+
+    expect(await getPayloadColumns(studyId)).toEqual([
+      "key_1",
+      "key_2",
+      "late_key",
+    ]);
+  });
+
+  it("should still export when the cache is unavailable", async () => {
+    const studyId = "payload-key-cache-unavailable";
+    const sessionId = await createStudy(studyId);
+    await addResponse(sessionId, { key_1: 1 });
+
+    // Imitate a database on which the cache's migration has not been applied
+    await sequelize.models.ResponsePayloadKeyCache.drop();
+    try {
+      expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
+    } finally {
+      await sequelize.models.ResponsePayloadKeyCache.sync();
+    }
+  });
 });

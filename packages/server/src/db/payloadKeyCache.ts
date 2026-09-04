@@ -31,6 +31,15 @@ interface PayloadKeyCache extends ScanPosition {
   keys: CachedPayloadKey[];
 }
 
+// How far back every scan reaches beyond the position of the previous one.
+// A response only becomes visible to a scan once it has been committed, which
+// can happen after a response that has been created later already is. Without
+// an overlap, such a response would fall behind the position of the scan that
+// missed it and its keys would never make it into the cache. Re-scanning the
+// last few moments before the previous position closes that gap, at the cost
+// of looking at a handful of responses twice.
+const SCAN_OVERLAP_MS = 60 * 1000;
+
 // The responses of a study, which are scanned for payload keys
 const RESPONSES_OF_STUDY = `
   FROM
@@ -64,7 +73,9 @@ function getScanConditions(
     }
     if (lastUpdatedAt !== null) {
       unscanned.push('wwl_responses."updatedAt" > :lastUpdatedAt');
-      replacements.lastUpdatedAt = lastUpdatedAt;
+      replacements.lastUpdatedAt = new Date(
+        lastUpdatedAt.getTime() - SCAN_OVERLAP_MS,
+      );
     }
     if (unscanned.length > 0) {
       conditions.push(`(${unscanned.join(" OR ")})`);
@@ -236,7 +247,12 @@ async function updateCache(
   studyId: string,
 ): Promise<CachedPayloadKey[]> {
   const cache = await readCache(sequelize, studyId);
-  const position = cache?.lastResponseId != null ? cache : undefined;
+  // Both parts of the position are needed to reliably tell which responses
+  // have already been scanned, so an incomplete one leads to a full re-scan.
+  const position =
+    cache?.lastResponseId != null && cache?.lastUpdatedAt != null
+      ? cache
+      : undefined;
 
   // Check whether there is anything that has been added or changed since the
   // last scan, before doing the (much more expensive) scan itself.
