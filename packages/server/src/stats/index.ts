@@ -54,22 +54,36 @@ type StudyStatsEntry = {
 
 type ResponsesPerSessionStats = {
   nSessions: number;
+  nFinishedSessions: number;
   nResponses: number;
   meanResponsesPerSession: number | null;
-  // How many sessions have exactly n responses
-  histogram: Array<{ nResponses: number; nSessions: number }>;
-  // How many sessions have at least n responses i.e. how many participants
-  // are still around after n responses
-  retention: Array<{ nResponses: number; nSessions: number; share: number }>;
+  // How many sessions have exactly n responses, split by whether they have
+  // been marked as finished
+  histogram: Array<{
+    nResponses: number;
+    nFinished: number;
+    nUnfinished: number;
+  }>;
+  // Share of sessions with at least n responses. Finished and unfinished
+  // sessions are counted separately, each within their own group, since the
+  // length of finished sessions can vary just as much as the point at which
+  // participants drop out.
+  retention: Array<{
+    nResponses: number;
+    finished: number | null;
+    unfinished: number | null;
+  }>;
   retentionTruncated: boolean;
 };
 
-type ParticipantLinkingStats = {
-  // Participants with at least one session
+type ParticipantStats = {
+  // Participants with at least one session in the current scope
   nParticipants: number;
   nParticipantsWithMultipleSessions: number;
   // Participants with more than one session in the same study
   nParticipantsRepeatingAStudy: number;
+  // Participants who take part in more than one study. When a single study is
+  // selected, these are the ones who have also taken part in another study.
   nParticipantsWithMultipleStudies: number;
   sessionsPerParticipant: Array<{
     nSessions: number;
@@ -103,13 +117,20 @@ type RecruitmentStats = {
 
 type Stats = {
   options: { studyId: string | null; days: number };
+  // Every study, for the study picker
   studyIds: Array<string>;
   sessionsOverTime: Array<SessionsOverTimeEntry>;
-  studies: Array<StudyStatsEntry>;
-  responsesPerSession: ResponsesPerSessionStats;
-  participantLinking: ParticipantLinkingStats;
+  participants: ParticipantStats;
   recruitment: RecruitmentStats;
+  // A comparison of all studies, only part of the overview
+  studies?: Array<StudyStatsEntry>;
+  // The selected study and how far participants get in it, only part of the
+  // stats of a single study
+  study?: StudyStatsEntry;
+  responsesPerSession?: ResponsesPerSessionStats;
 };
+
+type SqlFilter = { sql: string; replacements: Record<string, unknown> };
 
 // Restrict a query to the sessions of the selected study and timeframe
 function sessionFilter(
@@ -118,7 +139,7 @@ function sessionFilter(
     createdAt: '"createdAt"',
     studyId: '"studyId"',
   },
-): { sql: string; replacements: Record<string, unknown> } {
+): SqlFilter {
   const { firstDate } = getDates(options.days ?? DEFAULT_TIMEFRAME);
 
   const conditions = [`${columns.createdAt} >= :firstDate`];
@@ -200,12 +221,24 @@ async function getSessionsOverTime(
 // responses can not be timed.
 async function getStudyStats(
   sequelize: Sequelize,
+  options: StatsOptions = {},
 ): Promise<Array<StudyStatsEntry>> {
   const duration = sqlSecondsBetween(
     getDialect(sequelize),
     'MAX("wwl_responses"."createdAt")',
     '"wwl_sessions"."createdAt"',
   );
+  // Sessions are limited to the timeframe, the studies themselves are not
+  const filter = sessionFilter(
+    { days: options.days },
+    {
+      createdAt: '"wwl_sessions"."createdAt"',
+      studyId: '"wwl_sessions"."studyId"',
+    },
+  );
+  const onlyStudy = options.studyId
+    ? 'WHERE "wwl_studies"."studyId" = :studyId'
+    : "";
 
   const rows = await sequelize.query<{
     studyId: string;
@@ -231,16 +264,24 @@ async function getStudyStats(
         FROM "wwl_sessions"
         LEFT JOIN "wwl_responses"
           ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
+        ${filter.sql}
         GROUP BY
           "wwl_sessions"."sessionId",
           "wwl_sessions"."studyId",
           "wwl_sessions"."finished",
           "wwl_sessions"."createdAt"
       ) AS "sessions" ON "sessions"."studyId" = "wwl_studies"."studyId"
+      ${onlyStudy}
       GROUP BY "wwl_studies"."studyId"
       ORDER BY COUNT("sessions"."sessionId") DESC, "wwl_studies"."studyId"
     `,
-    { type: QueryTypes.SELECT },
+    {
+      replacements: {
+        ...filter.replacements,
+        ...(options.studyId ? { studyId: options.studyId } : {}),
+      },
+      type: QueryTypes.SELECT,
+    },
   );
 
   return rows.map((row) => {
@@ -260,8 +301,8 @@ async function getStudyStats(
   });
 }
 
-// How many responses sessions have, which indicates where participants
-// dropped out of a study
+// How many responses the sessions of a study have, which shows how far
+// participants get before they leave
 async function getResponsesPerSession(
   sequelize: Sequelize,
   options: StatsOptions = {},
@@ -273,57 +314,79 @@ async function getResponsesPerSession(
 
   const rows = await sequelize.query<{
     nResponses: number | string;
+    finished: boolean | number;
     nSessions: number | string;
   }>(
     `
-      SELECT "nResponses", COUNT(*) AS "nSessions"
+      SELECT "nResponses", "finished", COUNT(*) AS "nSessions"
       FROM (
         SELECT
           "wwl_sessions"."sessionId" AS "sessionId",
+          "wwl_sessions"."finished" AS "finished",
           COUNT("wwl_responses"."responseId") AS "nResponses"
         FROM "wwl_sessions"
         LEFT JOIN "wwl_responses"
           ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
         ${filter.sql}
-        GROUP BY "wwl_sessions"."sessionId"
+        GROUP BY "wwl_sessions"."sessionId", "wwl_sessions"."finished"
       ) AS "sessions"
-      GROUP BY "nResponses"
+      GROUP BY "nResponses", "finished"
       ORDER BY "nResponses"
     `,
     { replacements: filter.replacements, type: QueryTypes.SELECT },
   );
 
-  const histogram = rows.map((row) => ({
-    nResponses: toNumber(row.nResponses),
-    nSessions: toNumber(row.nSessions),
-  }));
+  const counts = new Map<number, { nFinished: number; nUnfinished: number }>();
+  for (const row of rows) {
+    const nResponses = toNumber(row.nResponses);
+    const entry = counts.get(nResponses) ?? { nFinished: 0, nUnfinished: 0 };
+    // Booleans are returned as 0 and 1 by some of the supported databases
+    if (row.finished === true || row.finished === 1) {
+      entry.nFinished += toNumber(row.nSessions);
+    } else {
+      entry.nUnfinished += toNumber(row.nSessions);
+    }
+    counts.set(nResponses, entry);
+  }
 
-  const nSessions = histogram.reduce((sum, row) => sum + row.nSessions, 0);
+  const histogram = [...counts.entries()]
+    .map(([nResponses, entry]) => ({ nResponses, ...entry }))
+    .sort((a, b) => a.nResponses - b.nResponses);
+
+  const total = (key: "nFinished" | "nUnfinished"): number =>
+    histogram.reduce((sum, entry) => sum + entry[key], 0);
+  const nFinishedSessions = total("nFinished");
+  const nUnfinishedSessions = total("nUnfinished");
+  const nSessions = nFinishedSessions + nUnfinishedSessions;
   const nResponses = histogram.reduce(
-    (sum, row) => sum + row.nResponses * row.nSessions,
+    (sum, entry) =>
+      sum + entry.nResponses * (entry.nFinished + entry.nUnfinished),
     0,
   );
 
-  // How many sessions are still around after n responses
+  // How many sessions are still going after n responses, within each group
   const maxResponses = histogram.length
     ? histogram[histogram.length - 1].nResponses
     : 0;
   const retentionLength = Math.min(maxResponses, MAX_RETENTION_POINTS);
   const retention = [];
-  let remaining = nSessions;
+  let remainingFinished = nFinishedSessions;
+  let remainingUnfinished = nUnfinishedSessions;
   for (let n = 1; n <= retentionLength; n++) {
     // Sessions with exactly n - 1 responses do not make it any further
-    const droppedOut = histogram.find((row) => row.nResponses === n - 1);
-    remaining -= droppedOut ? droppedOut.nSessions : 0;
+    const droppedOut = histogram.find((entry) => entry.nResponses === n - 1);
+    remainingFinished -= droppedOut?.nFinished ?? 0;
+    remainingUnfinished -= droppedOut?.nUnfinished ?? 0;
     retention.push({
       nResponses: n,
-      nSessions: remaining,
-      share: share(remaining, nSessions) ?? 0,
+      finished: share(remainingFinished, nFinishedSessions),
+      unfinished: share(remainingUnfinished, nUnfinishedSessions),
     });
   }
 
   return {
     nSessions,
+    nFinishedSessions,
     nResponses,
     meanResponsesPerSession: share(nResponses, nSessions),
     histogram,
@@ -332,12 +395,25 @@ async function getResponsesPerSession(
   };
 }
 
-// How many participants there are per number of sessions, studies, ... The
+// How many participants there are per number of sessions or studies. The
 // aggregate is computed per participant, e.g. COUNT(*) for their sessions.
 async function countParticipantsPer(
   sequelize: Sequelize,
   aggregate: string,
+  filter: SqlFilter,
+  // Only count the participants of the selected study, while still counting
+  // all of their sessions
+  onlyParticipantsOfStudy = false,
 ): Promise<Array<{ value: number; nParticipants: number }>> {
+  const ofStudy = onlyParticipantsOfStudy
+    ? `AND EXISTS (
+         SELECT 1
+         FROM "wwl_sessions" AS "ofStudy"
+         WHERE "ofStudy"."participantId" = "wwl_sessions"."participantId"
+           AND "ofStudy"."studyId" = :studyId
+       )`
+    : "";
+
   const rows = await sequelize.query<{
     value: number | string;
     nParticipants: number | string;
@@ -347,13 +423,15 @@ async function countParticipantsPer(
       FROM (
         SELECT "participantId", ${aggregate} AS "value"
         FROM "wwl_sessions"
-        WHERE "participantId" IS NOT NULL
+        ${filter.sql}
+        AND "participantId" IS NOT NULL
+        ${ofStudy}
         GROUP BY "participantId"
       ) AS "participants"
       GROUP BY "value"
       ORDER BY "value"
     `,
-    { type: QueryTypes.SELECT },
+    { replacements: filter.replacements, type: QueryTypes.SELECT },
   );
 
   return rows.map((row) => ({
@@ -362,14 +440,30 @@ async function countParticipantsPer(
   }));
 }
 
-// How participants are linked across sessions and studies
-async function getParticipantLinking(
+// How often participants take part, and how they move between studies. When a
+// study is selected, this covers the participants of that study.
+async function getParticipantStats(
   sequelize: Sequelize,
-): Promise<ParticipantLinkingStats> {
+  options: StatsOptions = {},
+): Promise<ParticipantStats> {
+  const { studyId } = options;
+  // Sessions of the selected study, or all sessions
+  const filter = sessionFilter(options);
+  // All of a participant's sessions, no matter which study they are in
+  const anyStudy = sessionFilter({ days: options.days });
+  const replacements = { ...anyStudy.replacements, ...filter.replacements };
+
   const [sessionCounts, studyCounts, repeatedStudyRows, transitionRows] =
     await Promise.all([
-      countParticipantsPer(sequelize, "COUNT(*)"),
-      countParticipantsPer(sequelize, 'COUNT(DISTINCT "studyId")'),
+      // Sessions of the selected study, or all sessions of a participant
+      countParticipantsPer(sequelize, "COUNT(*)", filter),
+      // The studies of the participants in scope, always all of them
+      countParticipantsPer(
+        sequelize,
+        'COUNT(DISTINCT "studyId")',
+        { sql: anyStudy.sql, replacements },
+        Boolean(studyId),
+      ),
       // Participants who have taken part in the same study more than once
       sequelize.query<{ nParticipants: number | string }>(
         `
@@ -377,15 +471,17 @@ async function getParticipantLinking(
           FROM (
             SELECT "participantId"
             FROM "wwl_sessions"
-            WHERE "participantId" IS NOT NULL
+            ${filter.sql}
+            AND "participantId" IS NOT NULL
             GROUP BY "participantId", "studyId"
             HAVING COUNT(*) > 1
           ) AS "repeated"
         `,
-        { type: QueryTypes.SELECT },
+        { replacements: filter.replacements, type: QueryTypes.SELECT },
       ),
-      // Sessions which are in a different study than a participant's
-      // previous one
+      // Sessions which are in a different study than a participant's previous
+      // one. The selected study is only used to pick the transitions it is
+      // part of, so that moves in both directions are visible.
       sequelize.query<{
         fromStudyId: string;
         toStudyId: string;
@@ -403,14 +499,16 @@ async function getParticipantLinking(
                 PARTITION BY "participantId" ORDER BY "createdAt"
               ) AS "previousStudyId"
             FROM "wwl_sessions"
-            WHERE "participantId" IS NOT NULL
+            ${anyStudy.sql}
+            AND "participantId" IS NOT NULL
           ) AS "transitions"
           WHERE "previousStudyId" IS NOT NULL
             AND "previousStudyId" <> "studyId"
+            ${studyId ? 'AND (:studyId IN ("previousStudyId", "studyId"))' : ""}
           GROUP BY "previousStudyId", "studyId"
           ORDER BY COUNT(*) DESC, "previousStudyId", "studyId"
         `,
-        { type: QueryTypes.SELECT },
+        { replacements, type: QueryTypes.SELECT },
       ),
     ]);
 
@@ -588,43 +686,61 @@ function sanitizeTimeframe(days: unknown): number {
   return Math.min(parsed, MAX_TIMEFRAME);
 }
 
-// Compute all statistics at once
+// Every study there is, in the order they are shown in the picker
+async function getStudyIds(sequelize: Sequelize): Promise<Array<string>> {
+  const rows = await sequelize.query<{ studyId: string }>(
+    'SELECT "studyId" FROM "wwl_studies" ORDER BY "studyId"',
+    { type: QueryTypes.SELECT },
+  );
+  return rows.map((row) => row.studyId);
+}
+
+// Compute all statistics at once. Without a study this is the overview across
+// all studies, with one it is the more detailed view of that study.
 async function getStats(
   sequelize: Sequelize,
   options: StatsOptions = {},
 ): Promise<Stats> {
   const days = sanitizeTimeframe(options.days);
+  const { studyId } = options;
   const statsOptions = { ...options, days };
 
-  const [
-    sessionsOverTime,
-    studies,
-    responsesPerSession,
-    participantLinking,
-    recruitment,
-  ] = await Promise.all([
-    getSessionsOverTime(sequelize, statsOptions),
-    getStudyStats(sequelize),
-    getResponsesPerSession(sequelize, statsOptions),
-    getParticipantLinking(sequelize),
-    getRecruitment(sequelize, statsOptions),
-  ]);
+  const [studyIds, sessionsOverTime, participants, recruitment] =
+    await Promise.all([
+      getStudyIds(sequelize),
+      getSessionsOverTime(sequelize, statsOptions),
+      getParticipantStats(sequelize, statsOptions),
+      getRecruitment(sequelize, statsOptions),
+    ]);
 
-  return {
-    options: { studyId: options.studyId ?? null, days },
-    studyIds: studies.map((entry) => entry.studyId),
+  const stats: Stats = {
+    options: { studyId: studyId ?? null, days },
+    studyIds,
     sessionsOverTime,
-    studies,
-    responsesPerSession,
-    participantLinking,
+    participants,
     recruitment,
   };
+
+  if (studyId) {
+    // How far participants get is only of interest within a single study,
+    // since studies differ in how many responses they collect
+    const [studies, responsesPerSession] = await Promise.all([
+      getStudyStats(sequelize, statsOptions),
+      getResponsesPerSession(sequelize, statsOptions),
+    ]);
+    stats.study = studies[0];
+    stats.responsesPerSession = responsesPerSession;
+  } else {
+    stats.studies = await getStudyStats(sequelize, statsOptions);
+  }
+
+  return stats;
 }
 
 export {
   type StatsOptions,
   type Stats,
-  type ParticipantLinkingStats,
+  type ParticipantStats,
   type RecruitmentStats,
   type RecruitmentBreakdown,
   type ResponsesPerSessionStats,
@@ -633,7 +749,7 @@ export {
   type ValueCountEntry,
   getStats,
   getStudyStats,
-  getParticipantLinking,
+  getParticipantStats,
   getRecruitment,
   getResponsesPerSession,
   getSessionsOverTime,

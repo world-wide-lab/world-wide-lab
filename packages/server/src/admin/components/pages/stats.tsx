@@ -1,8 +1,10 @@
 import {
   Box,
+  Button,
   H2,
   H4,
   H5,
+  Icon,
   Label,
   Link,
   Loader,
@@ -20,12 +22,17 @@ import { ApiClient } from "adminjs";
 import type React from "react";
 import { useEffect, useState } from "react";
 
-import type { RecruitmentBreakdown, Stats } from "../../../stats/index.js";
+import type {
+  ParticipantStats,
+  RecruitmentBreakdown,
+  RecruitmentStats,
+  Stats,
+} from "../../../stats/index.js";
 import { Chart } from "../charts/Chart.js";
 import { SessionsOverTimeChart } from "../charts/SessionsOverTimeChart.js";
 
 const PAGE_NAME = "Stats";
-// Number of studies compared in the charts, tables always show all of them
+// Number of studies compared in the chart, the table always shows all of them
 const N_STUDIES_IN_CHARTS = 10;
 // Number of bars shown in the responses per session chart
 const N_BARS_IN_HISTOGRAM = 25;
@@ -41,6 +48,7 @@ const MDN_QUERY_STRING =
 
 // Widths of the tiles, from small screens to large ones
 const HALF = [1, 1, 1 / 2];
+const TWO_THIRDS = [1, 1, 2 / 3];
 const THIRD = [1, 1, 1 / 3];
 const QUARTER = [1 / 2, 1 / 2, 1 / 4];
 // Quarter of the width, but full width on medium screens
@@ -57,8 +65,8 @@ const timeframeOptions = [
 ];
 const ALL_STUDIES = { value: "", label: "All studies" };
 
-// The selected filters are kept in the page's URL, so that the stats of a
-// single study can be linked to, e.g. from the page of that study.
+// The selection is kept in the page's URL, so that the stats of a single
+// study can be linked to, e.g. from the page of that study.
 function getFiltersFromUrl(): { studyId: string; days: number } {
   if (typeof window === "undefined") {
     return { studyId: ALL_STUDIES.value, days: DEFAULT_DAYS };
@@ -102,7 +110,10 @@ function formatShare(value: number | null): string {
   return value === null ? "-" : `${(value * 100).toFixed(1)}%`;
 }
 
-function formatDuration(seconds: number): string {
+function formatDuration(seconds: number | null): string {
+  if (seconds === null) {
+    return "-";
+  }
   if (seconds < 60) {
     return `${seconds.toFixed(1)}s`;
   }
@@ -116,26 +127,6 @@ function formatDuration(seconds: number): string {
 // narrow column
 function shortenUrl(value: string): string {
   return value.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
-
-// Add the counts which are missing from a histogram, so that it is drawn
-// without any gaps in it
-function fillHistogram(
-  histogram: Array<{ nResponses: number; nSessions: number }>,
-  maxBars: number,
-): Array<{ nResponses: number; nSessions: number }> {
-  const counts = new Map(
-    histogram.map((entry) => [entry.nResponses, entry.nSessions]),
-  );
-  const highest = histogram.length
-    ? histogram[histogram.length - 1].nResponses
-    : 0;
-
-  const filled = [];
-  for (let n = 0; n <= Math.min(highest, maxBars - 1); n++) {
-    filled.push({ nResponses: n, nSessions: counts.get(n) ?? 0 });
-  }
-  return filled;
 }
 
 function sumOf<T>(entries: Array<T>, key: keyof T): number {
@@ -226,7 +217,7 @@ const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({
 
 const DataTable: React.FC<{
   headers: Array<string>;
-  rows: Array<Array<string>>;
+  rows: Array<Array<React.ReactNode>>;
   emptyMessage?: string;
 }> = ({
   headers,
@@ -245,8 +236,9 @@ const DataTable: React.FC<{
         </TableRow>
       </TableHead>
       <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row[0]}>
+        {rows.map((row, rowIndex) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Rows have no id
+          <TableRow key={rowIndex}>
             {row.map((cell, index) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: Cells have no id
               <TableCell key={index}>{cell}</TableCell>
@@ -282,6 +274,433 @@ const Breakdown: React.FC<{
   </Tile>
 );
 
+// Where the sessions in the current scope came from
+const Recruitment: React.FC<{
+  recruitment: RecruitmentStats;
+  scope: string;
+}> = ({ recruitment, scope }) => (
+  <>
+    <Section
+      title="Recruitment"
+      description={`Where the participants of ${scope} came from, based on information the World-Wide-Lab client collects whenever a session is started. Sessions for which it is missing, e.g. sessions created directly via the API, are counted as (unknown).`}
+    />
+    <Row>
+      <Breakdown
+        title="Source URL"
+        description={
+          <>
+            The address of the page your study ran on, without its{" "}
+            <ExternalLink href={MDN_QUERY_STRING}>query string</ExternalLink>.
+          </>
+        }
+        breakdown={recruitment.bySourceUrl}
+      />
+      <Breakdown
+        title="Referrer"
+        description={
+          <>
+            The page participants clicked the link to your study on, taken from
+            the <ExternalLink href={MDN_REFERRER}>Referer header</ExternalLink>.
+            Participants who entered the address directly show up as (none /
+            direct).
+          </>
+        }
+        breakdown={recruitment.byReferrer}
+      />
+      <Breakdown
+        title="Source Parameter"
+        description={
+          <>
+            The source, utm_source or ref{" "}
+            <ExternalLink href={MDN_QUERY_STRING}>query parameter</ExternalLink>{" "}
+            of your study's address, e.g. ?source=newsletter. Use it to tell
+            your recruitment channels apart.
+          </>
+        }
+        breakdown={recruitment.bySourceParameter}
+      />
+    </Row>
+  </>
+);
+
+// The tables about participants, which are the same for a single study and
+// for the overview, only their scope differs
+const ParticipantTables: React.FC<{
+  participants: ParticipantStats;
+  sessionsLabel: string;
+  studiesLabel: string;
+  transitionsLabel: string;
+}> = ({ participants, sessionsLabel, studiesLabel, transitionsLabel }) => (
+  <Row alignTop>
+    <Tile
+      title="Sessions per Participant"
+      description={sessionsLabel}
+      width={QUARTER_WIDE}
+    >
+      <DataTable
+        headers={["Sessions", "Participants"]}
+        rows={participants.sessionsPerParticipant.map((entry) => [
+          formatNumber(entry.nSessions),
+          formatNumber(entry.nParticipants),
+        ])}
+        emptyMessage="No sessions have been linked to a participant yet."
+      />
+    </Tile>
+    <Tile
+      title="Studies per Participant"
+      description={studiesLabel}
+      width={QUARTER_WIDE}
+    >
+      <DataTable
+        headers={["Studies", "Participants"]}
+        rows={participants.studiesPerParticipant.map((entry) => [
+          formatNumber(entry.nStudies),
+          formatNumber(entry.nParticipants),
+        ])}
+        emptyMessage="No sessions have been linked to a participant yet."
+      />
+    </Tile>
+    <Tile
+      title="Moving between Studies"
+      description={transitionsLabel}
+      width={HALF}
+    >
+      <DataTable
+        headers={["From", "To", "Participants"]}
+        rows={participants.studyTransitions
+          .slice(0, N_TRANSITIONS)
+          .map((entry) => [
+            entry.fromStudyId,
+            entry.toStudyId,
+            formatNumber(entry.nTransitions),
+          ])}
+        emptyMessage="No participant has moved from one study to another yet."
+      />
+      {participants.studyTransitions.length > N_TRANSITIONS && (
+        <Text variant="sm" mt="default">
+          Only the {N_TRANSITIONS} most common transitions are shown.
+        </Text>
+      )}
+    </Tile>
+  </Row>
+);
+
+// Sessions started and finished per day, plus the completion rate
+const OverTime: React.FC<{ stats: Stats; scope: string }> = ({
+  stats,
+  scope,
+}) => (
+  <>
+    <Section
+      title="Over Time"
+      description={`How the sessions of ${scope} developed within the selected timeframe.`}
+    />
+    <Row>
+      <Tile
+        title="Sessions per Day"
+        description="Sessions which were started and finished each day. A session only counts as finished once your study calls the client's finish() function at its end."
+        width={HALF}
+      >
+        <SessionsOverTimeChart
+          data={stats.sessionsOverTime}
+          height={CHART_HEIGHT}
+        />
+      </Tile>
+      <Tile
+        title="Completion Rate per Day"
+        description="The share of each day's sessions which were finished. Days without any sessions are shown as 0%."
+        width={HALF}
+      >
+        <Chart
+          type="line"
+          labels={stats.sessionsOverTime.map((entry) => entry.date)}
+          datasets={[
+            {
+              name: "Completion Rate (%)",
+              values: stats.sessionsOverTime.map(
+                (entry) => (entry.completionRate ?? 0) * 100,
+              ),
+            },
+          ]}
+          colors={["green"]}
+          height={CHART_HEIGHT}
+          formatValue={(value) => `${value.toFixed(1)}%`}
+        />
+      </Tile>
+    </Row>
+  </>
+);
+
+// The stats of all studies together
+const Overview: React.FC<{
+  stats: Stats;
+  onSelectStudy: (studyId: string) => void;
+}> = ({ stats, onSelectStudy }) => {
+  const studies = stats.studies ?? [];
+  const nSessions = sumOf(stats.sessionsOverTime, "nSessions");
+  const nFinished = sumOf(stats.sessionsOverTime, "nFinished");
+
+  return (
+    <>
+      <Row>
+        <StatTile label="Sessions" value={formatNumber(nSessions)} />
+        <StatTile
+          label="Finished Sessions"
+          value={`${formatNumber(nFinished)} (${formatShare(
+            nSessions > 0 ? nFinished / nSessions : null,
+          )})`}
+        />
+        <StatTile label="Studies" value={formatNumber(stats.studyIds.length)} />
+        <StatTile
+          label="Linked Participants"
+          value={formatNumber(stats.participants.nParticipants)}
+        />
+      </Row>
+
+      <OverTime stats={stats} scope="all studies" />
+
+      <Section
+        title="Studies"
+        description="How your studies compare to each other. Open a study to see how far participants get in it, where they came from and how they moved on."
+      />
+      <Row>
+        <Tile
+          title="Sessions per Study"
+          description="A session's duration is measured from its start until its last response, so sessions without any responses are not included in it."
+          width={TWO_THIRDS}
+        >
+          <DataTable
+            headers={["Study", "Sessions", "Finished", "Mean Duration", ""]}
+            rows={studies.map((entry) => [
+              entry.studyId,
+              formatNumber(entry.nSessions),
+              `${formatNumber(entry.nFinished)} (${formatShare(
+                entry.completionRate,
+              )})`,
+              formatDuration(entry.meanDurationSeconds),
+              <Button
+                key={entry.studyId}
+                size="sm"
+                rounded
+                onClick={() => onSelectStudy(entry.studyId)}
+              >
+                <Icon icon="BarChart" /> Stats
+              </Button>,
+            ])}
+            emptyMessage="There are no studies yet."
+          />
+        </Tile>
+        <Tile
+          title="Completion Rate per Study"
+          description="The share of a study's sessions which were finished."
+          width={THIRD}
+        >
+          <Chart
+            type="bar"
+            labels={studies
+              .slice(0, N_STUDIES_IN_CHARTS)
+              .map((entry) => entry.studyId)}
+            datasets={[
+              {
+                name: "Completion Rate (%)",
+                values: studies
+                  .slice(0, N_STUDIES_IN_CHARTS)
+                  .map((entry) => (entry.completionRate ?? 0) * 100),
+              },
+            ]}
+            colors={["green"]}
+            height={CHART_HEIGHT}
+            formatValue={(value) => `${value.toFixed(1)}%`}
+          />
+        </Tile>
+      </Row>
+
+      <Section
+        title="Participants"
+        description="How often the same person takes part in your studies. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted."
+      />
+      <Row>
+        <StatTile
+          label="Linked Participants"
+          value={formatNumber(stats.participants.nParticipants)}
+        />
+        <StatTile
+          label="With multiple Sessions"
+          value={formatNumber(
+            stats.participants.nParticipantsWithMultipleSessions,
+          )}
+        />
+        <StatTile
+          label="Took the same Study twice"
+          value={formatNumber(stats.participants.nParticipantsRepeatingAStudy)}
+        />
+        <StatTile
+          label="Took part in multiple Studies"
+          value={formatNumber(
+            stats.participants.nParticipantsWithMultipleStudies,
+          )}
+        />
+      </Row>
+      <ParticipantTables
+        participants={stats.participants}
+        sessionsLabel="How many participants took part n times."
+        studiesLabel="How many participants took part in n different studies."
+        transitionsLabel="How often a participant's next session was in a different study than the one before."
+      />
+
+      <Recruitment recruitment={stats.recruitment} scope="all studies" />
+    </>
+  );
+};
+
+// The stats of a single study, including how far participants get in it
+const Study: React.FC<{ stats: Stats; studyId: string }> = ({
+  stats,
+  studyId,
+}) => {
+  const study = stats.study;
+  const dropout = stats.responsesPerSession;
+  const scope = `the study ${studyId}`;
+
+  const nSessions = dropout?.nSessions ?? 0;
+  const nUnfinishedSessions = nSessions - (dropout?.nFinishedSessions ?? 0);
+  // Charts are only drawn for the groups which have any sessions at all
+  const groups = [
+    {
+      name: "Finished (%)",
+      color: "green",
+      exists: (dropout?.nFinishedSessions ?? 0) > 0,
+      retention: (index: number) =>
+        (dropout?.retention[index].finished ?? 0) * 100,
+      histogram: (entry: { nFinished: number }) => entry.nFinished,
+      barName: "Finished",
+    },
+    {
+      name: "Unfinished (%)",
+      color: "light-green",
+      exists: nUnfinishedSessions > 0,
+      retention: (index: number) =>
+        (dropout?.retention[index].unfinished ?? 0) * 100,
+      histogram: (entry: { nUnfinished: number }) => entry.nUnfinished,
+      barName: "Unfinished",
+    },
+  ].filter((group) => group.exists);
+
+  return (
+    <>
+      <Row>
+        <StatTile
+          label="Sessions"
+          value={formatNumber(study?.nSessions ?? 0)}
+        />
+        <StatTile
+          label="Finished Sessions"
+          value={`${formatNumber(study?.nFinished ?? 0)} (${formatShare(
+            study?.completionRate ?? null,
+          )})`}
+        />
+        <StatTile
+          label="Responses"
+          value={formatNumber(dropout?.nResponses ?? 0)}
+        />
+        <StatTile
+          label="Mean Session Duration"
+          value={formatDuration(study?.meanDurationSeconds ?? null)}
+        />
+      </Row>
+
+      <OverTime stats={stats} scope={scope} />
+
+      <Section
+        title="Dropout"
+        description={`How far participants get in ${studyId} before they leave, on average ${
+          dropout?.meanResponsesPerSession?.toFixed(1) ?? "0"
+        } responses per session. Finished and unfinished sessions are counted separately, since the length of finished sessions can vary just as much. This works best if your study stores one response per trial or page.`}
+      />
+      <Row>
+        <Tile
+          title="Sessions still going after n Responses"
+          description="The share of the finished and of the unfinished sessions with at least n responses, each within their own group."
+          width={HALF}
+        >
+          <Chart
+            type="line"
+            labels={(dropout?.retention ?? []).map((entry) =>
+              String(entry.nResponses),
+            )}
+            datasets={groups.map((group) => ({
+              name: group.name,
+              values: (dropout?.retention ?? []).map((_, index) =>
+                group.retention(index),
+              ),
+            }))}
+            colors={groups.map((group) => group.color)}
+            height={CHART_HEIGHT}
+            formatValue={(value) => `${value.toFixed(1)}%`}
+          />
+          {dropout?.retentionTruncated && (
+            <MessageBox
+              variant="info"
+              message="Only the beginning of the curve is shown, since sessions have very many responses."
+            />
+          )}
+        </Tile>
+        <Tile
+          title="Responses per Session"
+          description="How many sessions have exactly n responses. Sessions without any responses are the ones at 0."
+          width={HALF}
+        >
+          <Chart
+            type="bar"
+            labels={(dropout?.histogram ?? [])
+              .slice(0, N_BARS_IN_HISTOGRAM)
+              .map((entry) => String(entry.nResponses))}
+            datasets={groups.map((group) => ({
+              name: group.barName,
+              values: (dropout?.histogram ?? [])
+                .slice(0, N_BARS_IN_HISTOGRAM)
+                .map((entry) => group.histogram(entry)),
+            }))}
+            colors={groups.map((group) => group.color)}
+            height={CHART_HEIGHT}
+          />
+        </Tile>
+      </Row>
+
+      <Section
+        title="Participants"
+        description={`The participants of ${studyId} and what else they take part in. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted.`}
+      />
+      <Row>
+        <StatTile
+          label="Linked Participants"
+          value={formatNumber(stats.participants.nParticipants)}
+        />
+        <StatTile
+          label="Took this Study more than once"
+          value={formatNumber(
+            stats.participants.nParticipantsWithMultipleSessions,
+          )}
+        />
+        <StatTile
+          label="Also took other Studies"
+          value={formatNumber(
+            stats.participants.nParticipantsWithMultipleStudies,
+          )}
+        />
+      </Row>
+      <ParticipantTables
+        participants={stats.participants}
+        sessionsLabel={`How many participants took part in ${studyId} n times.`}
+        studiesLabel={`In how many studies the participants of ${studyId} took part, including this one.`}
+        transitionsLabel={`How often participants moved to or from ${studyId}.`}
+      />
+
+      <Recruitment recruitment={stats.recruitment} scope={scope} />
+    </>
+  );
+};
+
 export const StatsPage: React.FC = () => {
   const initialFilters = getFiltersFromUrl();
   const [studyId, setStudyId] = useState<string>(initialFilters.studyId);
@@ -292,7 +711,7 @@ export const StatsPage: React.FC = () => {
   useEffect(() => {
     let outdated = false;
 
-    // Keep the filters in the URL, so that the current view can be
+    // Keep the selection in the URL, so that the current view can be
     // bookmarked and shared
     updateUrl(studyId, days);
 
@@ -333,33 +752,28 @@ export const StatsPage: React.FC = () => {
   const selectedTimeframe =
     timeframeOptions.find((option) => option.value === days) ??
     timeframeOptions[1];
-  const studyLabel = studyId ? `the study ${studyId}` : "all studies";
-  const allData = "This always covers all of your data.";
-
-  const histogram = fillHistogram(
-    stats?.responsesPerSession.histogram ?? [],
-    N_BARS_IN_HISTOGRAM,
-  );
-  const nSessions = sumOf(stats?.sessionsOverTime ?? [], "nSessions");
-  const nFinished = sumOf(stats?.sessionsOverTime ?? [], "nFinished");
 
   return (
     <Box variant="grey">
       <Box mx={[0, 0, 0, "auto"]} width={[1, 1, 1, 1024]} py="lg" px="lg">
         <Box flex flexDirection="row" flexWrap="wrap" alignItems="flex-end">
           <Box flexGrow={1} px="sm">
-            <H2>Stats</H2>
+            <H2>{studyId ? `Stats: ${studyId}` : "Stats"}</H2>
           </Box>
-          <Box width={[1 / 2, 1 / 2, 200]} px="sm">
-            <Label>Study</Label>
-            <Select
-              value={selectedStudy}
-              options={studyOptions}
-              onChange={(selected: { value: string }) =>
-                setStudyId(selected?.value ?? "")
-              }
-            />
-          </Box>
+          {/* Only the stats of a single study can be switched to another one,
+              the overview always covers every study */}
+          {studyId && (
+            <Box width={[1 / 2, 1 / 2, 200]} px="sm">
+              <Label>Study</Label>
+              <Select
+                value={selectedStudy}
+                options={studyOptions}
+                onChange={(selected: { value: string }) =>
+                  setStudyId(selected?.value ?? "")
+                }
+              />
+            </Box>
+          )}
           <Box width={[1 / 2, 1 / 2, 200]} px="sm">
             <Label>Timeframe</Label>
             <Select
@@ -378,309 +792,10 @@ export const StatsPage: React.FC = () => {
           <Tile>
             <Loader />
           </Tile>
+        ) : stats.options.studyId ? (
+          <Study stats={stats} studyId={stats.options.studyId} />
         ) : (
-          <>
-            <Row>
-              <StatTile label="Sessions" value={formatNumber(nSessions)} />
-              <StatTile
-                label="Finished Sessions"
-                value={`${formatNumber(nFinished)} (${formatShare(
-                  nSessions > 0 ? nFinished / nSessions : null,
-                )})`}
-              />
-              <StatTile
-                label="Responses"
-                value={formatNumber(stats.responsesPerSession.nResponses)}
-              />
-              <StatTile
-                label="Responses per Session"
-                value={
-                  stats.responsesPerSession.meanResponsesPerSession === null
-                    ? "-"
-                    : stats.responsesPerSession.meanResponsesPerSession.toFixed(
-                        1,
-                      )
-                }
-              />
-            </Row>
-
-            <Section
-              title="Over Time"
-              description={`How the sessions of ${studyLabel} developed within the selected timeframe.`}
-            />
-            <Row>
-              <Tile
-                title="Sessions per Day"
-                description="Sessions which were started and finished each day. A session only counts as finished once your study calls the client's finish() function at its end."
-                width={HALF}
-              >
-                <SessionsOverTimeChart
-                  data={stats.sessionsOverTime}
-                  height={CHART_HEIGHT}
-                />
-              </Tile>
-              <Tile
-                title="Completion Rate per Day"
-                description="The share of each day's sessions which were finished. Days without any sessions are shown as 0%."
-                width={HALF}
-              >
-                <Chart
-                  type="line"
-                  labels={stats.sessionsOverTime.map((entry) => entry.date)}
-                  datasets={[
-                    {
-                      name: "Completion Rate (%)",
-                      values: stats.sessionsOverTime.map(
-                        (entry) => (entry.completionRate ?? 0) * 100,
-                      ),
-                    },
-                  ]}
-                  colors={["green"]}
-                  height={CHART_HEIGHT}
-                  formatValue={(value) => `${value.toFixed(1)}%`}
-                />
-              </Tile>
-            </Row>
-
-            <Section
-              title="Studies"
-              description={`How your studies compare to each other. ${allData}`}
-            />
-            <Row>
-              <Tile
-                title="Sessions per Study"
-                description="A session's duration is measured from its start until its last response, so sessions without any responses are not included in it."
-                width={HALF}
-              >
-                <DataTable
-                  headers={["Study", "Sessions", "Finished", "Mean Duration"]}
-                  rows={stats.studies.map((entry) => [
-                    entry.studyId,
-                    formatNumber(entry.nSessions),
-                    `${formatNumber(entry.nFinished)} (${formatShare(
-                      entry.completionRate,
-                    )})`,
-                    entry.meanDurationSeconds === null
-                      ? "-"
-                      : formatDuration(entry.meanDurationSeconds),
-                  ])}
-                  emptyMessage="There are no studies yet."
-                />
-              </Tile>
-              <Tile
-                title="Completion Rate per Study"
-                description="The share of a study's sessions which were finished."
-                width={HALF}
-              >
-                <Chart
-                  type="bar"
-                  labels={stats.studies
-                    .slice(0, N_STUDIES_IN_CHARTS)
-                    .map((entry) => entry.studyId)}
-                  datasets={[
-                    {
-                      name: "Completion Rate (%)",
-                      values: stats.studies
-                        .slice(0, N_STUDIES_IN_CHARTS)
-                        .map((entry) => (entry.completionRate ?? 0) * 100),
-                    },
-                  ]}
-                  colors={["green"]}
-                  height={CHART_HEIGHT}
-                  formatValue={(value) => `${value.toFixed(1)}%`}
-                />
-              </Tile>
-            </Row>
-
-            <Section
-              title="Dropout"
-              description={`How far participants get in ${studyLabel} before they leave. This works best if your study stores one response per trial or page.`}
-            />
-            <Row>
-              <Tile
-                title="Sessions still going after n Responses"
-                description="The share of sessions with at least n responses. The steeper this drops, the earlier participants leave."
-                width={HALF}
-              >
-                <Chart
-                  type="line"
-                  labels={stats.responsesPerSession.retention.map((entry) =>
-                    String(entry.nResponses),
-                  )}
-                  datasets={[
-                    {
-                      name: "Sessions (%)",
-                      values: stats.responsesPerSession.retention.map(
-                        (entry) => entry.share * 100,
-                      ),
-                    },
-                  ]}
-                  colors={["green"]}
-                  height={CHART_HEIGHT}
-                  formatValue={(value) => `${value.toFixed(1)}%`}
-                />
-                {stats.responsesPerSession.retentionTruncated && (
-                  <MessageBox
-                    variant="info"
-                    message="Only the beginning of the curve is shown, since sessions have very many responses."
-                  />
-                )}
-              </Tile>
-              <Tile
-                title="Responses per Session"
-                description="How many sessions have exactly n responses. Sessions without any responses are the ones at 0."
-                width={HALF}
-              >
-                <Chart
-                  type="bar"
-                  labels={histogram.map((entry) => String(entry.nResponses))}
-                  datasets={[
-                    {
-                      name: "Sessions",
-                      values: histogram.map((entry) => entry.nSessions),
-                    },
-                  ]}
-                  colors={["green"]}
-                  height={CHART_HEIGHT}
-                />
-              </Tile>
-            </Row>
-
-            <Section
-              title="Participants"
-              description={`How often the same person takes part in your studies. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted. ${allData}`}
-            />
-            <Row>
-              <StatTile
-                label="Linked Participants"
-                value={formatNumber(stats.participantLinking.nParticipants)}
-              />
-              <StatTile
-                label="With multiple Sessions"
-                value={formatNumber(
-                  stats.participantLinking.nParticipantsWithMultipleSessions,
-                )}
-              />
-              <StatTile
-                label="Took the same Study twice"
-                value={formatNumber(
-                  stats.participantLinking.nParticipantsRepeatingAStudy,
-                )}
-              />
-              <StatTile
-                label="Took part in multiple Studies"
-                value={formatNumber(
-                  stats.participantLinking.nParticipantsWithMultipleStudies,
-                )}
-              />
-            </Row>
-            <Row alignTop>
-              <Tile
-                title="Sessions per Participant"
-                description="How many participants took part n times."
-                width={QUARTER_WIDE}
-              >
-                <DataTable
-                  headers={["Sessions", "Participants"]}
-                  rows={stats.participantLinking.sessionsPerParticipant.map(
-                    (entry) => [
-                      formatNumber(entry.nSessions),
-                      formatNumber(entry.nParticipants),
-                    ],
-                  )}
-                  emptyMessage="No sessions have been linked to a participant yet."
-                />
-              </Tile>
-              <Tile
-                title="Studies per Participant"
-                description="How many participants took part in n different studies."
-                width={QUARTER_WIDE}
-              >
-                <DataTable
-                  headers={["Studies", "Participants"]}
-                  rows={stats.participantLinking.studiesPerParticipant.map(
-                    (entry) => [
-                      formatNumber(entry.nStudies),
-                      formatNumber(entry.nParticipants),
-                    ],
-                  )}
-                  emptyMessage="No sessions have been linked to a participant yet."
-                />
-              </Tile>
-              <Tile
-                title="Moving between Studies"
-                description="How often a participant's next session was in a different study than the one before."
-                width={HALF}
-              >
-                <DataTable
-                  headers={["From", "To", "Participants"]}
-                  rows={stats.participantLinking.studyTransitions
-                    .slice(0, N_TRANSITIONS)
-                    .map((entry) => [
-                      entry.fromStudyId,
-                      entry.toStudyId,
-                      formatNumber(entry.nTransitions),
-                    ])}
-                  emptyMessage="No participant has moved from one study to another yet."
-                />
-                {stats.participantLinking.studyTransitions.length >
-                  N_TRANSITIONS && (
-                  <Text variant="sm" mt="default">
-                    Only the {N_TRANSITIONS} most common transitions are shown.
-                  </Text>
-                )}
-              </Tile>
-            </Row>
-
-            <Section
-              title="Recruitment"
-              description={`Where the participants of ${studyLabel} came from, based on information the World-Wide-Lab client collects whenever a session is started. Sessions for which it is missing, e.g. sessions created directly via the API, are counted as (unknown).`}
-            />
-            <Row>
-              <Breakdown
-                title="Source URL"
-                description={
-                  <>
-                    The address of the page your study ran on, without its{" "}
-                    <ExternalLink href={MDN_QUERY_STRING}>
-                      query string
-                    </ExternalLink>
-                    .
-                  </>
-                }
-                breakdown={stats.recruitment.bySourceUrl}
-              />
-              <Breakdown
-                title="Referrer"
-                description={
-                  <>
-                    The page participants clicked the link to your study on,
-                    taken from the{" "}
-                    <ExternalLink href={MDN_REFERRER}>
-                      Referer header
-                    </ExternalLink>
-                    . Participants who entered the address directly show up as
-                    (none / direct).
-                  </>
-                }
-                breakdown={stats.recruitment.byReferrer}
-              />
-              <Breakdown
-                title="Source Parameter"
-                description={
-                  <>
-                    The source, utm_source or ref{" "}
-                    <ExternalLink href={MDN_QUERY_STRING}>
-                      query parameter
-                    </ExternalLink>{" "}
-                    of your study's address, e.g. ?source=newsletter. Use it to
-                    tell your recruitment channels apart.
-                  </>
-                }
-                breakdown={stats.recruitment.bySourceParameter}
-              />
-            </Row>
-          </>
+          <Overview stats={stats} onSelectStudy={setStudyId} />
         )}
       </Box>
     </Box>

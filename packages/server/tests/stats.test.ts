@@ -3,7 +3,7 @@ import "./setup_env";
 
 import sequelize from "../src/db";
 import {
-  getParticipantLinking,
+  getParticipantStats,
   getRecruitment,
   getResponsesPerSession,
   getSessionsOverTime,
@@ -223,6 +223,7 @@ describe("Stats", () => {
     it("should compute the sessions, completion and duration per study", async () => {
       const entries = await getStudyStats(sequelize);
 
+      // Studies with the most sessions come first
       expect(entries.map((entry) => entry.studyId)).toEqual([
         STUDY_A,
         STUDY_B,
@@ -243,11 +244,26 @@ describe("Stats", () => {
       expect(studyB.nTimedSessions).toBe(2);
       expect(studyB.meanDurationSeconds).toBeCloseTo((120 + 60) / 2, 3);
 
-      // Studies without any responses have no duration at all
-      expect(studyOld.nSessions).toBe(1);
-      expect(studyOld.completionRate).toBe(0);
+      // The only session of this study is outside of the timeframe
+      expect(studyOld.nSessions).toBe(0);
+      expect(studyOld.completionRate).toBe(null);
       expect(studyOld.nTimedSessions).toBe(0);
       expect(studyOld.meanDurationSeconds).toBe(null);
+    });
+
+    it("should count sessions within the given timeframe", async () => {
+      const entries = await getStudyStats(sequelize, { days: 365 });
+
+      const studyOld = entries.find((entry) => entry.studyId === STUDY_OLD);
+      expect(studyOld?.nSessions).toBe(1);
+    });
+
+    it("should only return the selected study", async () => {
+      const entries = await getStudyStats(sequelize, { studyId: STUDY_B });
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0].studyId).toBe(STUDY_B);
+      expect(entries[0].nSessions).toBe(2);
     });
   });
 
@@ -257,13 +273,15 @@ describe("Stats", () => {
 
       // The session from 100 days ago is outside of the default timeframe
       expect(stats.nSessions).toBe(6);
+      expect(stats.nFinishedSessions).toBe(4);
       expect(stats.nResponses).toBe(10);
       expect(stats.meanResponsesPerSession).toBe(10 / 6);
+      // Finished and unfinished sessions are counted separately
       expect(stats.histogram).toEqual([
-        { nResponses: 0, nSessions: 1 },
-        { nResponses: 1, nSessions: 1 },
-        { nResponses: 2, nSessions: 3 },
-        { nResponses: 3, nSessions: 1 },
+        { nResponses: 0, nFinished: 0, nUnfinished: 1 },
+        { nResponses: 1, nFinished: 0, nUnfinished: 1 },
+        { nResponses: 2, nFinished: 3, nUnfinished: 0 },
+        { nResponses: 3, nFinished: 1, nUnfinished: 0 },
       ]);
     });
 
@@ -271,17 +289,23 @@ describe("Stats", () => {
       const stats = await getResponsesPerSession(sequelize, { days: 365 });
 
       expect(stats.nSessions).toBe(7);
-      expect(stats.histogram[0]).toEqual({ nResponses: 0, nSessions: 2 });
+      expect(stats.histogram[0]).toEqual({
+        nResponses: 0,
+        nFinished: 0,
+        nUnfinished: 2,
+      });
     });
 
     it("should compute how many sessions make it past n responses", async () => {
       const stats = await getResponsesPerSession(sequelize);
 
       expect(stats.retentionTruncated).toBe(false);
+      // Every group is relative to its own size, so that the two can be
+      // compared even though there are twice as many finished sessions
       expect(stats.retention).toEqual([
-        { nResponses: 1, nSessions: 5, share: 5 / 6 },
-        { nResponses: 2, nSessions: 4, share: 4 / 6 },
-        { nResponses: 3, nSessions: 1, share: 1 / 6 },
+        { nResponses: 1, finished: 1, unfinished: 1 / 2 },
+        { nResponses: 2, finished: 1, unfinished: 0 },
+        { nResponses: 3, finished: 1 / 4, unfinished: 0 },
       ]);
     });
 
@@ -291,18 +315,19 @@ describe("Stats", () => {
       });
 
       expect(stats.nSessions).toBe(4);
+      expect(stats.nFinishedSessions).toBe(3);
       expect(stats.nResponses).toBe(7);
       expect(stats.histogram).toEqual([
-        { nResponses: 0, nSessions: 1 },
-        { nResponses: 2, nSessions: 2 },
-        { nResponses: 3, nSessions: 1 },
+        { nResponses: 0, nFinished: 0, nUnfinished: 1 },
+        { nResponses: 2, nFinished: 2, nUnfinished: 0 },
+        { nResponses: 3, nFinished: 1, nUnfinished: 0 },
       ]);
     });
   });
 
-  describe("Participant Linking", () => {
+  describe("Participants", () => {
     it("should count how often participants take part", async () => {
-      const stats = await getParticipantLinking(sequelize);
+      const stats = await getParticipantStats(sequelize);
 
       expect(stats.nParticipants).toBe(3);
       expect(stats.nParticipantsWithMultipleSessions).toBe(2);
@@ -313,13 +338,13 @@ describe("Stats", () => {
     });
 
     it("should count participants repeating the same study", async () => {
-      const stats = await getParticipantLinking(sequelize);
+      const stats = await getParticipantStats(sequelize);
 
       expect(stats.nParticipantsRepeatingAStudy).toBe(1);
     });
 
     it("should count participants taking part in different studies", async () => {
-      const stats = await getParticipantLinking(sequelize);
+      const stats = await getParticipantStats(sequelize);
 
       expect(stats.nParticipantsWithMultipleStudies).toBe(1);
       expect(stats.studiesPerParticipant).toEqual([
@@ -329,11 +354,49 @@ describe("Stats", () => {
     });
 
     it("should count participants moving from one study to another", async () => {
-      const stats = await getParticipantLinking(sequelize);
+      const stats = await getParticipantStats(sequelize);
 
       expect(stats.studyTransitions).toEqual([
         { fromStudyId: STUDY_A, toStudyId: STUDY_B, nTransitions: 1 },
       ]);
+    });
+
+    it("should count the sessions of a study's participants in it", async () => {
+      const stats = await getParticipantStats(sequelize, {
+        studyId: STUDY_A,
+      });
+
+      expect(stats.nParticipants).toBe(3);
+      // Only the sessions in the selected study are counted
+      expect(stats.nParticipantsWithMultipleSessions).toBe(1);
+      expect(stats.sessionsPerParticipant).toEqual([
+        { nSessions: 1, nParticipants: 2 },
+        { nSessions: 2, nParticipants: 1 },
+      ]);
+    });
+
+    it("should count the other studies of a study's participants", async () => {
+      const stats = await getParticipantStats(sequelize, {
+        studyId: STUDY_B,
+      });
+
+      // Only one of the two sessions in this study has a participant
+      expect(stats.nParticipants).toBe(1);
+      // That participant has also taken part in another study
+      expect(stats.nParticipantsWithMultipleStudies).toBe(1);
+      expect(stats.studiesPerParticipant).toEqual([
+        { nStudies: 2, nParticipants: 1 },
+      ]);
+    });
+
+    it("should only count the transitions of the selected study", async () => {
+      const intoB = await getParticipantStats(sequelize, { studyId: STUDY_B });
+      expect(intoB.studyTransitions).toEqual([
+        { fromStudyId: STUDY_A, toStudyId: STUDY_B, nTransitions: 1 },
+      ]);
+
+      const old = await getParticipantStats(sequelize, { studyId: STUDY_OLD });
+      expect(old.studyTransitions).toEqual([]);
     });
   });
 
@@ -382,15 +445,32 @@ describe("Stats", () => {
   });
 
   describe("All Stats", () => {
-    it("should compute every statistic at once", async () => {
-      const stats = await getStats(sequelize, { studyId: STUDY_A });
+    it("should compute the overview of all studies", async () => {
+      const stats = await getStats(sequelize);
 
-      expect(stats.options).toEqual({ studyId: STUDY_A, days: 30 });
+      expect(stats.options).toEqual({ studyId: null, days: 30 });
       expect(stats.studyIds).toEqual([STUDY_A, STUDY_B, STUDY_OLD]);
       expect(stats.sessionsOverTime).toHaveLength(30);
       expect(stats.studies).toHaveLength(3);
-      expect(stats.responsesPerSession.nSessions).toBe(4);
-      expect(stats.participantLinking.nParticipants).toBe(3);
+      expect(stats.participants.nParticipants).toBe(3);
+      expect(stats.recruitment.bySourceUrl.entries.length).toBeGreaterThan(0);
+      // How far participants get is only computed for a single study
+      expect(stats.study).toBeUndefined();
+      expect(stats.responsesPerSession).toBeUndefined();
+    });
+
+    it("should compute the stats of a single study", async () => {
+      const stats = await getStats(sequelize, { studyId: STUDY_A });
+
+      expect(stats.options).toEqual({ studyId: STUDY_A, days: 30 });
+      // Every study is returned, so that another one can be selected
+      expect(stats.studyIds).toEqual([STUDY_A, STUDY_B, STUDY_OLD]);
+      expect(stats.study?.studyId).toBe(STUDY_A);
+      expect(stats.study?.nSessions).toBe(4);
+      expect(stats.responsesPerSession?.nSessions).toBe(4);
+      expect(stats.participants.nParticipants).toBe(3);
+      // The comparison of all studies is only part of the overview
+      expect(stats.studies).toBeUndefined();
       // The URL used for the three sessions of study A plus the session
       // without any metadata
       expect(stats.recruitment.bySourceUrl.entries).toEqual([
