@@ -21,6 +21,10 @@ jobs:
         NODE_OPTIONS: "--max-old-space-size=4096"
 
     strategy:
+      # One platform failing should not cancel the builds for the others -
+      # they are independent artifacts, and a toolchain problem on a single
+      # runner would otherwise hide whether the other two are fine.
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
@@ -90,7 +94,7 @@ jobs:
                 printf '| %s/ (installed) | %s |\n' "$(basename "$d")" "$(du -sh "$d" | cut -f1)"
               fi
             done
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
