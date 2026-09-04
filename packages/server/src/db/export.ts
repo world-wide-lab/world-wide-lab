@@ -4,6 +4,7 @@ import { QueryTypes, type Sequelize } from "sequelize";
 import config from "../config.js";
 import { AppError } from "../errors.js";
 import { logger } from "../logger.js";
+import { sanitizeStudyId } from "./util.js";
 
 type ExportFormat = "json" | "csv";
 
@@ -298,16 +299,55 @@ async function keysetQuery({
   onEnd();
 }
 
+// Quote a name, so that it can be used as an identifier (e.g. a column alias)
+// in a query. Any double quote within it is escaped by doubling it, which both
+// postgres and sqlite understand.
+//
+// Sequelize's own quoteIdentifier() is not used here, since it silently drops
+// double quotes instead of escaping them on postgres, which would rename the
+// columns of an export.
+function quoteIdentifier(name: string) {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+// Look up the value of a single payload key.
+//
+// How a key is looked up differs between dialects: postgres' ->> operator uses
+// the key itself, while sqlite interprets it as a JSON path, so the key has to
+// be turned into one first.
+function payloadKeyLookup(sequelize: Sequelize, key: string) {
+  const payload = 'wwl_responses."payload"';
+
+  if (sequelize.getDialect() !== "sqlite") {
+    return `${payload}->>${sequelize.escape(key)}`;
+  }
+
+  if (!key.includes('"')) {
+    // A path's label is escaped like a JSON string
+    return `json_extract(${payload}, ${sequelize.escape(`$.${JSON.stringify(key)}`)})`;
+  }
+
+  // Sqlite does not unescape \" within a path's label, so a key containing a
+  // double quote can not be looked up as a path at all. Those keys are
+  // compared as plain values instead, which is slower and therefore only done
+  // for the keys that actually need it.
+  return `(
+      SELECT payload_json.value
+      FROM json_each(${payload}) payload_json
+      WHERE payload_json.key = ${sequelize.escape(key)}
+    )`;
+}
+
 async function generateExtractedPayloadQuery(
   sequelize: Sequelize,
   studyId: string,
   options: { created_after?: Date } = {},
 ): Promise<{
   // The full query, without any ordering or pagination
-  query: string;
-  // Query for a single, keyset-paginated page of the full query. Expects a
-  // :limit replacement and, if hasCursor is set, a :cursor replacement.
-  pageQuery: (hasCursor: boolean) => string;
+  copyQuery: string;
+  // Query for a single, keyset-paginated page of the full query, continuing
+  // after the given cursor
+  pageQuery: (cursor: Cursor | undefined, limit: number) => string;
 }> {
   const keysQueryConditions = ['wwl_sessions."studyId" = :studyId'];
   if (options.created_after) {
@@ -343,9 +383,15 @@ async function generateExtractedPayloadQuery(
   // Create a the list of keys in the payload in a safe format
   const jsonKeys = keysResult
     .map((row) => ("key" in row ? row.key : undefined))
-    .filter((key) => key !== undefined);
+    .filter((key): key is string => typeof key === "string");
+  // Payload keys are provided by participants and can contain anything, so
+  // they have to be escaped, both where they are looked up and where they name
+  // the column they are selected under.
   const jsonFieldsString = jsonKeys
-    .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
+    .map(
+      (jsonKey) =>
+        `${payloadKeyLookup(sequelize, jsonKey)} AS ${quoteIdentifier(jsonKey)}`,
+    )
     .join(", ");
 
   // Collect list of table fields, so we can select them without the payload
@@ -367,13 +413,23 @@ async function generateExtractedPayloadQuery(
       INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId")
   `;
 
-  const baseConditions = ['wwl_sessions."studyId" = :studyId'];
+  // Both of the queries below carry all of their values escaped into the query
+  // itself, instead of leaving :placeholders for sequelize to fill in. Payload
+  // keys are part of these queries and, since they are provided by
+  // participants, they can look like a placeholder themselves, which sequelize
+  // cannot reliably tell apart from a real one. Postgres' COPY does not
+  // support query parameters to begin with.
+  const baseConditions = [
+    `wwl_sessions."studyId" = ${sequelize.escape(sanitizeStudyId(studyId))}`,
+  ];
   if (options.created_after) {
-    baseConditions.push('wwl_responses."createdAt" >= :created_after');
+    baseConditions.push(
+      `wwl_responses."createdAt" >= ${sequelize.escape(options.created_after)}`,
+    );
   }
 
   // The full query, used whenever the whole result can be streamed at once
-  const query = `
+  const copyQuery = `
     SELECT
       ${fieldsString}
     ${fromString}
@@ -383,24 +439,26 @@ async function generateExtractedPayloadQuery(
   // A single page of the query above, using keyset pagination on the responses'
   // primary key. The cursor is selected under its own, reserved alias, since
   // a payload key could otherwise shadow the "responseId" column.
-  const pageQuery = (hasCursor: boolean) => {
+  const pageQuery = (cursor: Cursor | undefined, limit: number) => {
     const conditions = [...baseConditions];
-    if (hasCursor) {
-      conditions.push('wwl_responses."responseId" > :cursor');
+    if (cursor !== undefined) {
+      conditions.push(
+        `wwl_responses."responseId" > ${sequelize.escape(cursor)}`,
+      );
     }
 
     return `
       SELECT
         ${fieldsString},
-        wwl_responses."responseId" AS "${KEYSET_CURSOR_COLUMN}"
+        wwl_responses."responseId" AS ${quoteIdentifier(KEYSET_CURSOR_COLUMN)}
       ${fromString}
       WHERE ${conditions.join(" AND ")}
       ORDER BY wwl_responses."responseId" ASC
-      LIMIT :limit
+      LIMIT ${sequelize.escape(limit)}
     `;
   };
 
-  return { query, pageQuery };
+  return { copyQuery, pageQuery };
 }
 
 export {
