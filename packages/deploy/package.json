@@ -9,15 +9,23 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0"
+    "@pulumi/awsx": "^2.16.1",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "@pulumi/awsx": "^2.16.1"
+  },
+  "peerDependenciesMeta": {
+    "@pulumi/awsx": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@pulumi/aws": "^6.57.0",
-    "@pulumi/awsx": "^2.16.1",
     "@pulumi/azure-native": "^2.83.0",
     "@pulumi/pulumi": "^3.137.0",
     "deepmerge": "^4.3.1",
-    "dotenv": "^16.4.5",
-    "typescript": "^5.6.3"
+    "dotenv": "^16.4.5"
   }
 }

@@ -4,6 +4,38 @@ asar: true
 artifactName: "${productName}-${os}-${arch}.${ext}"
 directories:
   buildResources: resources
+# Without an explicit list, electron-builder ships every file of every
+# production dependency. Around 44% of that payload is never read at runtime,
+# the bulk of it coming from the generated Pulumi SDKs (see #97).
+files:
+  - "**/*"
+  # Type declarations are only consumed by the TypeScript compiler (~291 MB).
+  - "!**/*.d.ts"
+  - "!**/*.d.mts"
+  - "!**/*.d.cts"
+  # Source maps (~52 MB).
+  - "!**/*.map"
+  # Incremental-build artefacts accidentally published by some packages (~8 MB).
+  - "!**/tsconfig.tsbuildinfo"
+  # Documentation (~10 MB). Licence files are deliberately kept, they only
+  # rarely carry a .md extension and are re-included below where they do.
+  - "!**/*.md"
+  - "**/{LICENSE,LICENCE,COPYING,NOTICE}*"
+  # The Pulumi SDKs are generated and ship one directory per cloud service:
+  # 236 for Azure, 217 for AWS. @world-wide-lab/deploy uses a handful, so drop
+  # the service directories and re-include the ones we need. Everything at the
+  # top level of the package (index.js, utilities.js, provider.js, ...) is
+  # untouched, as is types/, which the services require.
+  #
+  # The keep-lists below are verified against the imports of
+  # @world-wide-lab/deploy by check-pulumi-modules.js on every build. Do not
+  # edit them by hand without running it.
+  - "!node_modules/@pulumi/azure-native/*/**"
+  - "node_modules/@pulumi/azure-native/{app,dbforpostgresql,resources}/**"
+  - "node_modules/@pulumi/azure-native/types/**"
+  - "!node_modules/@pulumi/aws/*/**"
+  - "node_modules/@pulumi/aws/{apprunner,ec2,rds}/**"
+  - "node_modules/@pulumi/aws/types/**"
 mac:
   hardenedRuntime: true
   entitlements: "build/entitlements.mac.plist"
