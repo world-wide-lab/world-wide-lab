@@ -55,6 +55,12 @@ describe("Client", () => {
         search: "?myId=123&otherId=test",
       },
     } as any;
+    // Node provides a global navigator since v21, stubbed here, so
+    // metadata stays the same no matter where the tests are run.
+    vi.stubGlobal("navigator", {
+      language: "en-US",
+      languages: ["en-US", "en"],
+    });
 
     const session = await client.createSession({ studyId: "example" });
 
