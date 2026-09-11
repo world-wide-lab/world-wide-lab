@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 import { config } from "dotenv";
 
-config({ path: ".env.playwright" });
+config({ path: ".env.playwright", quiet: true });
 
 const docsDir = "../../docs/img/screenshots/generated/";
 async function goAndTakeScreenshot(

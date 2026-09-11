@@ -29,6 +29,9 @@ function initializeRouter(admin: AdminJS) {
   const sessionStore = new SequelizeStore({
     db: sequelize,
     table: "InternalAdminSession",
+    // Without this, the store looks for a model called "Session" first, which
+    // in our case is the model for the sessions of study participants
+    modelKey: "InternalAdminSession",
   });
 
   // Initialize router w/ authentication
