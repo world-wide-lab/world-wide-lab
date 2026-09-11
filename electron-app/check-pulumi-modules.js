@@ -5,13 +5,11 @@
  * subdirectory for every service the provider supports - 236 and 217 of them
  * respectively. @world-wide-lab/deploy imports a handful, but electron-builder
  * has no way of knowing that, so electron-builder.yml keeps only the
- * subdirectories we actually use and drops the rest (see #97).
+ * subdirectories we actually use and drops the rest to save file size.
  *
- * That optimisation breaks silently: importing a new Azure or AWS service would
- * produce an app that only fails once a user clicks "Deploy". This script walks
- * the import graph of @world-wide-lab/deploy, collects every Pulumi submodule it
- * can reach, and fails the build if one of them is not kept by
- * electron-builder.yml.
+ * This script walks the import graph of @world-wide-lab/deploy, collects every
+ * Pulumi submodule it can reach, and fails the build if one of them is not
+ * kept by electron-builder.yml.
  */
 
 import fs from "node:fs";
