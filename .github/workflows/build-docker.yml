@@ -105,10 +105,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Which image to test: pushed images are referenced by their digest,
+      # locally loaded ones (pull requests) by their local tag.
+      - name: Select the image to test
+        run: |
+          echo "WWL_SERVER_IMAGE=${{ github.event_name == 'pull_request' && env.LOCAL_IMAGE || format('ghcr.io/world-wide-lab/server@{0}', steps.build.outputs.digest) }}" >> "$GITHUB_ENV"
+
       # Test docker image
       - name: Test Docker image
-        # Test the image that was just built: pushed images are referenced by
-        # their digest, locally loaded ones (pull requests) by their local tag.
-        env:
-          WWL_SERVER_IMAGE: ${{ github.event_name == 'pull_request' && env.LOCAL_IMAGE || format('ghcr.io/world-wide-lab/server@{0}', steps.build.outputs.digest) }}
+        id: test
         run: docker compose -f docker/docker-compose.testing.yml run --rm test-server
+
+      - name: Show container logs
+        if: failure() && steps.test.conclusion == 'failure'
+        run: |
+          docker compose -f docker/docker-compose.testing.yml ps --all
+          docker compose -f docker/docker-compose.testing.yml logs --no-color
