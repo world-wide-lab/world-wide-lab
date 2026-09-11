@@ -4,14 +4,6 @@ import { config } from "dotenv";
 
 config({ path: ".env.playwright", quiet: true });
 
-// Remove platform name from snapshots
-// see https://github.com/microsoft/playwright/issues/7575
-// biome-ignore lint/correctness/noEmptyPattern: Using descruturing is forced by playwright
-test.beforeEach(async ({}, testInfo) => {
-  testInfo.snapshotPath = (name: string) =>
-    `${testInfo.file}-snapshots/${name}`;
-});
-
 test("has basic welcome message", async ({ page }) => {
   await page.goto("/");
 

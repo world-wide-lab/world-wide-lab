@@ -11,6 +11,8 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests-playwright",
+  // Keep the platform out of the snapshot names, they are shared
+  snapshotPathTemplate: "{testFilePath}-snapshots/{arg}{ext}",
   // Only run tests in files that have spec or test in their name, by default.
   testMatch: process.env.ALLOW_NON_TESTS
     ? "*"
