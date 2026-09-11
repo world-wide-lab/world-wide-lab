@@ -40,12 +40,6 @@ jobs:
       # runner would otherwise hide whether the other two are fine.
       fail-fast: false
       matrix:
-        # sqlite3 has no prebuilt binary for Electron, so it is always
-        # compiled from source with the node-gyp it pins itself. Only
-        # node-gyp >= 12 recognises the Visual Studio 2026 that windows-latest
-        # now ships, which is why this used to be pinned to windows-2022.
-        # sqlite3 >= 6 pins node-gyp 12.x (and needs Node >= 20.17), so with
-        # the repo on Node 24 the newer toolchain can be used again.
         os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
