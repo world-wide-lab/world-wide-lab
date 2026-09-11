@@ -6,6 +6,7 @@ import app from "../src/app";
 import sequelize from "../src/db";
 import {
   type CachedPayloadKey,
+  clearFullPayloadKeyCache,
   clearPayloadKeyCache,
 } from "../src/db/payloadKeyCache";
 
@@ -159,6 +160,25 @@ describe("Caching of payload keys", () => {
     expect(await getCache(studyId)).toBe(null);
 
     expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
+  });
+
+  it("should clear the cache of every study at once", async () => {
+    const studyIds = [
+      "payload-key-cache-clear-all-1",
+      "payload-key-cache-clear-all-2",
+    ];
+    for (const studyId of studyIds) {
+      const sessionId = await createStudy(studyId);
+      await addResponse(sessionId, { key_1: 1 });
+      await getPayloadColumns(studyId);
+      expect(await getCache(studyId)).not.toBe(null);
+    }
+
+    await clearFullPayloadKeyCache(sequelize);
+
+    for (const studyId of studyIds) {
+      expect(await getCache(studyId)).toBe(null);
+    }
   });
 
   it("should pick up responses that only became visible after a scan", async () => {

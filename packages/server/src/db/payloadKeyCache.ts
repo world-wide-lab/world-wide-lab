@@ -272,8 +272,8 @@ async function clearPayloadKeyCache(sequelize: Sequelize, studyId: string) {
 
 // Drop the cached keys of all studies
 async function clearFullPayloadKeyCache(sequelize: Sequelize) {
-  await getCacheModel(sequelize).destroy({});
+  await getCacheModel(sequelize).destroy({ where: {} });
 }
 
-export { getPayloadKeys, clearPayloadKeyCache };
+export { getPayloadKeys, clearPayloadKeyCache, clearFullPayloadKeyCache };
 export type { CachedPayloadKey };
