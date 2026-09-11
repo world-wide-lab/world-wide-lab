@@ -37,6 +37,11 @@ async function generateParticipantData(
         payload: {
           response: `Response #${index}`,
         },
+        // Responses are given one minute apart, so that the sessions have a
+        // sensible duration instead of lasting until right now
+        ...(createdAt
+          ? { createdAt: new Date(createdAt.getTime() + index * 60 * 1000) }
+          : {}),
       });
     }
     await sequelize.models.Response.bulkCreate(responses);
