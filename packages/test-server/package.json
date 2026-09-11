@@ -14,7 +14,7 @@
     "@types/supertest": "^7.2.1",
     "@world-wide-lab/server": "file:../server",
     "supertest": "^7.2.2",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^5.0.0"
   }
 }

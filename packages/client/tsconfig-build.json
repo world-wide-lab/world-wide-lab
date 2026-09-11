@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "exclude": ["tests/**/*.ts"],
   "compilerOptions": {
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "rootDir": "./src"
   }
 }
