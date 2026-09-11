@@ -7,17 +7,13 @@ import { logger } from "../logger.js";
 // actually export.
 interface CachedPayloadKey {
   key: string;
-  // ISO string, or null when the date could not be determined. Such a key is
-  // always included, so that nothing can go missing from an export.
+  // ISO string, or null when the date could not be determined.
   lastSeenAt: string | null;
 }
 
-// How far a study's responses have already been scanned. Every scan continues
-// from here, so that responses only ever have to be looked at once.
+// How far a study's responses have already been scanned.
 interface ScanPosition {
   lastResponseId: number | null;
-  // Responses changed after this have to be scanned again, since their payload
-  // (and with it their keys) may have changed as well.
   lastUpdatedAt: Date | null;
 }
 
@@ -25,10 +21,7 @@ interface PayloadKeyCache extends ScanPosition {
   keys: CachedPayloadKey[];
 }
 
-// A response only becomes visible once it has been committed, which can happen
-// after a response created later already is. Without this overlap, such a
-// response would stay behind the position of the scan that missed it and never
-// be scanned at all.
+// Safety overlap
 const SCAN_OVERLAP_MS = 60 * 1000;
 
 const RESPONSES_OF_STUDY = `
@@ -37,8 +30,6 @@ const RESPONSES_OF_STUDY = `
       INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_responses."sessionId")
 `;
 
-// Limit a scan to one study and, if a position is given, to the responses that
-// have not been scanned yet.
 function getScanConditions(studyId: string, position?: ScanPosition) {
   const conditions = ['wwl_sessions."studyId" = :studyId'];
   const replacements: Record<string, unknown> = { studyId };
@@ -154,8 +145,7 @@ async function readCache(
     return undefined;
   }
 
-  // An entry we cannot make sense of, e.g. one written by a different version,
-  // is simply rebuilt from scratch.
+  // An entry we cannot make sense of is rebuilt from scratch.
   if (!Array.isArray(record.keys)) {
     logger.warn(
       `Ignoring the malformed payload key cache of study "${studyId}".`,
@@ -191,8 +181,7 @@ function mergeKeys(
       continue;
     }
     const previous = merged.get(key);
-    // A missing date means the key is always included, so it wins over any
-    // actual date.
+    // A missing date means the key is always included
     if (previous == null || lastSeenAt == null) {
       merged.set(key, null);
     } else {
@@ -206,8 +195,8 @@ function mergeKeys(
   }));
 }
 
-// Bring a study's cached keys up to date by scanning the responses that have
-// not been scanned before.
+// Bring a study's cached keys up to date
+// (scanning the responses that have not been scanned before)
 async function updateCache(
   sequelize: Sequelize,
   studyId: string,
@@ -220,13 +209,13 @@ async function updateCache(
       ? cache
       : undefined;
 
-  // Check whether anything has been added or changed at all, before doing the
-  // much more expensive scan itself.
+  // Check whether anything has been added or changed at all
   const newPosition = await queryScanPosition(sequelize, studyId, position);
   if (newPosition === undefined) {
     return cache?.keys ?? [];
   }
 
+  // Combine cached and new keys
   const keys = mergeKeys(
     cache?.keys ?? [],
     await queryPayloadKeys(sequelize, studyId, position),
@@ -251,8 +240,7 @@ async function updateCache(
   return keys;
 }
 
-// Reduce the cached keys to the ones that are part of an export. A key belongs
-// to it when the most recent response containing it is being exported, too.
+// If partial export: Only keep keys that are relevant
 function selectKeys(keys: CachedPayloadKey[], created_after?: Date): string[] {
   const selected = keys.filter(
     ({ lastSeenAt }) =>
@@ -265,9 +253,7 @@ function selectKeys(keys: CachedPayloadKey[], created_after?: Date): string[] {
   return selected.map(({ key }) => key).sort();
 }
 
-// All keys used in the payloads of a study's responses. Scanning every payload
-// again is by far the slowest part of an extracted-payload export, so the keys
-// are cached in the database and only new responses are ever scanned.
+// High-level function to get the latest set of keys, while utilizing the cache
 async function getPayloadKeys(
   sequelize: Sequelize,
   studyId: string,
@@ -277,13 +263,16 @@ async function getPayloadKeys(
   return selectKeys(keys, created_after);
 }
 
-// Drop the cached keys of a study (or of all studies), so that they are
-// determined from scratch again. Only necessary when responses have been
-// deleted, since keys are otherwise kept up to date automatically.
-async function clearPayloadKeyCache(sequelize: Sequelize, studyId?: string) {
+// Drop the cached keys of a study
+async function clearPayloadKeyCache(sequelize: Sequelize, studyId: string) {
   await getCacheModel(sequelize).destroy({
-    where: studyId === undefined ? {} : { studyId },
+    where: { studyId },
   });
+}
+
+// Drop the cached keys of all studies
+async function clearFullPayloadKeyCache(sequelize: Sequelize) {
+  await getCacheModel(sequelize).destroy({});
 }
 
 export { getPayloadKeys, clearPayloadKeyCache };
