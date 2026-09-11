@@ -86,7 +86,18 @@ jobs:
 
       # Test docker image
       - name: Test Docker image
+        id: test
         # Test the image that was just built, referenced by its digest
         env:
           WWL_SERVER_IMAGE: ghcr.io/world-wide-lab/server@${{ steps.build.outputs.digest }}
         run: docker compose -f docker/docker-compose.testing.yml run --rm test-server
+
+      # Whatever the tests report, the reason usually lives in the server's own
+      # output, which is otherwise thrown away together with the containers
+      - name: Show container logs
+        if: failure() && steps.test.conclusion == 'failure'
+        env:
+          WWL_SERVER_IMAGE: ghcr.io/world-wide-lab/server@${{ steps.build.outputs.digest }}
+        run: |
+          docker compose -f docker/docker-compose.testing.yml ps --all
+          docker compose -f docker/docker-compose.testing.yml logs --no-color
