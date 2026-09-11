@@ -98,7 +98,7 @@ export abstract class WwlAwsBaseDeployment extends WwlPulumiDeployment {
 
     // Load environment variables from a .env file
     // TODO: Should this be moved somewhere else?
-    dotenv.config();
+    dotenv.config({ quiet: true });
 
     // Generate the final configuration by merging in defaults
     const defaultConfig: FlipOptional<WwlAwsDeploymentConfig> = {

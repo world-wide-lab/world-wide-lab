@@ -11,10 +11,10 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.20.2",
-    "@types/supertest": "^6.0.3",
+    "@types/supertest": "^7.2.1",
     "@world-wide-lab/server": "file:../server",
     "supertest": "^7.2.2",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "vitest": "^5.0.0"
   }
 }
