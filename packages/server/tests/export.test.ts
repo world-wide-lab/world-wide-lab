@@ -13,6 +13,23 @@ const API_KEY = process.env.DEFAULT_API_KEY;
 const STUDY_ID = "chunked-export";
 // Study whose payloads contain keys that clash with the response's own columns
 const STUDY_ID_CLASHING_KEYS = "chunked-export-clashing-keys";
+// Study whose payloads contain keys with characters that are meaningful in
+// SQL. Payloads are submitted by participants, so their keys can contain
+// anything and must never end up in a query unescaped.
+const STUDY_ID_SPECIAL_KEYS = "chunked-export-special-keys";
+
+// Payload keys which would break (or change) the export's query if they were
+// not escaped properly, together with the value they are stored under
+const SPECIAL_KEYS = [
+  "it's",
+  'a "quoted" key',
+  "back\\slash",
+  // Sequelize replaces named placeholders in raw queries
+  ":studyId",
+  // Attempts at actually injecting SQL through a payload key
+  "x' || (SELECT 'injected') || '",
+  '"; DROP TABLE wwl_responses; --',
+];
 
 const N_PARTICIPANTS = 3;
 const N_SESSIONS_PER_PARTICIPANT = 2;
@@ -87,6 +104,9 @@ describe("Chunked data exports", () => {
       responseId: `payload-value-${index}`,
       name: `payload-name-${index}`,
     }));
+    await generateStudyData(STUDY_ID_SPECIAL_KEYS, (index) =>
+      Object.fromEntries(SPECIAL_KEYS.map((key) => [key, `${key}-${index}`])),
+    );
   });
 
   afterEach(() => {
@@ -219,6 +239,67 @@ describe("Chunked data exports", () => {
       // still has to walk through all responses exactly once
       expect(response.body.length).toBe(N_RESPONSES);
       expect(uniqueValues(response.body, "responseId").size).toBe(N_RESPONSES);
+    });
+  });
+
+  describe("payload keys containing special characters", () => {
+    it("should export them under their own name (responses-extracted-payload)", async () => {
+      config.database.chunkSize = 4;
+
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "json",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(N_RESPONSES);
+
+      // Every key has to be exported under its exact name and with its own
+      // value, i.e. it may neither be renamed nor evaluated as SQL
+      for (const key of SPECIAL_KEYS) {
+        expect(uniqueValues(response.body, key).size).toBe(N_RESPONSES);
+        expect(response.body[0][key]).toBe(`${key}-0`);
+      }
+    });
+
+    it("should export them under their own name (responses-extracted-payload, CSV)", async () => {
+      config.database.chunkSize = 4;
+
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "csv",
+      );
+
+      expect(response.status).toBe(200);
+      const lines = csvLines(response.text);
+      expect(lines.length).toBe(N_RESPONSES + 1);
+
+      // CSV escapes double quotes by doubling them
+      for (const key of SPECIAL_KEYS) {
+        expect(lines[0]).toContain(key.replaceAll('"', '""'));
+      }
+    });
+
+    it("should not run SQL contained in a payload key", async () => {
+      config.database.chunkSize = 4;
+
+      await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "json",
+      );
+      await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "csv",
+      );
+
+      // The responses are still there, i.e. no injected statement has run
+      expect(await sequelize.models.Response.count()).toBeGreaterThanOrEqual(
+        3 * N_RESPONSES,
+      );
     });
   });
 
