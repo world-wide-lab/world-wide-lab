@@ -9,17 +9,11 @@ on:
       - "v*"
     branches:
       - feature/docker/*
-  # Run for pull requests that touch anything the image is built from, so that
-  # a broken image is caught before it is merged rather than at release time.
-  # Nothing is pushed to a registry for these runs, see the build job below.
+  # Run for pull requests that touces relevant files
   pull_request:
     branches:
       - main
     paths:
-      # The build context of the image
-      - "packages/server/**"
-      # The test container the built image is checked against
-      - "packages/test-server/**"
       # docker-compose.testing.yml and friends
       - "docker/**"
       # The Node version the Dockerfile's base image is kept in sync with

@@ -9,18 +9,13 @@ on:
       - "v*"
     branches:
       - feature/electron/*
-  # Run for pull requests that touch anything the app is built from, so that a
-  # broken build is caught before it is merged rather than at release time.
-  # These runs never publish, see PUBLISH_POLICY in the build job below.
+  # Run for pull requests that touces relevant files
   pull_request:
     branches:
       - main
     paths:
-      # The app itself, including its electron-builder config and lockfile
+      # Electron-app related files
       - "electron-app/**"
-      # The packages bundled into the app via "npm run build:wwl"
-      - "packages/server/**"
-      - "packages/deploy/**"
       # The Node version the build runs on
       - ".nvmrc"
       # Root dependencies / workspace definition
