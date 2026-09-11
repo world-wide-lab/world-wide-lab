@@ -9,10 +9,27 @@ on:
       - "v*"
     branches:
       - feature/docker/*
+  # Run for pull requests that touces relevant files
+  pull_request:
+    branches:
+      - main
+    paths:
+      # docker-compose.testing.yml and friends
+      - "docker/**"
+      # The Node version the Dockerfile's base image is kept in sync with
+      - ".nvmrc"
+      # Root dependencies / workspace definition
+      - "package.json"
+      - "package-lock.json"
+      # This workflow itself
+      - ".github/workflows/build-docker.yml"
 
 jobs:
   build-docker:
     runs-on: ubuntu-latest
+    env:
+      # Tag used for the image on pull requests
+      LOCAL_IMAGE: world-wide-lab/server:pr
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
@@ -24,12 +41,14 @@ jobs:
       # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages.
       # Once published, the packages are scoped to the account defined here.
       - name: Log in to the Github Container registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Log in to the AWS ECR Container registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: public.ecr.aws
@@ -77,16 +96,28 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./packages/server/
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          # Pull requests only build and test the image, they don't publish it.
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ github.event_name == 'pull_request' && env.LOCAL_IMAGE || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # Re-use the layers (and the npm cache) of previous runs
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Which image to test: pushed images are referenced by their digest,
+      # locally loaded ones (pull requests) by their local tag.
+      - name: Select the image to test
+        run: |
+          echo "WWL_SERVER_IMAGE=${{ github.event_name == 'pull_request' && env.LOCAL_IMAGE || format('ghcr.io/world-wide-lab/server@{0}', steps.build.outputs.digest) }}" >> "$GITHUB_ENV"
+
       # Test docker image
       - name: Test Docker image
-        # Test the image that was just built, referenced by its digest
-        env:
-          WWL_SERVER_IMAGE: ghcr.io/world-wide-lab/server@${{ steps.build.outputs.digest }}
+        id: test
         run: docker compose -f docker/docker-compose.testing.yml run --rm test-server
+
+      - name: Show container logs
+        if: failure() && steps.test.conclusion == 'failure'
+        run: |
+          docker compose -f docker/docker-compose.testing.yml ps --all
+          docker compose -f docker/docker-compose.testing.yml logs --no-color

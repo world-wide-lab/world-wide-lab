@@ -36,7 +36,7 @@
     "jspsych": ">=7.0.0"
   },
   "devDependencies": {
-    "@jspsych/config": "^2.0.2",
+    "@jspsych/config": "^3.3.4",
     "@jspsych/plugin-html-keyboard-response": "^2.0.0",
     "@jspsych/test-utils": "1.1.2",
     "@types/jest": "^29.5.12",
