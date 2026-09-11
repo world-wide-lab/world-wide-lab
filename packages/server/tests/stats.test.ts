@@ -220,7 +220,7 @@ describe("Stats", () => {
   });
 
   describe("Studies", () => {
-    it("should compute the sessions, completion and duration per study", async () => {
+    it("should compute the sessions and completion per study", async () => {
       const entries = await getStudyStats(sequelize);
 
       // Studies with the most sessions come first
@@ -234,19 +234,29 @@ describe("Stats", () => {
       expect(studyA.nSessions).toBe(4);
       expect(studyA.nFinished).toBe(3);
       expect(studyA.completionRate).toBe(0.75);
-      // The session without any responses can not be timed
-      expect(studyA.nTimedSessions).toBe(3);
-      expect(studyA.meanDurationSeconds).toBeCloseTo((300 + 120 + 120) / 3, 3);
 
       expect(studyB.nSessions).toBe(2);
       expect(studyB.nFinished).toBe(1);
       expect(studyB.completionRate).toBe(0.5);
-      expect(studyB.nTimedSessions).toBe(2);
-      expect(studyB.meanDurationSeconds).toBeCloseTo((120 + 60) / 2, 3);
 
       // The only session of this study is outside of the timeframe
       expect(studyOld.nSessions).toBe(0);
       expect(studyOld.completionRate).toBe(null);
+
+      // How long sessions take is not computed across studies
+      expect(studyA.meanDurationSeconds).toBe(undefined);
+    });
+
+    it("should compute how long the sessions of a study take", async () => {
+      const [studyA] = await getStudyStats(sequelize, { studyId: STUDY_A });
+
+      // The session without any responses can not be timed
+      expect(studyA.nTimedSessions).toBe(3);
+      expect(studyA.meanDurationSeconds).toBeCloseTo((300 + 120 + 120) / 3, 3);
+
+      const [studyOld] = await getStudyStats(sequelize, {
+        studyId: STUDY_OLD,
+      });
       expect(studyOld.nTimedSessions).toBe(0);
       expect(studyOld.meanDurationSeconds).toBe(null);
     });

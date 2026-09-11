@@ -47,9 +47,10 @@ type StudyStatsEntry = {
   nSessions: number;
   nFinished: number;
   completionRate: number | null;
-  // Sessions with at least one response, only those can be timed
-  nTimedSessions: number;
-  meanDurationSeconds: number | null;
+  // How long a session takes is only measured for a single study, since it
+  // means reading every response of the timeframe
+  nTimedSessions?: number;
+  meanDurationSeconds?: number | null;
 };
 
 type ResponsesPerSessionStats = {
@@ -217,11 +218,7 @@ async function getStudyStats(
   sequelize: Sequelize,
   options: StatsOptions = {},
 ): Promise<Array<StudyStatsEntry>> {
-  const duration = sqlSecondsBetween(
-    getDialect(sequelize),
-    'MAX("wwl_responses"."createdAt")',
-    '"wwl_sessions"."createdAt"',
-  );
+  const { studyId } = options;
   // Sessions are limited to the timeframe, the studies themselves are not
   const filter = sessionFilter(
     { days: options.days },
@@ -230,52 +227,67 @@ async function getStudyStats(
       studyId: '"wwl_sessions"."studyId"',
     },
   );
-  const onlyStudy = options.studyId
-    ? 'WHERE "wwl_studies"."studyId" = :studyId'
-    : "";
+
+  // A session is timed until its last response, which means reading every
+  // response of the timeframe, so it is only done for a single study
+  const duration = studyId
+    ? sqlSecondsBetween(
+        getDialect(sequelize),
+        'MAX("wwl_responses"."createdAt")',
+        '"wwl_sessions"."createdAt"',
+      )
+    : null;
+  const sessions = duration
+    ? `SELECT
+         "wwl_sessions"."sessionId" AS "sessionId",
+         "wwl_sessions"."studyId" AS "studyId",
+         "wwl_sessions"."finished" AS "finished",
+         ${duration} AS "durationSeconds"
+       FROM "wwl_sessions"
+       LEFT JOIN "wwl_responses"
+         ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
+         -- A response can never predate its session, so this only rules out
+         -- the responses of sessions outside of the timeframe
+         AND "wwl_responses"."createdAt" >= :firstDate
+       ${filter.sql}
+       GROUP BY
+         "wwl_sessions"."sessionId",
+         "wwl_sessions"."studyId",
+         "wwl_sessions"."finished",
+         "wwl_sessions"."createdAt"`
+    : `SELECT "sessionId", "studyId", "finished"
+       FROM "wwl_sessions"
+       ${filter.sql}`;
 
   const rows = await sequelize.query<{
     studyId: string;
     nSessions: number | string;
     nFinished: number | string | null;
-    nTimedSessions: number | string;
-    meanDurationSeconds: number | string | null;
+    nTimedSessions?: number | string;
+    meanDurationSeconds?: number | string | null;
   }>(
     `
       SELECT
         "wwl_studies"."studyId" AS "studyId",
         COUNT("sessions"."sessionId") AS "nSessions",
-        ${sqlCountIf('"sessions"."finished"')} AS "nFinished",
+        ${sqlCountIf('"sessions"."finished"')} AS "nFinished"${
+          duration
+            ? `,
         COUNT("sessions"."durationSeconds") AS "nTimedSessions",
-        AVG("sessions"."durationSeconds") AS "meanDurationSeconds"
+        AVG("sessions"."durationSeconds") AS "meanDurationSeconds"`
+            : ""
+        }
       FROM "wwl_studies"
-      LEFT JOIN (
-        SELECT
-          "wwl_sessions"."sessionId" AS "sessionId",
-          "wwl_sessions"."studyId" AS "studyId",
-          "wwl_sessions"."finished" AS "finished",
-          ${duration} AS "durationSeconds"
-        FROM "wwl_sessions"
-        LEFT JOIN "wwl_responses"
-          ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
-          -- A response can never predate its session, so this only rules out
-          -- the responses of sessions which are outside of the timeframe
-          AND "wwl_responses"."createdAt" >= :firstDate
-        ${filter.sql}
-        GROUP BY
-          "wwl_sessions"."sessionId",
-          "wwl_sessions"."studyId",
-          "wwl_sessions"."finished",
-          "wwl_sessions"."createdAt"
-      ) AS "sessions" ON "sessions"."studyId" = "wwl_studies"."studyId"
-      ${onlyStudy}
+      LEFT JOIN (${sessions}) AS "sessions"
+        ON "sessions"."studyId" = "wwl_studies"."studyId"
+      ${studyId ? 'WHERE "wwl_studies"."studyId" = :studyId' : ""}
       GROUP BY "wwl_studies"."studyId"
       ORDER BY COUNT("sessions"."sessionId") DESC, "wwl_studies"."studyId"
     `,
     {
       replacements: {
         ...filter.replacements,
-        ...(options.studyId ? { studyId: options.studyId } : {}),
+        ...(studyId ? { studyId } : {}),
       },
       type: QueryTypes.SELECT,
     },
@@ -289,11 +301,15 @@ async function getStudyStats(
       nSessions,
       nFinished,
       completionRate: share(nFinished, nSessions),
-      nTimedSessions: toNumber(row.nTimedSessions),
-      meanDurationSeconds:
-        row.meanDurationSeconds === null
-          ? null
-          : toNumber(row.meanDurationSeconds),
+      ...(duration
+        ? {
+            nTimedSessions: toNumber(row.nTimedSessions),
+            meanDurationSeconds:
+              row.meanDurationSeconds == null
+                ? null
+                : toNumber(row.meanDurationSeconds),
+          }
+        : {}),
     };
   });
 }

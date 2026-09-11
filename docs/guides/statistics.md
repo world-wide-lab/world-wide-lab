@@ -14,7 +14,7 @@ The overview covers all of your studies together:
 
   A session only counts as finished once your study calls `session.finish()` at its end, which the [jsPsych integration](/guides/integration-jsPsych.md) does automatically. If your study never calls it, every session will show up as unfinished.
 
-- **Studies**: how many sessions each study collected, how many of them were finished and how long a session took on average. A session's duration is measured from the moment it is started until its last response, since sessions do not have an explicit end, so sessions without any responses are not included in it.
+- **Studies**: how many sessions each study collected and how many of them were finished.
 
   Every row has a small **Statistics** button, which opens the statistics of that study.
 
@@ -24,7 +24,7 @@ The overview covers all of your studies together:
 
 ![A screenshot of the statistics of a single study in World-Wide-Lab](/img/screenshots/generated/admin_pages_Statistics_study.png){.screenshot}
 
-The statistics of a single study show the same sessions over time, participants and recruitment for that study alone, plus how far participants get in it. You can reach them from the **Statistics** button in the overview's list of studies or via **View Statistics** in the `...` menu of the list of studies. A second dropdown at the top switches to another study, or back to the overview.
+The statistics of a single study show the same sessions over time, participants and recruitment for that study alone, plus how long its sessions take and how far participants get in it. A session's duration is measured from the moment it is started until its last response, since sessions do not have an explicit end, so sessions without any responses are not included in it. You can reach them from the **Statistics** button in the overview's list of studies or via **View Statistics** in the `...` menu of the list of studies. A second dropdown at the top switches to another study, or back to the overview.
 
 Your selection is kept in the address of the page, so you can bookmark or share the statistics of a particular study.
 

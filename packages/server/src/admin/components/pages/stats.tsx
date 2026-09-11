@@ -461,22 +461,21 @@ const Overview: React.FC<{
 
       <Section
         title="Studies"
-        description="How your studies compare to each other. Open a study to see how far participants get in it, where they came from and how they moved on."
+        description="How your studies compare to each other. Open a study to see how long its sessions take, how far participants get in it and where they came from."
       />
       <Row>
         <Tile
           title="Sessions per Study"
-          description="A session's duration is measured from its start until its last response, so sessions without any responses are not included in it."
+          description="How much every study collected in the selected timeframe."
         >
           <DataTable
-            headers={["Study", "Sessions", "Finished", "Mean Duration", ""]}
+            headers={["Study", "Sessions", "Finished", ""]}
             rows={studies.map((entry) => [
               entry.studyId,
               formatNumber(entry.nSessions),
               `${formatNumber(entry.nFinished)} (${formatShare(
                 entry.completionRate,
               )})`,
-              formatDuration(entry.meanDurationSeconds),
               <Button
                 key={entry.studyId}
                 size="sm"
