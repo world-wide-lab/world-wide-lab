@@ -146,7 +146,6 @@ const config = {
       false,
     ),
     chunkSize: getIntFromEnv("DATABASE_CHUNK_SIZE") || 10000,
-    cachePayloadKeys: getBooleanFromEnv("DATABASE_CACHE_PAYLOAD_KEYS", true),
   },
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),

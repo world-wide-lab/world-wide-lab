@@ -315,12 +315,12 @@ async function generateExtractedPayloadQuery(
     throw new AppError("created_after must be a Date object", 400);
   }
 
-  // Get all keys which are present in the payloads of the responses. This is
-  // backed by a cache in the database, since scanning every payload again is
-  // by far the slowest part of this export.
-  const jsonKeys = await getPayloadKeys(sequelize, studyId, {
-    created_after: options.created_after,
-  });
+  // Get all keys which are present in the payloads of the responses
+  const jsonKeys = await getPayloadKeys(
+    sequelize,
+    studyId,
+    options.created_after,
+  );
   const jsonFieldsString = jsonKeys
     .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
     .join(", ");

@@ -16,19 +16,19 @@ export const up: Migration = async ({ context }) => {
       allowNull: false,
       defaultValue: [],
       comment:
-        "The keys that have been found in the payloads of the study's responses, together with the date of the most recent response each key appeared in.",
+        "The keys found in the payloads of the study's responses, with the date of the most recent response each key appeared in.",
     },
     lastResponseId: {
       type: DataTypes.INTEGER,
       allowNull: true,
       comment:
-        "The highest responseId that has already been scanned for keys. Responses after it still have to be scanned.",
+        "The highest responseId that has been scanned for keys. Later responses still have to be scanned.",
     },
     lastUpdatedAt: {
       type: DataTypes.DATE,
       allowNull: true,
       comment:
-        "The most recent updatedAt among the responses that have already been scanned for keys. Responses changed after it have to be scanned again.",
+        "The most recent updatedAt that has been scanned for keys. Responses changed after it have to be scanned again.",
     },
     createdAt: {
       type: DataTypes.DATE,

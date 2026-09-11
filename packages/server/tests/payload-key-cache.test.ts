@@ -3,7 +3,6 @@ import "./setup_env";
 
 import request from "supertest";
 import app from "../src/app";
-import config from "../src/config";
 import sequelize from "../src/db";
 import {
   type CachedPayloadKey,
@@ -13,8 +12,6 @@ import {
 const endpoint = request(app);
 
 const API_KEY = process.env.DEFAULT_API_KEY;
-
-const cachingEnabledByDefault = config.database.cachePayloadKeys;
 
 // Create a study with a single session to add responses to
 async function createStudy(studyId: string) {
@@ -59,10 +56,6 @@ async function getCache(studyId: string) {
 describe("Caching of payload keys", () => {
   beforeAll(async () => {
     await sequelize.sync();
-  });
-
-  afterEach(() => {
-    config.database.cachePayloadKeys = cachingEnabledByDefault;
   });
 
   it("should store the keys of a study when it is exported", async () => {
@@ -168,17 +161,6 @@ describe("Caching of payload keys", () => {
     expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
   });
 
-  it("should not use the cache when it is turned off", async () => {
-    const studyId = "payload-key-cache-disabled";
-    const sessionId = await createStudy(studyId);
-    await addResponse(sessionId, { key_1: 1 });
-
-    config.database.cachePayloadKeys = false;
-
-    expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
-    expect(await getCache(studyId)).toBe(null);
-  });
-
   it("should pick up responses that only became visible after a scan", async () => {
     const studyId = "payload-key-cache-late-response";
     const sessionId = await createStudy(studyId);
@@ -187,10 +169,9 @@ describe("Caching of payload keys", () => {
 
     expect(await getPayloadColumns(studyId)).toEqual(["key_1", "key_2"]);
 
-    // Imitate a response that has been committed only after a later one was
-    // already visible to the scan: it carries an updatedAt from before the
-    // position of that scan and a responseId below it, so only the overlap
-    // every scan reaches back can still pick it up.
+    // Imitate a response committed only after a later one was already visible
+    // to the scan: both its responseId and its updatedAt are behind that
+    // scan's position, so only the overlap can still pick it up.
     await firstResponse.update({ payload: { key_1: 1, late_key: 3 } });
     const { lastUpdatedAt } = await getCache(studyId);
     await sequelize.query(
@@ -208,19 +189,5 @@ describe("Caching of payload keys", () => {
       "key_2",
       "late_key",
     ]);
-  });
-
-  it("should still export when the cache is unavailable", async () => {
-    const studyId = "payload-key-cache-unavailable";
-    const sessionId = await createStudy(studyId);
-    await addResponse(sessionId, { key_1: 1 });
-
-    // Imitate a database on which the cache's migration has not been applied
-    await sequelize.models.ResponsePayloadKeyCache.drop();
-    try {
-      expect(await getPayloadColumns(studyId)).toEqual(["key_1"]);
-    } finally {
-      await sequelize.models.ResponsePayloadKeyCache.sync();
-    }
   });
 });
