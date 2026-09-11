@@ -1,12 +1,12 @@
-# Stats
+# Statistics
 
-World-Wide-Lab automatically computes a set of basic statistics about the data you have already collected. To see them, click **Stats** in the sidebar of the admin UI.
+World-Wide-Lab automatically computes a set of basic statistics about the data you have already collected. To see them, click **Statistics** in the sidebar of the admin UI.
 
-There are two views: an **overview** of everything you have collected, and the **stats of a single study**. Both are limited to a **timeframe**, which you can pick at the top of the page.
+There are two views: an **overview** of everything you have collected, and the **statistics of a single study**. Both are limited to a **timeframe**, which you can pick at the top of the page.
 
 ## Overview
 
-![A screenshot of the stats overview in World-Wide-Lab](/img/screenshots/generated/admin_pages_Stats.png){.screenshot}
+![A screenshot of the statistics overview in World-Wide-Lab](/img/screenshots/generated/admin_pages_Statistics.png){.screenshot}
 
 The overview covers all of your studies together:
 
@@ -16,20 +16,20 @@ The overview covers all of your studies together:
 
 - **Studies**: how many sessions each study collected, how many of them were finished and how long a session took on average. A session's duration is measured from the moment it is started until its last response, since sessions do not have an explicit end, so sessions without any responses are not included in it.
 
-  Every row has a small **Stats** button, which opens the stats of that study.
+  Every row has a small **Statistics** button, which opens the statistics of that study.
 
 - **Participants** and **Recruitment**, as described below.
 
-## Stats of a Study
+## Statistics of a Study
 
-![A screenshot of the stats of a single study in World-Wide-Lab](/img/screenshots/generated/admin_pages_Stats_study.png){.screenshot}
+![A screenshot of the statistics of a single study in World-Wide-Lab](/img/screenshots/generated/admin_pages_Statistics_study.png){.screenshot}
 
-The stats of a single study show the same sessions over time, participants and recruitment for that study alone, plus how far participants get in it. You can reach them from the **Stats** button in the overview's list of studies, from the study's own page (**View Stats for this Study**) or via the `...` menu in the list of studies. A second dropdown at the top switches to another study, or back to the overview.
+The statistics of a single study show the same sessions over time, participants and recruitment for that study alone, plus how far participants get in it. You can reach them from the **Statistics** button in the overview's list of studies or via **View Statistics** in the `...` menu of the list of studies. A second dropdown at the top switches to another study, or back to the overview.
 
-Your selection is kept in the address of the page, so you can bookmark or share the stats of a particular study.
+Your selection is kept in the address of the page, so you can bookmark or share the statistics of a particular study.
 
 ::: tip
-The stats are meant to give you a quick overview of your data. If you want to run your own analyses, you can always [download the full data](/guides/download-data.md) of a study.
+The statistics are meant to give you a quick overview of your data. If you want to run your own analyses, you can always [download the full data](/guides/download-data.md) of a study.
 :::
 
 ### Dropout
@@ -45,7 +45,7 @@ Finished and unfinished sessions are counted **separately**, each as a share of 
 
 How often the same person takes part in your studies. This is only possible for sessions which are linked to a participant, which happens when you use the `linkParticipant` option of the [client](/guides/client.md) or the jsPsych integration. Sessions without a participant are not counted here.
 
-Apart from how many sessions and studies each participant takes part in, the page also shows how often participants moved from one study to another one, i.e. how often a participant's next session was in a different study than the one before. In the stats of a single study, all of this covers the participants of that study, and the moves to and from it.
+Apart from how many sessions each participant takes part in, the page also shows how often participants moved from one study to another one, i.e. how often a participant's next session was in a different study than the one before. The overview additionally shows in how many different studies participants take part. In the statistics of a single study, all of this covers the participants of that study, and the moves to and from it.
 
 ## Recruitment
 

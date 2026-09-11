@@ -79,12 +79,6 @@ type ResponsesPerSessionStats = {
 type ParticipantStats = {
   // Participants with at least one session in the current scope
   nParticipants: number;
-  nParticipantsWithMultipleSessions: number;
-  // Participants with more than one session in the same study
-  nParticipantsRepeatingAStudy: number;
-  // Participants who take part in more than one study. When a single study is
-  // selected, these are the ones who have also taken part in another study.
-  nParticipantsWithMultipleStudies: number;
   sessionsPerParticipant: Array<{
     nSessions: number;
     nParticipants: number;
@@ -453,83 +447,53 @@ async function getParticipantStats(
   const anyStudy = sessionFilter({ days: options.days });
   const replacements = { ...anyStudy.replacements, ...filter.replacements };
 
-  const [sessionCounts, studyCounts, repeatedStudyRows, transitionRows] =
-    await Promise.all([
-      // Sessions of the selected study, or all sessions of a participant
-      countParticipantsPer(sequelize, "COUNT(*)", filter),
-      // The studies of the participants in scope, always all of them
-      countParticipantsPer(
-        sequelize,
-        'COUNT(DISTINCT "studyId")',
-        { sql: anyStudy.sql, replacements },
-        Boolean(studyId),
-      ),
-      // Participants who have taken part in the same study more than once
-      sequelize.query<{ nParticipants: number | string }>(
-        `
-          SELECT COUNT(DISTINCT "participantId") AS "nParticipants"
-          FROM (
-            SELECT "participantId"
-            FROM "wwl_sessions"
-            ${filter.sql}
-            AND "participantId" IS NOT NULL
-            GROUP BY "participantId", "studyId"
-            HAVING COUNT(*) > 1
-          ) AS "repeated"
-        `,
-        { replacements: filter.replacements, type: QueryTypes.SELECT },
-      ),
-      // Sessions which are in a different study than a participant's previous
-      // one. The selected study is only used to pick the transitions it is
-      // part of, so that moves in both directions are visible.
-      sequelize.query<{
-        fromStudyId: string;
-        toStudyId: string;
-        nTransitions: number | string;
-      }>(
-        `
+  const [sessionCounts, studyCounts, transitionRows] = await Promise.all([
+    // Sessions of the selected study, or all sessions of a participant
+    countParticipantsPer(sequelize, "COUNT(*)", filter),
+    // The studies of the participants in scope, always all of them
+    countParticipantsPer(
+      sequelize,
+      'COUNT(DISTINCT "studyId")',
+      { sql: anyStudy.sql, replacements },
+      Boolean(studyId),
+    ),
+    // Sessions which are in a different study than a participant's previous
+    // one. The selected study is only used to pick the transitions it is
+    // part of, so that moves in both directions are visible.
+    sequelize.query<{
+      fromStudyId: string;
+      toStudyId: string;
+      nTransitions: number | string;
+    }>(
+      `
+        SELECT
+          "previousStudyId" AS "fromStudyId",
+          "studyId" AS "toStudyId",
+          COUNT(*) AS "nTransitions"
+        FROM (
           SELECT
-            "previousStudyId" AS "fromStudyId",
-            "studyId" AS "toStudyId",
-            COUNT(*) AS "nTransitions"
-          FROM (
-            SELECT
-              "studyId",
-              LAG("studyId") OVER (
-                PARTITION BY "participantId" ORDER BY "createdAt"
-              ) AS "previousStudyId"
-            FROM "wwl_sessions"
-            ${anyStudy.sql}
-            AND "participantId" IS NOT NULL
-          ) AS "transitions"
-          WHERE "previousStudyId" IS NOT NULL
-            AND "previousStudyId" <> "studyId"
-            ${studyId ? 'AND (:studyId IN ("previousStudyId", "studyId"))' : ""}
-          GROUP BY "previousStudyId", "studyId"
-          ORDER BY COUNT(*) DESC, "previousStudyId", "studyId"
-        `,
-        { replacements, type: QueryTypes.SELECT },
-      ),
-    ]);
-
-  const countParticipants = (
-    entries: Array<{ value: number; nParticipants: number }>,
-    where: (value: number) => boolean = () => true,
-  ): number =>
-    entries
-      .filter((entry) => where(entry.value))
-      .reduce((sum, entry) => sum + entry.nParticipants, 0);
+            "studyId",
+            LAG("studyId") OVER (
+              PARTITION BY "participantId" ORDER BY "createdAt"
+            ) AS "previousStudyId"
+          FROM "wwl_sessions"
+          ${anyStudy.sql}
+          AND "participantId" IS NOT NULL
+        ) AS "transitions"
+        WHERE "previousStudyId" IS NOT NULL
+          AND "previousStudyId" <> "studyId"
+          ${studyId ? 'AND (:studyId IN ("previousStudyId", "studyId"))' : ""}
+        GROUP BY "previousStudyId", "studyId"
+        ORDER BY COUNT(*) DESC, "previousStudyId", "studyId"
+      `,
+      { replacements, type: QueryTypes.SELECT },
+    ),
+  ]);
 
   return {
-    nParticipants: countParticipants(sessionCounts),
-    nParticipantsWithMultipleSessions: countParticipants(
-      sessionCounts,
-      (value) => value > 1,
-    ),
-    nParticipantsRepeatingAStudy: toNumber(repeatedStudyRows[0]?.nParticipants),
-    nParticipantsWithMultipleStudies: countParticipants(
-      studyCounts,
-      (value) => value > 1,
+    nParticipants: sessionCounts.reduce(
+      (sum, entry) => sum + entry.nParticipants,
+      0,
     ),
     sessionsPerParticipant: sessionCounts.map((entry) => ({
       nSessions: entry.value,

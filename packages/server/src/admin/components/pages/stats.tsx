@@ -31,9 +31,7 @@ import type {
 import { Chart } from "../charts/Chart.js";
 import { SessionsOverTimeChart } from "../charts/SessionsOverTimeChart.js";
 
-const PAGE_NAME = "Stats";
-// Number of studies compared in the chart, the table always shows all of them
-const N_STUDIES_IN_CHARTS = 10;
+const PAGE_NAME = "Statistics";
 // Number of bars shown in the responses per session chart
 const N_BARS_IN_HISTOGRAM = 25;
 // Number of rows shown in the table of transitions between studies
@@ -48,7 +46,6 @@ const MDN_QUERY_STRING =
 
 // Widths of the tiles, from small screens to large ones
 const HALF = [1, 1, 1 / 2];
-const TWO_THIRDS = [1, 1, 2 / 3];
 const THIRD = [1, 1, 1 / 3];
 const QUARTER = [1 / 2, 1 / 2, 1 / 4];
 // Quarter of the width, but full width on medium screens
@@ -225,7 +222,9 @@ const DataTable: React.FC<{
   emptyMessage = "There is no data to show here yet.",
 }) =>
   rows.length === 0 ? (
-    <Text variant="sm">{emptyMessage}</Text>
+    <Text variant="sm" color="grey40">
+      {emptyMessage}
+    </Text>
   ) : (
     <Table>
       <TableHead>
@@ -301,8 +300,6 @@ const Recruitment: React.FC<{
           <>
             The page participants clicked the link to your study on, taken from
             the <ExternalLink href={MDN_REFERRER}>Referer header</ExternalLink>.
-            Participants who entered the address directly show up as (none /
-            direct).
           </>
         }
         breakdown={recruitment.byReferrer}
@@ -313,8 +310,7 @@ const Recruitment: React.FC<{
           <>
             The source, utm_source or ref{" "}
             <ExternalLink href={MDN_QUERY_STRING}>query parameter</ExternalLink>{" "}
-            of your study's address, e.g. ?source=newsletter. Use it to tell
-            your recruitment channels apart.
+            of your study's address, e.g. ?source=newsletter.
           </>
         }
         breakdown={recruitment.bySourceParameter}
@@ -328,14 +324,16 @@ const Recruitment: React.FC<{
 const ParticipantTables: React.FC<{
   participants: ParticipantStats;
   sessionsLabel: string;
-  studiesLabel: string;
+  // How many studies a participant takes part in is only shown in the
+  // overview, since a single study can only ever be one of them
+  studiesLabel?: string;
   transitionsLabel: string;
 }> = ({ participants, sessionsLabel, studiesLabel, transitionsLabel }) => (
   <Row alignTop>
     <Tile
       title="Sessions per Participant"
       description={sessionsLabel}
-      width={QUARTER_WIDE}
+      width={studiesLabel ? QUARTER_WIDE : HALF}
     >
       <DataTable
         headers={["Sessions", "Participants"]}
@@ -346,20 +344,22 @@ const ParticipantTables: React.FC<{
         emptyMessage="No sessions have been linked to a participant yet."
       />
     </Tile>
-    <Tile
-      title="Studies per Participant"
-      description={studiesLabel}
-      width={QUARTER_WIDE}
-    >
-      <DataTable
-        headers={["Studies", "Participants"]}
-        rows={participants.studiesPerParticipant.map((entry) => [
-          formatNumber(entry.nStudies),
-          formatNumber(entry.nParticipants),
-        ])}
-        emptyMessage="No sessions have been linked to a participant yet."
-      />
-    </Tile>
+    {studiesLabel && (
+      <Tile
+        title="Studies per Participant"
+        description={studiesLabel}
+        width={QUARTER_WIDE}
+      >
+        <DataTable
+          headers={["Studies", "Participants"]}
+          rows={participants.studiesPerParticipant.map((entry) => [
+            formatNumber(entry.nStudies),
+            formatNumber(entry.nParticipants),
+          ])}
+          emptyMessage="No sessions have been linked to a participant yet."
+        />
+      </Tile>
+    )}
     <Tile
       title="Moving between Studies"
       description={transitionsLabel}
@@ -467,7 +467,6 @@ const Overview: React.FC<{
         <Tile
           title="Sessions per Study"
           description="A session's duration is measured from its start until its last response, so sessions without any responses are not included in it."
-          width={TWO_THIRDS}
         >
           <DataTable
             headers={["Study", "Sessions", "Finished", "Mean Duration", ""]}
@@ -484,33 +483,10 @@ const Overview: React.FC<{
                 rounded
                 onClick={() => onSelectStudy(entry.studyId)}
               >
-                <Icon icon="BarChart" /> Stats
+                <Icon icon="BarChart" /> Statistics
               </Button>,
             ])}
             emptyMessage="There are no studies yet."
-          />
-        </Tile>
-        <Tile
-          title="Completion Rate per Study"
-          description="The share of a study's sessions which were finished."
-          width={THIRD}
-        >
-          <Chart
-            type="bar"
-            labels={studies
-              .slice(0, N_STUDIES_IN_CHARTS)
-              .map((entry) => entry.studyId)}
-            datasets={[
-              {
-                name: "Completion Rate (%)",
-                values: studies
-                  .slice(0, N_STUDIES_IN_CHARTS)
-                  .map((entry) => (entry.completionRate ?? 0) * 100),
-              },
-            ]}
-            colors={["green"]}
-            height={CHART_HEIGHT}
-            formatValue={(value) => `${value.toFixed(1)}%`}
           />
         </Tile>
       </Row>
@@ -519,28 +495,6 @@ const Overview: React.FC<{
         title="Participants"
         description="How often the same person takes part in your studies. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted."
       />
-      <Row>
-        <StatTile
-          label="Linked Participants"
-          value={formatNumber(stats.participants.nParticipants)}
-        />
-        <StatTile
-          label="With multiple Sessions"
-          value={formatNumber(
-            stats.participants.nParticipantsWithMultipleSessions,
-          )}
-        />
-        <StatTile
-          label="Took the same Study twice"
-          value={formatNumber(stats.participants.nParticipantsRepeatingAStudy)}
-        />
-        <StatTile
-          label="Took part in multiple Studies"
-          value={formatNumber(
-            stats.participants.nParticipantsWithMultipleStudies,
-          )}
-        />
-      </Row>
       <ParticipantTables
         participants={stats.participants}
         sessionsLabel="How many participants took part n times."
@@ -669,30 +623,13 @@ const Study: React.FC<{ stats: Stats; studyId: string }> = ({
 
       <Section
         title="Participants"
-        description={`The participants of ${studyId} and what else they take part in. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted.`}
+        description={`The ${formatNumber(
+          stats.participants.nParticipants,
+        )} participants of ${studyId} and what else they take part in. Only sessions which are linked to a participant, e.g. via the linkParticipant option of the client, are counted.`}
       />
-      <Row>
-        <StatTile
-          label="Linked Participants"
-          value={formatNumber(stats.participants.nParticipants)}
-        />
-        <StatTile
-          label="Took this Study more than once"
-          value={formatNumber(
-            stats.participants.nParticipantsWithMultipleSessions,
-          )}
-        />
-        <StatTile
-          label="Also took other Studies"
-          value={formatNumber(
-            stats.participants.nParticipantsWithMultipleStudies,
-          )}
-        />
-      </Row>
       <ParticipantTables
         participants={stats.participants}
         sessionsLabel={`How many participants took part in ${studyId} n times.`}
-        studiesLabel={`In how many studies the participants of ${studyId} took part, including this one.`}
         transitionsLabel={`How often participants moved to or from ${studyId}.`}
       />
 
@@ -727,10 +664,10 @@ export const StatsPage: React.FC = () => {
         }
       })
       .catch((error) => {
-        console.error("Error retrieving stats", error);
+        console.error("Error retrieving statistics", error);
         if (!outdated) {
           setError(
-            "The stats could not be retrieved. Please check the server logs for more information.",
+            "The statistics could not be retrieved. Please check the server logs for more information.",
           );
         }
       });
@@ -756,14 +693,22 @@ export const StatsPage: React.FC = () => {
   return (
     <Box variant="grey">
       <Box mx={[0, 0, 0, "auto"]} width={[1, 1, 1, 1024]} py="lg" px="lg">
-        <Box flex flexDirection="row" flexWrap="wrap" alignItems="flex-end">
-          <Box flexGrow={1} px="sm">
-            <H2>{studyId ? `Stats: ${studyId}` : "Stats"}</H2>
+        <Box
+          flex
+          flexDirection="row"
+          flexWrap="wrap"
+          alignItems="flex-end"
+          mb="lg"
+        >
+          <Box flexGrow={1} px="sm" py="sm">
+            <H2 mb="0">
+              {studyId ? `Study Statistics: ${studyId}` : "Statistics"}
+            </H2>
           </Box>
-          {/* Only the stats of a single study can be switched to another one,
-              the overview always covers every study */}
+          {/* Only a single study can be switched to another one, the overview
+              always covers every study */}
           {studyId && (
-            <Box width={[1 / 2, 1 / 2, 200]} px="sm">
+            <Box width={[1, 1 / 2, 200]} px="sm" py="sm">
               <Label>Study</Label>
               <Select
                 value={selectedStudy}
@@ -774,7 +719,7 @@ export const StatsPage: React.FC = () => {
               />
             </Box>
           )}
-          <Box width={[1 / 2, 1 / 2, 200]} px="sm">
+          <Box width={[1, 1 / 2, 200]} px="sm" py="sm">
             <Label>Timeframe</Label>
             <Select
               value={selectedTimeframe}

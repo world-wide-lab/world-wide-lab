@@ -330,23 +330,15 @@ describe("Stats", () => {
       const stats = await getParticipantStats(sequelize);
 
       expect(stats.nParticipants).toBe(3);
-      expect(stats.nParticipantsWithMultipleSessions).toBe(2);
       expect(stats.sessionsPerParticipant).toEqual([
         { nSessions: 1, nParticipants: 1 },
         { nSessions: 2, nParticipants: 2 },
       ]);
     });
 
-    it("should count participants repeating the same study", async () => {
-      const stats = await getParticipantStats(sequelize);
-
-      expect(stats.nParticipantsRepeatingAStudy).toBe(1);
-    });
-
     it("should count participants taking part in different studies", async () => {
       const stats = await getParticipantStats(sequelize);
 
-      expect(stats.nParticipantsWithMultipleStudies).toBe(1);
       expect(stats.studiesPerParticipant).toEqual([
         { nStudies: 1, nParticipants: 2 },
         { nStudies: 2, nParticipants: 1 },
@@ -368,7 +360,6 @@ describe("Stats", () => {
 
       expect(stats.nParticipants).toBe(3);
       // Only the sessions in the selected study are counted
-      expect(stats.nParticipantsWithMultipleSessions).toBe(1);
       expect(stats.sessionsPerParticipant).toEqual([
         { nSessions: 1, nParticipants: 2 },
         { nSessions: 2, nParticipants: 1 },
@@ -383,7 +374,6 @@ describe("Stats", () => {
       // Only one of the two sessions in this study has a participant
       expect(stats.nParticipants).toBe(1);
       // That participant has also taken part in another study
-      expect(stats.nParticipantsWithMultipleStudies).toBe(1);
       expect(stats.studiesPerParticipant).toEqual([
         { nStudies: 2, nParticipants: 1 },
       ]);

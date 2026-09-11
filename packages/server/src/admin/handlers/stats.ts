@@ -10,7 +10,7 @@ import sequelize from "../../db/index.js";
 import { getStats, sanitizeTimeframe } from "../../stats/index.js";
 
 // Name of the page in the admin UI, also used to link to it
-const STATS_PAGE_NAME = "Stats";
+const STATS_PAGE_NAME = "Statistics";
 
 // The statistics run across all collected data, which can take a moment on
 // larger databases, so their results are cached for a short while.
@@ -48,7 +48,7 @@ export const viewStudyStatsHandler: ActionHandler<ActionResponse> = async (
 
   if (!request.params.recordId || !record) {
     throw new NotFoundError(
-      'You have to pass "recordId" to the View Stats Action',
+      'You have to pass "recordId" to the View Statistics Action',
       "Action#handler",
     );
   }

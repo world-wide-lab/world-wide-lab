@@ -333,7 +333,7 @@ const admin = new AdminJS({
           },
           viewStats: {
             actionType: "record",
-            label: "View Stats",
+            label: "View Statistics",
             icon: "BarChart",
             component: false,
             handler: viewStudyStatsHandler,
@@ -577,7 +577,7 @@ const admin = new AdminJS({
               show: "Study Info",
               edit: "Edit Study",
               delete: "Delete Study",
-              viewStats: "Stats for this Study",
+              viewStats: "View Statistics",
             },
           },
           wwl_participants: {

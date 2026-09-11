@@ -67,7 +67,7 @@ test("Update Screenshots for docs", async ({ page }) => {
     "admin/resources/wwl_studies/records/my-awesome-study-id/downloadData",
   );
 
-  // Stats
+  // Statistics
   // These pages are a lot longer than the others, so they get a taller window
   // to fit all of their sections into one screenshot.
   await page.setViewportSize({ width: 1280, height: 2400 });
@@ -75,10 +75,10 @@ test("Update Screenshots for docs", async ({ page }) => {
     await page.locator(".frappe-chart").first().waitFor();
     await page.waitForTimeout(1000);
   };
-  await goAndTakeScreenshot(page, "admin/pages/Stats", waitForCharts);
+  await goAndTakeScreenshot(page, "admin/pages/Statistics", waitForCharts);
 
-  // Stats of a single study
-  await page.goto("/admin/pages/Stats?studyId=example");
+  // Statistics of a single study
+  await page.goto("/admin/pages/Statistics?studyId=example");
   await waitForCharts(page);
-  await takeScreenshot(page, "admin/pages/Stats_study");
+  await takeScreenshot(page, "admin/pages/Statistics_study");
 });
