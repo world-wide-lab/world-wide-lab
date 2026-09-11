@@ -37,12 +37,12 @@
   },
   "devDependencies": {
     "@jspsych/config": "^3.3.4",
-    "@jspsych/plugin-html-keyboard-response": "^2.0.0",
+    "@jspsych/plugin-html-keyboard-response": "^2.2.0",
     "@jspsych/test-utils": "1.1.2",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@world-wide-lab/server": "file:../server",
-    "jspsych": "^7.0.0",
-    "ts-jest": "^29.1.1"
+    "jspsych": "^7.3.4",
+    "ts-jest": "^29.4.12"
   },
   "dependencies": {
     "@world-wide-lab/client": "^0.7.1"

@@ -83,6 +83,9 @@ function getIntFromEnv(key: string): number | undefined {
 // Load .env file
 dotenvConfig({
   path: getValueFromEnv("WWL_ENV_FILE") || ".env",
+  // Without this, dotenv prints a summary of what it loaded on every start,
+  // which does not go through our logger
+  quiet: true,
 });
 
 const electronApp = getBooleanFromEnv("WWL_ELECTRON_APP", false);

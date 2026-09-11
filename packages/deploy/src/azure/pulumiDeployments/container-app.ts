@@ -97,7 +97,7 @@ export class WwlAzureContainerAppDeployment extends WwlPulumiDeployment {
 
     // Load environment variables from a .env file
     // TODO: Should this be moved somewhere else?
-    dotenv.config();
+    dotenv.config({ quiet: true });
 
     // Allow setting the location via the stack configuration (if it exists)
     // This is mainly for consistency with the behaviour of the AWS autoamted deployments,
