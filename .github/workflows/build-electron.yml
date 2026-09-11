@@ -9,6 +9,20 @@ on:
       - "v*"
     branches:
       - feature/electron/*
+  # Run for pull requests that touces relevant files
+  pull_request:
+    branches:
+      - main
+    paths:
+      # Electron-app related files
+      - "electron-app/**"
+      # The Node version the build runs on
+      - ".nvmrc"
+      # Root dependencies / workspace definition
+      - "package.json"
+      - "package-lock.json"
+      # This workflow itself
+      - ".github/workflows/build-electron.yml"
 
 # Sets permissions of the GITHUB_TOKEN to allow creating releases
 permissions:
