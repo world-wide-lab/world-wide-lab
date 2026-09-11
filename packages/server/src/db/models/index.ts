@@ -416,8 +416,7 @@ function defineModels(sequelize: Sequelize) {
         type: DataTypes.JSON,
         allowNull: false,
         defaultValue: [],
-        comment:
-          "The keys found in the payloads of the study's responses, with the date of the most recent response each key appeared in.",
+        comment: "The keys found in the payloads of the study's responses.",
       },
       lastResponseId: {
         type: DataTypes.INTEGER,

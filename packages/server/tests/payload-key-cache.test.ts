@@ -5,7 +5,6 @@ import request from "supertest";
 import app from "../src/app";
 import sequelize from "../src/db";
 import {
-  type CachedPayloadKey,
   clearFullPayloadKeyCache,
   clearPayloadKeyCache,
 } from "../src/db/payloadKeyCache";
@@ -69,10 +68,7 @@ describe("Caching of payload keys", () => {
     expect(await getPayloadColumns(studyId)).toEqual(["key_1", "key_2"]);
 
     const cache = await getCache(studyId);
-    expect(cache.keys.map((entry: CachedPayloadKey) => entry.key)).toEqual([
-      "key_1",
-      "key_2",
-    ]);
+    expect(cache.keys).toEqual(["key_1", "key_2"]);
     expect(cache.lastResponseId).toBe(response.responseId);
   });
 
@@ -86,9 +82,7 @@ describe("Caching of payload keys", () => {
     // Add a key that is not part of any response, so that it can only come
     // from the cache
     const cache = await getCache(studyId);
-    await cache.update({
-      keys: [...cache.keys, { key: "cached_key", lastSeenAt: null }],
-    });
+    await cache.update({ keys: [...cache.keys, "cached_key"] });
 
     expect(await getPayloadColumns(studyId)).toEqual(["cached_key", "key_1"]);
   });
@@ -117,7 +111,7 @@ describe("Caching of payload keys", () => {
     expect(await getPayloadColumns(studyId)).toEqual(["key_1", "key_2"]);
   });
 
-  it("should only return keys of the exported responses (created_after)", async () => {
+  it("should use all cached keys for partial exports (created_after)", async () => {
     const studyId = "payload-key-cache-created-after";
     const sessionId = await createStudy(studyId);
     const oldResponse = await addResponse(sessionId, { old_key: 1 });
@@ -137,11 +131,15 @@ describe("Caching of payload keys", () => {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const query = `?created_after=${encodeURIComponent(oneHourAgo)}`;
 
-    // Both when the cache is still empty and when it has been filled already
-    expect(await getPayloadColumns(studyId, query)).toEqual(["new_key"]);
-    expect(await getPayloadColumns(studyId, query)).toEqual(["new_key"]);
+    // Only the newer response is exported, but the keys of the older one are
+    // part of the columns as well (they are simply empty).
+    const partial = await download(studyId, query);
+    expect(partial.body.length).toBe(1);
+    expect(await getPayloadColumns(studyId, query)).toEqual([
+      "new_key",
+      "old_key",
+    ]);
 
-    // Without created_after, all keys are part of the export
     expect(await getPayloadColumns(studyId)).toEqual(["new_key", "old_key"]);
   });
 
@@ -152,9 +150,7 @@ describe("Caching of payload keys", () => {
 
     await getPayloadColumns(studyId);
     const cache = await getCache(studyId);
-    await cache.update({
-      keys: [...cache.keys, { key: "cached_key", lastSeenAt: null }],
-    });
+    await cache.update({ keys: [...cache.keys, "cached_key"] });
 
     await clearPayloadKeyCache(sequelize, studyId);
     expect(await getCache(studyId)).toBe(null);

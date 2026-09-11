@@ -1,16 +1,6 @@
 import { QueryTypes, type Sequelize } from "sequelize";
 import { logger } from "../logger.js";
 
-// A key found in a study's response payloads, together with the creation date
-// of the most recent response containing it. That date is what lets exports
-// using created_after still get exactly the columns of the responses they
-// actually export.
-interface CachedPayloadKey {
-  key: string;
-  // ISO string, or null when the date could not be determined.
-  lastSeenAt: string | null;
-}
-
 // How far a study's responses have already been scanned.
 interface ScanPosition {
   lastResponseId: number | null;
@@ -18,7 +8,7 @@ interface ScanPosition {
 }
 
 interface PayloadKeyCache extends ScanPosition {
-  keys: CachedPayloadKey[];
+  keys: string[];
 }
 
 // Safety overlap
@@ -70,30 +60,21 @@ async function queryPayloadKeys(
   sequelize: Sequelize,
   studyId: string,
   position?: ScanPosition,
-): Promise<CachedPayloadKey[]> {
+): Promise<string[]> {
   const { where, replacements } = getScanConditions(studyId, position);
 
   const rows = await sequelize.query(
     `
-      SELECT
-        payload_json.key AS key,
-        MAX(wwl_responses."createdAt") AS "lastSeenAt"
+      SELECT DISTINCT
+        payload_json.key AS key
       ${RESPONSES_OF_STUDY},
         json_each(payload) payload_json
-      WHERE ${where}
-      GROUP BY payload_json.key
-      ORDER BY key ASC;
+      WHERE ${where};
     `,
     { type: QueryTypes.SELECT, replacements },
   );
 
-  return rows.map((row) => {
-    const { key, lastSeenAt } = row as Record<string, unknown>;
-    return {
-      key: String(key),
-      lastSeenAt: toDate(lastSeenAt)?.toISOString() ?? null,
-    };
-  });
+  return rows.map((row) => String((row as Record<string, unknown>).key));
 }
 
 // Determine how far the responses can be scanned. This has to happen before
@@ -154,7 +135,7 @@ async function readCache(
   }
 
   return {
-    keys: record.keys as CachedPayloadKey[],
+    keys: record.keys as string[],
     lastResponseId: record.lastResponseId,
     lastUpdatedAt: toDate(record.lastUpdatedAt),
   };
@@ -167,40 +148,12 @@ function maxDate(a: Date | null, b: Date | null): Date | null {
   return a > b ? a : b;
 }
 
-// Add newly found keys to the cached ones, keeping the most recent date per key
-function mergeKeys(
-  cached: CachedPayloadKey[],
-  found: CachedPayloadKey[],
-): CachedPayloadKey[] {
-  // A Map is used instead of a plain object, since payload keys come from users
-  // and could otherwise clash with an object's properties.
-  const merged = new Map<string, string | null>();
-  for (const { key, lastSeenAt } of [...cached, ...found]) {
-    if (!merged.has(key)) {
-      merged.set(key, lastSeenAt ?? null);
-      continue;
-    }
-    const previous = merged.get(key);
-    // A missing date means the key is always included
-    if (previous == null || lastSeenAt == null) {
-      merged.set(key, null);
-    } else {
-      merged.set(key, lastSeenAt > previous ? lastSeenAt : previous);
-    }
-  }
-
-  return [...merged.entries()].map(([key, lastSeenAt]) => ({
-    key,
-    lastSeenAt,
-  }));
-}
-
-// Bring a study's cached keys up to date
-// (scanning the responses that have not been scanned before)
-async function updateCache(
+// All keys used in the payloads of a study's responses, bringing the cache up
+// to date by scanning the responses that have not been scanned before.
+async function getPayloadKeys(
   sequelize: Sequelize,
   studyId: string,
-): Promise<CachedPayloadKey[]> {
+): Promise<string[]> {
   const cache = await readCache(sequelize, studyId);
   // Both parts of the position are needed to tell which responses have already
   // been scanned, so an incomplete one leads to a full re-scan.
@@ -215,11 +168,14 @@ async function updateCache(
     return cache?.keys ?? [];
   }
 
-  // Combine cached and new keys
-  const keys = mergeKeys(
-    cache?.keys ?? [],
-    await queryPayloadKeys(sequelize, studyId, position),
-  );
+  // Combine cached and new keys, sorted so that exports always use the same
+  // order of columns
+  const keys = [
+    ...new Set([
+      ...(cache?.keys ?? []),
+      ...(await queryPayloadKeys(sequelize, studyId, position)),
+    ]),
+  ].sort();
 
   // Keep the previous position wherever it is further along than this scan's,
   // which happens when responses were changed (updatedAt) without new ones
@@ -240,29 +196,6 @@ async function updateCache(
   return keys;
 }
 
-// If partial export: Only keep keys that are relevant
-function selectKeys(keys: CachedPayloadKey[], created_after?: Date): string[] {
-  const selected = keys.filter(
-    ({ lastSeenAt }) =>
-      created_after === undefined ||
-      lastSeenAt == null ||
-      new Date(lastSeenAt) >= created_after,
-  );
-
-  // Sort, so that exports always use the same order of columns
-  return selected.map(({ key }) => key).sort();
-}
-
-// High-level function to get the latest set of keys, while utilizing the cache
-async function getPayloadKeys(
-  sequelize: Sequelize,
-  studyId: string,
-  created_after?: Date,
-): Promise<string[]> {
-  const keys = await updateCache(sequelize, studyId);
-  return selectKeys(keys, created_after);
-}
-
 // Drop the cached keys of a study
 async function clearPayloadKeyCache(sequelize: Sequelize, studyId: string) {
   await getCacheModel(sequelize).destroy({
@@ -276,4 +209,3 @@ async function clearFullPayloadKeyCache(sequelize: Sequelize) {
 }
 
 export { getPayloadKeys, clearPayloadKeyCache, clearFullPayloadKeyCache };
-export type { CachedPayloadKey };

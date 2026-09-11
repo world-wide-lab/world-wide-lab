@@ -316,11 +316,7 @@ async function generateExtractedPayloadQuery(
   }
 
   // Get all keys which are present in the payloads of the responses
-  const jsonKeys = await getPayloadKeys(
-    sequelize,
-    studyId,
-    options.created_after,
-  );
+  const jsonKeys = await getPayloadKeys(sequelize, studyId);
   const jsonFieldsString = jsonKeys
     .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
     .join(", ");
