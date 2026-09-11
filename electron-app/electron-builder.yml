@@ -36,6 +36,15 @@ files:
   - "!node_modules/@pulumi/aws/*/**"
   - "node_modules/@pulumi/aws/{apprunner,ec2,rds}/**"
   - "node_modules/@pulumi/aws/types/**"
+  # @pulumi/awsx is only reached through the ECS deployment, which nothing in
+  # the app loads, and it drags in the AWS SDK v2 (~100 MB together). They stay
+  # ordinary dependencies of @world-wide-lab/deploy - the library still offers
+  # the ECS stack - they are just dead weight inside the desktop app.
+  #
+  # check-pulumi-modules.js verifies on every build that neither is reachable,
+  # both from the imports of @world-wide-lab/deploy and from the lockfile.
+  - "!node_modules/@pulumi/awsx/**"
+  - "!node_modules/aws-sdk/**"
 mac:
   hardenedRuntime: true
   entitlements: "build/entitlements.mac.plist"

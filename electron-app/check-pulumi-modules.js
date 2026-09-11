@@ -21,6 +21,7 @@ import url from "node:url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const deploySrc = path.resolve(__dirname, "../packages/deploy/src");
 const builderConfig = path.resolve(__dirname, "electron-builder.yml");
+const lockfile = path.resolve(__dirname, "../package-lock.json");
 
 const PRUNED_SDKS = ["@pulumi/azure-native", "@pulumi/aws"];
 
@@ -58,6 +59,7 @@ function resolveRelative(fromFile, specifier) {
  */
 function collectUsedModules(entry) {
   const used = new Map();
+  const packages = new Map();
   const seen = new Set();
   const queue = [entry];
 
@@ -72,6 +74,14 @@ function collectUsedModules(entry) {
         if (resolved) queue.push(resolved);
         continue;
       }
+      // Which npm package this specifier belongs to, scope included.
+      const segments = specifier.split("/");
+      const name = specifier.startsWith("@")
+        ? segments.slice(0, 2).join("/")
+        : segments[0];
+      if (!packages.has(name))
+        packages.set(name, path.relative(deploySrc, file));
+
       for (const sdk of PRUNED_SDKS) {
         if (specifier === sdk) {
           throw new Error(
@@ -88,7 +98,7 @@ pruned SDK. Import the service directly instead, e.g. "${sdk}/resources".`,
       }
     }
   }
-  return used;
+  return { used, packages };
 }
 
 /** The submodules electron-builder.yml re-includes for a given SDK. */
@@ -109,15 +119,74 @@ Expected a line of the form:
   return new Set(match[1].split(",").map((m) => m.trim()));
 }
 
+/** Packages electron-builder.yml drops entirely: `- "!node_modules/<pkg>/**"`. */
+function readExcludedPackages() {
+  const config = fs.readFileSync(builderConfig, "utf8");
+  const excluded = new Set();
+  for (const match of config.matchAll(
+    /["']!node_modules\/((?:@[^/*"']+\/)?[^/*"']+)\/\*\*["']/g,
+  )) {
+    excluded.add(match[1]);
+  }
+  return excluded;
+}
+
+/**
+ * Which packages in the lockfile declare a dependency on `name`. A package that
+ * is itself excluded does not count - the point is to catch a *reachable*
+ * package starting to need something the app no longer ships.
+ */
+function findDependents(name, excluded) {
+  const lock = JSON.parse(fs.readFileSync(lockfile, "utf8"));
+  const dependents = [];
+  for (const [location, entry] of Object.entries(lock.packages)) {
+    const deps = {
+      ...(entry.dependencies ?? {}),
+      ...(entry.optionalDependencies ?? {}),
+    };
+    if (!(name in deps)) continue;
+    // The deploy package's own imports are checked by the import-graph walk.
+    if (location === "packages/deploy") continue;
+    const owner = location.startsWith("node_modules/")
+      ? location.slice("node_modules/".length).split("/node_modules/").pop()
+      : location;
+    if (excluded.has(owner)) continue;
+    dependents.push(owner);
+  }
+  return dependents;
+}
+
 let used;
+let importedPackages;
 try {
-  used = collectUsedModules(path.join(deploySrc, "index.ts"));
+  ({ used, packages: importedPackages } = collectUsedModules(
+    path.join(deploySrc, "index.ts"),
+  ));
 } catch (error) {
   console.error(`\n${error.message}\n`);
   process.exit(1);
 }
 
 const problems = [];
+
+// Packages dropped wholesale must be unreachable, or the app breaks at runtime.
+const excludedPackages = readExcludedPackages();
+for (const name of excludedPackages) {
+  const importer = importedPackages.get(name);
+  if (importer) {
+    problems.push(
+      `${name} is imported by ${importer} but excluded from the bundle in electron-builder.yml.
+  Either stop importing it, or drop the "!node_modules/${name}/**" line.`,
+    );
+  }
+  const dependents = findDependents(name, excludedPackages);
+  if (dependents.length > 0) {
+    problems.push(
+      `${name} is excluded from the bundle but ${[...new Set(dependents)].sort().join(", ")} depend(s) on it.
+  Something the app does ship now needs it; drop the "!node_modules/${name}/**" line.`,
+    );
+  }
+}
 
 for (const sdk of PRUNED_SDKS) {
   const kept = readKeptModules(sdk);
@@ -134,7 +203,7 @@ for (const sdk of PRUNED_SDKS) {
 
 if (problems.length > 0) {
   console.error(
-    `\nThe app would ship without Pulumi services that it needs:\n\n${problems.join("\n\n")}\n`,
+    `\nThe app would ship without something it needs:\n\n${problems.join("\n\n")}\n`,
   );
   process.exit(1);
 }
@@ -143,3 +212,4 @@ for (const sdk of PRUNED_SDKS) {
   const needed = [...(used.get(sdk) ?? [])].sort();
   console.log(`${sdk}: bundling ${needed.join(", ") || "(nothing)"}`);
 }
+console.log(`excluded entirely: ${[...excludedPackages].sort().join(", ")}`);
