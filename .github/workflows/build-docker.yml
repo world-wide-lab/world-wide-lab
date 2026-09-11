@@ -106,8 +106,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Which image to test: pushed images are referenced by their digest,
-      # locally loaded ones (pull requests) by their local tag. Every compose
-      # command below has to agree on this, so it is resolved once.
+      # locally loaded ones (pull requests) by their local tag.
       - name: Select the image to test
         run: |
           echo "WWL_SERVER_IMAGE=${{ github.event_name == 'pull_request' && env.LOCAL_IMAGE || format('ghcr.io/world-wide-lab/server@{0}', steps.build.outputs.digest) }}" >> "$GITHUB_ENV"
@@ -117,8 +116,6 @@ jobs:
         id: test
         run: docker compose -f docker/docker-compose.testing.yml run --rm test-server
 
-      # Whatever the tests report, the reason usually lives in the server's own
-      # output, which is otherwise thrown away together with the containers
       - name: Show container logs
         if: failure() && steps.test.conclusion == 'failure'
         run: |

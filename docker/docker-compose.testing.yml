@@ -8,10 +8,6 @@ services:
       # Note: These are example credentials, you MUST change these before deploying anything
       POSTGRES_USER: example_db_user
       POSTGRES_PASSWORD: example_db_password
-    # The server exits when it cannot reach the database on startup, and unlike
-    # in docker-compose.yml there is no restart policy here to paper over it.
-    # Waiting for postgres to actually accept connections keeps the run from
-    # depending on which of the two containers wins the race.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U example_db_user -d wwl"]
       interval: 1s
@@ -33,8 +29,6 @@ services:
       ADMIN_AUTH_DEFAULT_PASSWORD: "admin"
       ADMIN_AUTH_SESSION_SECRET: "asdfgh12345"
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
-    # The image's own HEALTHCHECK only starts reporting after 30s, which is a
-    # sensible interval for a long-running deployment but not for a test run
     healthcheck:
       interval: 1s
       timeout: 5s
@@ -49,9 +43,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       wwl-server:
-        # Without this the tests can start before the server is listening, and
-        # a server that died on startup shows up as an unresolvable hostname
-        # rather than as the failure it is
+        # Wait for WWL before starting tests
         condition: service_healthy
     environment:
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
