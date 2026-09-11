@@ -258,6 +258,9 @@ async function getStudyStats(
         FROM "wwl_sessions"
         LEFT JOIN "wwl_responses"
           ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
+          -- A response can never predate its session, so this only rules out
+          -- the responses of sessions which are outside of the timeframe
+          AND "wwl_responses"."createdAt" >= :firstDate
         ${filter.sql}
         GROUP BY
           "wwl_sessions"."sessionId",
@@ -321,6 +324,9 @@ async function getResponsesPerSession(
         FROM "wwl_sessions"
         LEFT JOIN "wwl_responses"
           ON "wwl_responses"."sessionId" = "wwl_sessions"."sessionId"
+          -- A response can never predate its session, so this only rules out
+          -- the responses of sessions which are outside of the timeframe
+          AND "wwl_responses"."createdAt" >= :firstDate
         ${filter.sql}
         GROUP BY "wwl_sessions"."sessionId", "wwl_sessions"."finished"
       ) AS "sessions"

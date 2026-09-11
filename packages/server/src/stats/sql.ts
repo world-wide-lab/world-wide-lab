@@ -47,7 +47,7 @@ function sqlJsonValue(
   }
   return dialect === "sqlite"
     ? `json_extract(${column}, '$.${path.join(".")}')`
-    : `${column}::jsonb #>> '{${path.join(",")}}'`;
+    : `${column} #>> '{${path.join(",")}}'`;
 }
 
 // Everything in front of the query string of a URL.
