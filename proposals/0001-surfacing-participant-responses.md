@@ -1,7 +1,7 @@
 # Proposal 0001 — Surfacing participant responses to other participants
 
 **Status:** Draft / request for comments
-**Date:** 2026-09-16
+**Date:** 2026-09-17
 
 ## 1. The problem
 
@@ -14,15 +14,15 @@ A lot of interesting online research needs content, not numbers, to flow back:
 
 | Use case | Shape |
 | --- | --- |
-| **Transmission chain / iterated learning** | Participant *n* sees what participant *n−1* produced, reproduces it, and their output becomes the stimulus for *n+1*. Strict hand-off, one participant per link. |
-| **Peer-generated stimuli** | "Another participant drew this — what do you think it is?", "Rate this caption / argument / explanation another person wrote." Many-to-many, each item wants *k* judgements. |
+| **Transmission chain / iterated learning** | Participant *n* sees what participant *n−1* produced, reproduces it, and their output becomes the item for *n+1*. Strict hand-off, one participant per link. |
+| **Peer-generated items** | "Another participant drew this — what do you think it is?", "Rate this caption / argument / explanation another person wrote." Many-to-many, each item wants *k* judgements. |
 | **Gallery / wall** | "Here's what other people said." Read-only, no assignment, mostly a display feature (and a recruitment feature). |
 | **Asynchronous social games** | The participant plays against a past participant's recorded move (dictator game, trust game, prisoner's dilemma). One past record consumed per new session. |
 | **Crowd annotation** | Researcher seeds items, participants label them, each item needs *n* labels before it retires. Same machinery, but the items are not participant-generated. |
 
 All five reduce to the same two primitives: **contribute an item to a pool**, and
 **draw an item from a pool under some selection policy**. What differs is who
-seeds the pool, how many times an item may be drawn, and how tightly a draw is
+seeds the pool, how many times an item may be used, and how tightly a draw is
 tied to a particular session.
 
 ## 2. What exists today, and why it doesn't fit
@@ -52,40 +52,35 @@ Four facts constrain any design:
    `POST /v1/response` never needed.
 4. **Deployments can be multi-instance.** There is an `Instance` model, a
    heartbeat, and a `primary` election (`services/service-instances.ts`), plus
-   replication (`db/replication.ts`). The in-process cache
-   (`src/cache.ts`, `memoryStore`, `max: 50`) is per-instance. So "hand this item
-   to exactly one participant" has to be enforced in the database, never in
-   memory.
+   replication (`db/replication.ts`). The response cache (`src/cache.ts`) is an
+   in-process `memoryStore` and therefore per-instance. So "hand this item to
+   exactly one participant" has to be enforced in the database, never in memory.
 
 Leaderboards are the closest precedent and a good template: a named,
 researcher-created container (`wwl_leaderboards`) plus participant-written rows
 (`wwl_leaderboard_scores`) that are keyed by `sessionId` and expose only fields
 explicitly named "public" (`publicIndividualName`, `publicGroupName`). The
-proposal below deliberately copies that shape so it is idiomatic here.
+design below deliberately copies that shape so it is idiomatic here.
 
 ## 3. Requirements
 
 Derived from the use cases above:
 
 - **R1 — Explicit publication.** Content shown to participants is opted into, never inferred. No existing response becomes public by accident.
-- **R2 — Moderation.** User-generated content shown to other people needs an approval state, an admin queue, and retraction that takes effect quickly.
+- **R2 — Moderation.** User-generated content shown to other people needs an approval state, an admin queue, and retraction.
 - **R3 — Researcher seeding.** A pool must be able to contain items the researcher wrote (generation 0 of a chain, pre-made annotation items) as well as participant-generated ones.
-- **R4 — Selection policies.** At minimum: random, least-served, newest/oldest, and "exclude items this participant produced".
+- **R4 — Selection policies.** At minimum: random, least-drawn, newest/oldest, "exclude items this participant produced", and "exclude items this participant has already seen".
 - **R5 — Serving limits.** "Show each item to at most *k* people" and "retire after *n* completions" must be enforceable across instances.
 - **R6 — Provenance.** Analysis has to be able to reconstruct "response *R* was produced in reaction to item *I*, which came from response *R′*" without parsing free-form payloads.
 - **R7 — Privacy.** A draw returns content and an opaque id, never a `sessionId`, `participantId`, or anything from `privateInfo`.
 - **R8 — Fits the existing stack.** Sequelize model + umzug migration + yup schema + AdminJS resource + client method, same as leaderboards.
 
-## 4. Options
+## 4. Options considered
 
 ### Option A — Flag on the existing responses table
 
 Add `shareStatus` (`'private' | 'pending' | 'approved' | 'rejected'`) to
 `wwl_responses`, plus a public `GET /v1/study/:studyId/responses/shared`.
-
-```sql
-ALTER TABLE wwl_responses ADD COLUMN "shareStatus" VARCHAR DEFAULT 'private';
-```
 
 - **For:** smallest possible change; no new concepts; existing `session.response()` calls keep working; single source of truth for content.
 - **Against:**
@@ -94,27 +89,25 @@ ALTER TABLE wwl_responses ADD COLUMN "shareStatus" VARCHAR DEFAULT 'private';
   - No home for researcher-seeded items (R3) — a seeded item is not a response, it has no session.
   - No home for serving counters (R5) without adding hot-write counter columns to the largest, most append-heavy table in the schema.
   - Moderation queue sits on top of a table that can hold millions of rows per study (R2).
-- **Effort:** ~1 migration, ~1 endpoint. Small.
 - **Verdict:** fine for the *gallery* use case alone. Collapses under chains, limits, or seeding.
 
-### Option B — A stimulus pool + stimulus table *(recommended core)*
+### Option B — An item pool + item table
 
 Two new tables mirroring `Leaderboard` / `LeaderboardScore`: a researcher-created
-`StimulusPool`, and `Stimulus` rows that may be seeded by the researcher or
-contributed by a session.
+`ItemPool`, and `Item` rows that may be seeded by the researcher or contributed
+by a session, with `timesDrawn` / `timesCompleted` counters on each item.
 
-- **For:** clean separation between "raw data we collected" and "content we show"; satisfies R1–R5 and R7 directly; seeding is natural; counters live on a small table; moderation queue is an AdminJS resource for free; mirrors a pattern the codebase already has.
-- **Against:** a second write path — a participant contributing content does two writes (`response` + `stimulus`). Mitigated by a client helper that does both and by storing `sourceResponseId`.
-- **Effort:** 1 migration (2 tables), 2 models, 2 yup schemas, ~4 public endpoints, 2 AdminJS resources, 2 client methods, docs. Medium.
+- **For:** clean separation between "raw data we collected" and "content we show"; satisfies R1–R3, R5 and R7; seeding is natural; moderation queue is an AdminJS resource for free; mirrors a pattern the codebase already has.
+- **Against:** counters alone cannot express "don't show this participant anything they have already seen" (R4), cannot reclaim an item from a participant who dropped out mid-task, and give only an approximate record of who saw what (R6).
 
-### Option C — Option B plus a draws/assignment table
+### Option C — Option B plus a draws table *(recommended)*
 
-Add `wwl_stimulus_draws`: one row per "item *I* was served to session *S*", with
-a status (`served` / `completed` / `expired`).
+Add `wwl_item_draws`: one row per "item *I* was served to session *S*", with a
+status (`served` / `completed` / `expired`) and a link to the response that
+completed it.
 
-- **For:** the only way to get *exactly-once* assignment, "don't show this participant anything they've already seen", reclaiming items from participants who dropped out mid-task, and complete provenance (R6) without trusting payload contents.
-- **Against:** an extra row per served item; needs an expiry sweep (there is already a periodic services runner in `services/` to hang it off); more moving parts for studies that just want a gallery.
-- **Effort:** Medium on top of B. Should be opt-in per pool (`trackDraws`).
+- **For:** everything in B, plus exactly-once assignment under concurrency, exclude-already-seen, reclaiming abandoned draws, and complete provenance (R6) that does not depend on trusting payload contents. The draw row is also the natural place to hang the response link that makes chain analysis a plain join.
+- **Against:** an extra row per served item; needs an expiry sweep (there is already a periodic services runner in `services/` to hang it off); more moving parts for studies that only want a gallery.
 
 ### Option D — Link table only, no content table
 
@@ -122,14 +115,13 @@ Keep responses as the only content store; add `wwl_response_links`
 (`sessionId`, `shownResponseId`). Selection is computed on the fly over
 `wwl_responses`.
 
-- **For:** no content duplication; any response can become a stimulus retroactively; very flexible.
-- **Against:** selection queries scan the biggest table in the schema; still no place for moderation state, seeded items, or per-item limits — add those and you have rebuilt Option A's problems plus a join. The flexibility is mostly theoretical, since in practice a study decides up front what it shares.
-- **Verdict:** not recommended standalone; the link idea survives as the (much cheaper) `Response.stimulusId` column in §5.
+- **For:** no content duplication; any response can become an item retroactively.
+- **Against:** selection queries scan the biggest table in the schema; still no place for moderation state, seeded items, or per-item limits — add those and you have rebuilt Option A's problems plus a join.
 
 ### Option E — Don't build it; document an external pattern
 
 Researchers run their own small service that reads via the protected API and
-serves stimuli themselves.
+serves items themselves.
 
 - **For:** zero maintenance for WWL.
 - **Against:** the protected API needs an API key, which cannot live in
@@ -141,76 +133,86 @@ serves stimuli themselves.
 
 ### Comparison
 
-| | A: flag on responses | B: pool + stimuli | C: B + draws | D: link table | E: external |
+| | A: flag on responses | B: pool + items | **C: B + draws** | D: link table | E: external |
 | --- | --- | --- | --- | --- | --- |
 | Gallery | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Peer-rated stimuli | ⚠️ no limits | ✅ | ✅ | ⚠️ | ✅ |
-| Transmission chain | ❌ | ⚠️ counter-based | ✅ | ❌ | ✅ |
+| Peer-rated items | ⚠️ no limits | ✅ | ✅ | ⚠️ | ✅ |
+| Transmission chain | ❌ | ⚠️ approximate | ✅ | ❌ | ✅ |
 | Researcher-seeded items | ❌ | ✅ | ✅ | ❌ | ✅ |
 | Exclude already-seen | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Reclaim abandoned draws | ❌ | ❌ | ✅ | ❌ | ✅ |
 | Moderation UI | ⚠️ huge table | ✅ | ✅ | ❌ | ❌ |
 | Provenance for analysis | ⚠️ | ✅ | ✅✅ | ✅ | ⚠️ |
 | Effort | S | M | M+ | M | – |
 
 ## 5. Recommendation
 
-**Ship Option B, designed so Option C drops in as a per-pool flag.** Concretely:
+**Option C**: `wwl_item_pools` + `wwl_items` + `wwl_item_draws`, shipped
+together. The draws table is what separates "usually right" from "correct under
+concurrency and abandonment", and it is also where the response link lives that
+makes chain data analysable with an ordinary join.
 
-- *Milestone 1* — `wwl_stimulus_pools` + `wwl_stimuli` with counters, moderation,
-  and the four public endpoints. Also add a nullable `stimulusId` column to
-  `wwl_responses`. That one column buys most of Option C's provenance (R6) for
-  the price of a single FK: every response can say which item provoked it, and
-  chain reconstruction becomes a self-join instead of payload archaeology.
-- *Milestone 2* — `wwl_stimulus_draws` behind `pool.trackDraws`, adding
-  exclude-seen, exactly-once hand-off, and expiry/reclaim.
+Naming: **item**, not stimulus. `stimulus` is precise for psychology and opaque
+outside it; `item` reads well in the API (`/item-pool/:poolId/draw`), in the
+admin UI, and for the non-psychology use cases (gallery, async games).
 
-Counters alone (`timesDrawn` + `maxDrawsPerItem`) already give a usable
-approximation of exactly-once for chains; the draws table upgrades it from
-"usually right" to "correct under concurrency and abandonment". Splitting it this
-way means the gallery and peer-rating use cases ship without waiting for the
-harder concurrency work.
+Suggested build order within the one change: schema and migration → contribute
+and draw endpoints → completion (including via the response API) → gallery →
+admin moderation → data export.
 
-## 6. Detailed design (milestone 1)
+## 6. Detailed design
 
 ### 6.1 Schema
 
 ```
-wwl_stimulus_pools                      -- researcher-created, mirrors wwl_leaderboards
+wwl_item_pools                          -- researcher-created, mirrors wwl_leaderboards
   poolId            STRING   PK, /^[a-zA-Z0-9-_]+$/
   createdAt         DATE
   updatedAt         DATE
   studyId           STRING   nullable FK → wwl_studies   (null = shared across studies)
-  moderation        STRING   'review' | 'open' | 'closed'      default 'review'
+  moderation        STRING   'reviewed' | 'unreviewed' | 'closed'   default 'reviewed'
   drawPolicy        STRING   'random' | 'least-drawn' | 'newest' | 'oldest'   default 'random'
-  maxDrawsPerItem   INTEGER  nullable   -- null = unlimited
   maxPayloadBytes   INTEGER  nullable   -- null = server default
-  trackDraws        BOOLEAN  default false     -- reserved for milestone 2
+  drawExpiresAfter  INTEGER  nullable   -- seconds; null = draws never expire
   publicInfo        JSON     nullable   -- e.g. prompt text the frontend renders
   privateInfo       JSON     nullable
 
-wwl_stimuli
-  stimulusId        UUID     PK, UUIDV4       -- random: not enumerable (§2.2)
+wwl_items
+  itemId            UUID     PK, UUIDV4       -- random: not enumerable (§2.2)
   createdAt         DATE
   updatedAt         DATE
-  poolId            STRING   FK → wwl_stimulus_pools, not null
+  poolId            STRING   FK → wwl_item_pools, not null
   publicPayload     JSON     not null   -- THE content shown to other participants
-  status            STRING   'pending' | 'approved' | 'rejected' | 'retired'
+  status            STRING   'pending' | 'approved' | 'rejected' | 'retired'   default 'pending'
   sourceSessionId   UUID     nullable FK → wwl_sessions    (null = researcher-seeded)
   sourceResponseId  INTEGER  nullable FK → wwl_responses
-  parentStimulusId  UUID     nullable FK → wwl_stimuli     (chains)
+  parentItemId      UUID     nullable FK → wwl_items       (chains)
   generation        INTEGER  default 0
-  timesDrawn        INTEGER  default 0
-  timesCompleted    INTEGER  default 0
+  timesDrawn        INTEGER  default 0       -- denormalised from wwl_item_draws
+  timesCompleted    INTEGER  default 0       -- denormalised from wwl_item_draws
   privateInfo       JSON     nullable
 
-wwl_responses
-  + stimulusId      UUID     nullable FK → wwl_stimuli     -- what this response reacted to
+wwl_item_draws
+  drawId            UUID     PK, UUIDV4       -- handed to the client, so not enumerable
+  createdAt         DATE
+  updatedAt         DATE
+  itemId            UUID     FK → wwl_items, not null
+  sessionId         UUID     FK → wwl_sessions, not null
+  status            STRING   'served' | 'completed' | 'expired'   default 'served'
+  expiresAt         DATE     nullable
+  responseId        INTEGER  nullable FK → wwl_responses   -- the response that completed it
 ```
 
-Indices, following the pattern of the leaderboards migration: `poolId`,
-`studyId`, `status`, `sourceSessionId`, `parentStimulusId`, `timesDrawn`,
-`updatedAt`, and a composite `(poolId, status, timesDrawn)` for the hot draw
-query.
+`wwl_item_draws` is the source of truth for who saw what; `timesDrawn` and
+`timesCompleted` are denormalised onto the item so that the selection query can
+order by them without a `COUNT` join on every draw. They are maintained in the
+same statement that writes the draw (§6.4).
+
+Indices, following the pattern of the leaderboards migration: on items `poolId`,
+`status`, `sourceSessionId`, `parentItemId`, `timesDrawn`, `updatedAt`, and a
+composite `(poolId, status, timesDrawn)` for the hot draw query; on draws
+`itemId`, `sessionId`, `responseId`, `status`, and a composite
+`(sessionId, itemId)` for the exclude-already-seen filter.
 
 Note the field name: **`publicPayload`, not `payload`**. The codebase already
 uses the `public*` prefix to mean "this can be read from the public API", and
@@ -219,21 +221,39 @@ goes in here is visible to strangers.
 
 ### 6.2 Moderation modes
 
-| `moderation` | New participant items start as | Use for |
+| `moderation` | Participant contributions | What is drawable / visible |
 | --- | --- | --- |
-| `review` *(default)* | `pending` — invisible until an admin approves | anything free-text or free-form drawing |
-| `open` | `approved` | constrained payloads (a number, a choice, a coordinate) or pilot studies |
-| `closed` | rejected at the API — pool accepts researcher-seeded items only | crowd annotation of pre-made items |
+| `reviewed` *(default)* | accepted, stored as `pending` | `status = 'approved'` only |
+| `unreviewed` | accepted, stored as `pending` | `status IN ('pending', 'approved')` |
+| `closed` | rejected at the API (400) | `status = 'approved'` only |
 
-Defaulting to `review` means the unsafe thing is the one you have to type. It
-does block live chains, so `open` has to be a first-class documented option
-rather than a footgun — the guide should say plainly: use `open` only when the
-payload shape makes abuse impossible, e.g. because it is validated to a number
-or an enum.
+The important detail in `unreviewed` is that contributions do **not** get the
+`approved` flag. They are visible because the *pool* is in a mode where pending
+items are visible by default, not because anything vetted them. Visibility is
+therefore a function of `(pool.moderation, item.status)`, not of `item.status`
+alone.
 
-An `admin`-side JSON-schema check per pool (`privateInfo.payloadSchema`) would
-let `open` be safe for structured payloads. Flagged as an open question, not
-proposed for milestone 1.
+That has a useful consequence: flipping a pool from `unreviewed` to `reviewed`
+immediately hides every item nobody has approved, which is exactly the kill
+switch you want if abuse shows up mid-study. Items that *were* explicitly
+approved stay visible across the switch. It also means `unreviewed` can later
+grow a "bulk approve everything currently visible" admin action without any
+schema change.
+
+`closed` differs from `reviewed` only at write time — it rejects contributions
+outright — since a closed pool contains only researcher-seeded items, which are
+created `approved` from the admin UI. Its read path is identical.
+
+Defaulting to `reviewed` means the unsafe thing is the one you have to type.
+`unreviewed` is a first-class documented option rather than a footgun, since
+live chains need it; the guide should say plainly that it is for payloads whose
+shape makes abuse impossible (a number, a coordinate, a choice from a fixed
+set).
+
+*Future:* a per-pool JSON schema for `publicPayload` would let `unreviewed` be
+safe for structured payloads generally, and would catch client bugs early. Cheap
+with `yup` already in the stack, but it is a new config surface and is
+deliberately out of scope here.
 
 ### 6.3 Public API
 
@@ -241,61 +261,108 @@ Mounted on `routerPublic` (`/v1`), documented with the same `@openapi` JSDoc
 blocks as everything else in `public.ts`.
 
 ```
-POST /v1/stimulus-pool/:poolId/stimulus
-  body  { publicPayload, sessionId?, responseId?, parentStimulusId?, privateInfo? }
-  →     { success: true, stimulusId, status }
+POST /v1/item-pool/:poolId/item
+  body  { publicPayload, sessionId?, responseId?, parentItemId?, privateInfo? }
+  →     { success: true, itemId, status }
 ```
 Contribute an item. `sessionId` is optional but strongly encouraged — without it
 the item cannot be attributed, excluded from its own author, or retracted by
-session. `parentStimulusId` sets `generation = parent.generation + 1`.
+session. `parentItemId` sets `generation = parent.generation + 1`.
 
 ```
-GET /v1/stimulus-pool/:poolId/draw
-  query count=1, policy?, sessionId?, excludeOwn=true, minGeneration?, maxGeneration?
-  →     { stimuli: [ { stimulusId, publicPayload, generation, parentStimulusId } ] }
+GET /v1/item-pool/:poolId/draw
+  query sessionId (required), count=1, policy?, excludeOwn=true, excludeSeen=true,
+        maxDrawsPerItem?, maxCompletionsPerItem?, minGeneration?, maxGeneration?
+  →     { draws: [ { drawId, itemId, publicPayload, generation, parentItemId } ] }
 ```
-Draw items and atomically increment `timesDrawn`. Only `status = 'approved'`
-items with `timesDrawn < maxDrawsPerItem` are eligible. `excludeOwn` filters
-`sourceSessionId != sessionId` (and, when the session has a participant, all
-sessions of that participant). **This endpoint mutates and must never accept
-`cacheFor`.**
+Draw items, writing a `wwl_item_draws` row per item and incrementing
+`timesDrawn`. `sessionId` is required here (unlike on contribute) because a draw
+is by definition served *to* someone. `excludeOwn` filters
+`sourceSessionId != sessionId` and, when the session has a participant, all
+sessions of that participant; `excludeSeen` filters out items with an existing
+draw for this session. This endpoint mutates, so it does not accept `cacheFor`.
 
 ```
-POST /v1/stimulus/:stimulusId/complete
+POST /v1/draw/:drawId/complete
   body  { sessionId, responseId? }
   →     { success: true }
 ```
-Signals the participant actually finished the task with this item: increments
-`timesCompleted` and retires the item if `timesCompleted >= maxDrawsPerItem`.
-In milestone 2 this closes the matching draw row instead of trusting the client.
+Marks the draw `completed`, links `responseId` if given, and increments
+`timesCompleted` on the item.
 
 ```
-GET /v1/stimulus-pool/:poolId/stimuli
+POST /v1/response
+  body  { ..., drawId? }        -- existing endpoint, one new optional field
+```
+When `drawId` is supplied, the response is created and the matching draw is
+completed and linked to the new `responseId` in a single transaction. This is
+the convenient path for the common case where one response *is* the completion,
+and it means a study does not have to make two calls in sequence and handle the
+second one failing. `POST /v1/draw/:drawId/complete` stays for completions that
+are not a single response (or not a response at all).
+
+```
+GET /v1/item-pool/:poolId/items
   query limit?, sort=newest|oldest|random, cacheFor?
-  →     { stimuli: [ { stimulusId, publicPayload, generation } ] }
+  →     { items: [ { itemId, publicPayload, generation } ] }
 ```
-Read-only gallery. Non-mutating, so `cacheFor` is safe here — with the caveat in
-§6.7.
+Read-only gallery. Non-mutating, so `cacheFor` is safe. Retraction is therefore
+eventually consistent within the caller's chosen `cacheFor` window, which is
+fine — the frontend picks that number based on how fresh it needs the wall to
+be.
 
-### 6.4 Selection under concurrency
+```
+DELETE /v1/item/:itemId
+  body  { sessionId }
+  →     { success: true }
+```
+A session retracts its own contribution (sets `status = 'rejected'`). This is
+also the mechanism a participant withdrawal request needs.
 
-`timesDrawn` must be incremented in the database, never read-modify-written in
-Node. For the counter-only design:
+### 6.4 Draw limits: query parameters, not pool columns
+
+`maxDrawsPerItem` and `maxCompletionsPerItem` are **query parameters on the draw
+endpoint**, not columns on the pool. They are just filters on the selection
+query (`timesDrawn < :maxDraws`, `timesCompleted < :maxCompletions`), this
+matches how `limit` / `sort` / `aggregate` already work on the leaderboard
+endpoint, and it means tuning a study's *k* does not need a migration or an
+admin round-trip.
+
+The honest cost: the threshold comes from the client, so a buggy study could
+over-serve an item. The atomic claim in §6.5 still prevents two concurrent draws
+from both slipping past the same threshold, so this is a "wrong number" risk,
+not a race. If a study ever needs a guarantee the client cannot weaken, the
+answer is pool-level caps that a query may tighten but not loosen — additive
+later, deliberately not built now.
+
+### 6.5 Selection under concurrency
+
+Claiming has to be one atomic statement in the database, never a read in Node
+followed by a write (§2.4). Sketch for the Postgres path:
 
 ```sql
-UPDATE wwl_stimuli
-   SET "timesDrawn" = "timesDrawn" + 1, "updatedAt" = now()
- WHERE "stimulusId" IN (
-         SELECT "stimulusId" FROM wwl_stimuli
-          WHERE "poolId" = :poolId AND status = 'approved'
-            AND (:maxDraws IS NULL OR "timesDrawn" < :maxDraws)
-            AND (:sessionId IS NULL OR "sourceSessionId" IS DISTINCT FROM :sessionId)
-          ORDER BY <policy>
-          LIMIT :count
-          FOR UPDATE SKIP LOCKED        -- Postgres only
-       )
+WITH claimed AS (
+  SELECT "itemId" FROM wwl_items
+   WHERE "poolId" = :poolId
+     AND (CASE WHEN :moderation = 'unreviewed'
+               THEN status IN ('pending', 'approved')
+               ELSE status = 'approved' END)
+     AND (:maxDraws IS NULL OR "timesDrawn" < :maxDraws)
+     AND (:maxCompletions IS NULL OR "timesCompleted" < :maxCompletions)
+     AND (NOT :excludeOwn OR "sourceSessionId" IS DISTINCT FROM :sessionId)
+     AND (NOT :excludeSeen OR NOT EXISTS (
+           SELECT 1 FROM wwl_item_draws d
+            WHERE d."itemId" = wwl_items."itemId" AND d."sessionId" = :sessionId))
+   ORDER BY <policy>
+   LIMIT :count
+   FOR UPDATE SKIP LOCKED
+)
+UPDATE wwl_items SET "timesDrawn" = "timesDrawn" + 1, "updatedAt" = now()
+ WHERE "itemId" IN (SELECT "itemId" FROM claimed)
  RETURNING *;
 ```
+
+…then insert the `wwl_item_draws` rows in the same transaction.
 
 `RETURNING` works on both supported dialects (Postgres, and SQLite ≥ 3.35 for
 the Electron app). `FOR UPDATE SKIP LOCKED` is Postgres-only and must be omitted
@@ -313,107 +380,141 @@ for SQLite, which serialises writes anyway — the same
 `least-drawn` is what makes crowd annotation and balanced *k*-ratings work, and
 it is also the right default for chains: it hands out the least-used tip first.
 
-### 6.5 Client
+### 6.6 Expiry and reclaim
+
+When a pool sets `drawExpiresAfter`, each draw gets `expiresAt = now() +
+drawExpiresAfter`. A periodic job — a new service alongside
+`service-alerts.ts` / `service-instances.ts`, which already follow this
+pattern — flips overdue `served` draws to `expired` and decrements the item's
+`timesDrawn`, putting the item back in circulation.
+
+This is what stops a transmission chain from dying because one participant
+closed the tab, which under a counters-only design (Option B) would burn the
+only draw of that chain tip permanently.
+
+The sweep must only run on the primary instance; `service-instances.ts` already
+elects one.
+
+### 6.7 Client
 
 ```js
-// Contribute — writes the response and the stimulus, links them both ways
-const stimulus = await session.contributeStimulus("drawings", {
+// Contribute — writes the response and the item, linking them both ways
+const item = await session.contributeItem("drawings", {
   publicPayload: { svg },
   // optional: also log it as ordinary study data
   response: { name: "draw-trial", payload: { svg, rt } },
 });
 
 // Draw
-const [item] = await client.drawStimuli("drawings", {
+const [draw] = await client.drawItems("drawings", {
   count: 1,
   sessionId: session.sessionId,
   excludeOwn: true,
+  excludeSeen: true,
+  maxCompletionsPerItem: 10,
 });
 
-// React to it — stimulusId lands on the response row, not buried in the payload
-await session.response({ name: "guess", payload: { guess }, stimulusId: item.stimulusId });
-await session.completeStimulus(item.stimulusId);
+// React to it — one call creates the response, completes the draw and links them
+await session.response({
+  name: "guess",
+  payload: { guess },
+  drawId: draw.drawId,
+});
 
 // Chain: pass your version on as the next link
-await session.contributeStimulus("chain", {
+await session.contributeItem("chain", {
   publicPayload: { text },
-  parentStimulusId: item.stimulusId,
+  parentItemId: draw.itemId,
 });
 ```
 
-`session.response()` gains an optional `stimulusId`, which is the whole of the
-`wwl_responses` change. The jsPsych integration gets a matching
+`session.response()` gains an optional `drawId`, which is the whole of the
+change to the existing response path. The jsPsych integration gets a matching
 `on_finish` helper in a follow-up.
 
-### 6.6 Admin UI
+### 6.8 Admin UI
 
-Two AdminJS resources registered in `admin/index.ts` alongside the existing ones:
+Three AdminJS resources registered in `admin/index.ts` alongside the existing
+ones:
 
-- **StimulusPool** — visible, `poolId` as `isTitle`, `new`/`edit` enabled (this is how researchers create pools, exactly like leaderboards), a `viewStimuli` record action mirroring `viewLeaderboardScoresHandler`.
-- **Stimulus** — visible (unlike `LeaderboardScore`, because this is the moderation queue), `new` enabled for seeding, a default filter on `status = 'pending'`, and bulk `Approve` / `Reject` / `Retire` actions. `publicPayload` rendered with the existing `ShowJsonProp` / `EditJsonProp` components.
+- **ItemPool** — visible, `poolId` as `isTitle`, `new`/`edit` enabled (this is how researchers create pools, exactly like leaderboards), a `viewItems` record action mirroring `viewLeaderboardScoresHandler`.
+- **Item** — visible (unlike `LeaderboardScore`, because this is the moderation queue), `new` enabled for seeding, a default filter on `status = 'pending'`, and bulk `Approve` / `Reject` / `Retire` actions. `publicPayload` rendered with the existing `ShowJsonProp` / `EditJsonProp` components.
+- **ItemDraw** — read-only, `navigation: false` like `LeaderboardScore`, reachable from an item's show page. Useful for debugging a stuck chain, not for day-to-day work.
 
-Plus a `CREATE_STIMULUS_POOLS` env var next to the existing
-`CREATE_STUDIES` / `CREATE_LEADERBOARDS` in `config.ts`, so a deployment can
-declare its pools without clicking.
+Plus a `CREATE_ITEM_POOLS` env var next to the existing `CREATE_STUDIES` /
+`CREATE_LEADERBOARDS` in `config.ts`, so a deployment can declare its pools
+without clicking.
 
-### 6.7 Caching — a caveat worth fixing first
+### 6.9 Data export
 
-The leaderboard scores endpoint builds its cache key as
-`req.path + req.query` (`public.ts:1166`). `req.query` is an object, so it
-stringifies to `[object Object]` and every query-parameter variant of a given
-path shares one cache entry; `/study/:studyId/count/:countType` similarly keys on
-`req.path` alone while accepting a `minResponseCount` parameter
-(`public.ts:695`). The gallery endpoint would inherit the same bug, and unlike a
-leaderboard, a stale cache entry here can keep showing content that has just been
-moderated away. Two things follow:
-
-1. Fix the key (e.g. `req.path + JSON.stringify(req.query)` or `req.originalUrl`) before reusing the pattern — worth a separate small PR either way.
-2. The cache is `memoryStore` and per-instance, so a retraction takes effect only after `cacheFor` expires on *every* instance. Recommend capping `cacheFor` on `/stimuli` for pools in `review` mode, and documenting that retraction is eventually-consistent within that window.
-
-### 6.8 Data export
-
-`protected.ts` gains two `dataType` values, `stimuli-raw` and (milestone 2)
-`stimulus-draws-raw`, so a downloaded study contains the pool as well as the
+`protected.ts` gains two `dataType` values, `items-raw` and `item-draws-raw`, so
+a downloaded study contains the pool and the serving record as well as the
 responses. Without this, a chain study's data is unanalysable outside the
-database — the chain structure lives entirely in `parentStimulusId`.
+database — the chain structure lives entirely in `parentItemId`, and who-saw-what
+lives entirely in the draws table.
 
-### 6.9 Privacy and abuse
+Pools with `studyId = NULL` are shared across studies, so a per-study export has
+to decide what to include. Proposed: export the items and draws that are
+reachable from that study's sessions, not the entire shared pool.
 
-- Public responses carry `stimulusId`, `publicPayload`, `generation`, `parentStimulusId`. Never `sourceSessionId`, `sourceResponseId`, `privateInfo`, or any participant identifier (R7).
-- `stimulusId` is a random UUID, so the pool is not enumerable and pool size is not inferable.
+### 6.10 Privacy and abuse
+
+- Public API responses carry `drawId`, `itemId`, `publicPayload`, `generation`, `parentItemId`. Never `sourceSessionId`, `sourceResponseId`, `privateInfo`, or any participant identifier (R7).
+- `itemId` and `drawId` are random UUIDs, so pools are not enumerable and pool size is not inferable.
 - Per-pool `maxPayloadBytes` (default something like 64 KB) enforced at the API. The global `requestMaxSize` of 256 MB is not a meaningful limit for a public write endpoint whose content other people will see.
-- A session can retract its own contributions: `DELETE /v1/stimulus/:stimulusId` with a matching `sessionId` sets `status = 'rejected'`. This is also the mechanism a participant withdrawal request needs.
-- Deleting a study should cascade to its pools and stimuli; the existing `deleteStudyHandler` needs updating, and `deletionProtection` already guards the accidental case.
+- Deleting a study should cascade to its pools, items and draws; the existing `deleteStudyHandler` needs updating, and `deletionProtection` already guards the accidental case. Shared pools (`studyId = NULL`) must survive the deletion of any one study.
 - There is still no rate-limiting middleware in `app.ts`. This feature makes that gap more consequential (a public write endpoint feeding a public read endpoint); suggest a simple per-IP limiter on the contribute endpoint as part of the work, or at minimum a note in the deployment guide.
 
 ## 7. Worked examples
 
-**Transmission chain.** Pool `story-chain`, `moderation: 'review'`,
-`drawPolicy: 'least-drawn'`, `maxDrawsPerItem: 1`. Researcher seeds generation 0
-via the admin UI. Each participant draws one item, retells it, contributes the
-retelling with `parentStimulusId` set. Analysis: recursive self-join on
-`parentStimulusId`, joined to `wwl_responses.stimulusId` for timings and
-raw trial data.
+**Transmission chain.** Pool `story-chain`, `moderation: 'reviewed'`,
+`drawPolicy: 'least-drawn'`, `drawExpiresAfter: 600`. Researcher seeds
+generation 0 via the admin UI. Each participant draws one item with
+`maxDrawsPerItem=1`, retells it, and contributes the retelling with
+`parentItemId` set. Abandoned tabs return their chain tip after ten minutes.
+Analysis: recursive self-join on `parentItemId`, joined to `wwl_item_draws` for
+timings and the response that each link produced.
 
-**Peer rating.** Pool `captions`, `moderation: 'review'`,
-`drawPolicy: 'least-drawn'`, `maxDrawsPerItem: 10`. Participants contribute in
-phase 1; in phase 2 each draws 5 with `excludeOwn: true` and rates them. Every
-caption converges on ~10 ratings without a coordinator.
+**Peer rating.** Pool `captions`, `moderation: 'reviewed'`,
+`drawPolicy: 'least-drawn'`. Participants contribute in phase 1; in phase 2 each
+draws 5 with `excludeOwn=true`, `excludeSeen=true` and
+`maxCompletionsPerItem=10`, and rates them. Every caption converges on ~10
+ratings without a coordinator, and nobody rates the same caption twice.
 
-**Gallery.** Pool `answers`, `moderation: 'review'`. Study page calls
-`GET /v1/stimulus-pool/answers/stimuli?limit=20&sort=newest&cacheFor=60`. No
-draws, no counters, no completes.
+**Gallery.** Pool `answers`, `moderation: 'reviewed'`. Study page calls
+`GET /v1/item-pool/answers/items?limit=20&sort=newest&cacheFor=60`. No draws, no
+completions.
 
-**Async dictator game.** Pool `offers`, `moderation: 'open'` (payload is a single
-validated integer), `drawPolicy: 'random'`, `maxDrawsPerItem: 1`, `excludeOwn`.
-Each new participant responds to exactly one real past offer.
+**Async dictator game.** Pool `offers`, `moderation: 'unreviewed'` (payload is a
+single validated integer), `drawPolicy: 'random'`, drawn with
+`maxDrawsPerItem=1` and `excludeOwn=true`. Each new participant responds to
+exactly one real past offer.
 
 ## 8. Open questions
 
-1. **Naming.** `stimulus` is precise for psychology and opaque outside it. `contribution`, `item`, `artifact`, `exhibit`? `stimulus-pool` / `stimulus` reads well in the API and matches the audience; happy to be overruled.
-2. **Should a pool own its schema?** A per-pool JSON schema for `publicPayload` would make `moderation: 'open'` genuinely safe for structured payloads, and would catch client bugs early. Cheap with `yup` already in the stack, but it is a new config surface.
-3. **Media.** Drawings and audio are the obvious use cases, and JSON payloads mean base64 blobs in the database. Out of scope here, but if file upload is ever on the roadmap, the stimulus table is where it lands, and `maxPayloadBytes` should be set with that in mind.
-4. **Does `maxDrawsPerItem` count draws or completions?** Proposed: draws gate eligibility, completions retire the item. Under counter-only (milestone 1) an abandoned session burns a draw permanently. Milestone 2's expiry fixes it; is that acceptable in the interim, or should milestone 1 ship `trackDraws` after all?
-5. **Cross-study pools.** `studyId` is nullable, copying leaderboards. Is a pool shared between studies a real requirement or accidental generality?
-6. **Retraction latency.** Is eventual consistency within `cacheFor` acceptable for moderated pools, or does retraction need to bust the cache across instances (which the current `memoryStore` cannot do)?
-7. **Ordering vs. the leaderboards overlap.** A pool with a numeric payload and a `newest` policy is nearly a leaderboard. Worth unifying eventually, or deliberately keeping them separate?
+1. **Should `wwl_responses` also carry a `drawId`?** As designed, the link is
+   `wwl_item_draws.responseId` — one response per draw, the one that completed
+   it. A trial that produces several responses from one drawn item (a rating
+   plus a confidence judgement plus free text) can only designate one of them.
+   A nullable `wwl_responses.drawId` would make that many-to-one and is one
+   cheap column, at the cost of two places expressing nearly the same link.
+2. **Media.** Drawings and audio are the obvious use cases, and JSON payloads
+   mean base64 blobs in the database. Out of scope here, but if file upload is
+   ever on the roadmap, `wwl_items` is where it lands, and `maxPayloadBytes`
+   should be set with that in mind.
+3. **Should `drawPolicy` live on the pool at all?** Every other selection knob
+   ended up as a query parameter (§6.4). `drawPolicy` is currently a pool
+   column for discoverability, but the same argument would move it to the query.
+4. **Sharing granularity.** `studyId = NULL` means "shared with every study on
+   this instance", which covers the stated requirement. Scoping a pool to a
+   *specific subset* of studies would need a join table; is that ever wanted, or
+   is all-or-one enough?
+
+Explicitly **not** open, for the record:
+
+- **Leaderboards stay separate.** A pool with a numeric payload and a `newest`
+  policy is nearly a leaderboard, and unifying them is an interesting idea, but
+  not now.
+- **Retraction latency.** Eventual consistency within the caller's `cacheFor`
+  window is acceptable, and the frontend chooses that number per request.
+- **Custom payload schemas.** Not in this change; possible later (§6.2).
