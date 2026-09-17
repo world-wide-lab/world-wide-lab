@@ -2,17 +2,23 @@
 import "./setup_env";
 
 import request from "supertest";
+import { deleteStudyItems } from "../src/admin/handlers/study";
 import app from "../src/app";
 import sequelize from "../src/db";
 
 const endpoint = request(app);
 
 const STUDY_ID = "items-study";
+const OTHER_STUDY_ID = "items-other-study";
+const API_KEY = process.env.DEFAULT_API_KEY;
 const NON_EXISTENT_UUID = "00000000-0000-0000-0000-000000000000";
 
-async function createSession(participantId?: string): Promise<string> {
+async function createSession(
+  participantId?: string,
+  studyId: string = STUDY_ID,
+): Promise<string> {
   const session: any = await sequelize.models.Session.create({
-    studyId: STUDY_ID,
+    studyId,
     participantId,
   });
   return session.sessionId;
@@ -42,6 +48,7 @@ describe("Items", () => {
   beforeAll(async () => {
     await sequelize.sync();
     await sequelize.models.Study.create({ studyId: STUDY_ID });
+    await sequelize.models.Study.create({ studyId: OTHER_STUDY_ID });
   });
 
   describe("POST /item-pool/:poolId/item", () => {
@@ -701,6 +708,140 @@ describe("Items", () => {
 
       expect(response.status).toBe(400);
       expect(await getItem(itemId)).toHaveProperty("status", "approved");
+    });
+  });
+
+  describe("GET /study/:studyId/data/:dataType/json", () => {
+    const EXPORT_STUDY_ID = "items-export";
+    let ownItemId: string;
+    let sharedItemId: string;
+    let foreignItemId: string;
+    let drawId: string;
+
+    beforeAll(async () => {
+      await sequelize.models.Study.create({ studyId: EXPORT_STUDY_ID });
+      const sessionId = await createSession(undefined, EXPORT_STUDY_ID);
+
+      // A pool of the study's own, plus a pool shared across studies which
+      // this study both contributes to and draws from
+      await createPool("export-own", { studyId: EXPORT_STUDY_ID });
+      await createPool("export-shared");
+
+      ownItemId = await createItem("export-own", { status: "approved" });
+      sharedItemId = await createItem("export-shared", {
+        status: "approved",
+        sourceSessionId: sessionId,
+      });
+      // Somebody else's contribution to the shared pool, which this study
+      // never touched
+      foreignItemId = await createItem("export-shared", {
+        status: "approved",
+        sourceSessionId: await createSession(undefined, OTHER_STUDY_ID),
+      });
+
+      const drawn = await endpoint
+        .get(
+          `/v1/item-pool/export-own/draw?sessionId=${sessionId}&excludeOwn=false`,
+        )
+        .send();
+      drawId = drawn.body.draws[0].drawId;
+    });
+
+    function download(dataType: string) {
+      return endpoint
+        .get(`/v1/study/${EXPORT_STUDY_ID}/data/${dataType}/json`)
+        .set("Authorization", `Bearer ${API_KEY}`)
+        .send();
+    }
+
+    it("should export the items reachable from the study", async () => {
+      const response = await download("items-raw");
+
+      expect(response.status).toBe(200);
+      const itemIds = response.body.map((item: any) => item.itemId).sort();
+      expect(itemIds).toEqual([ownItemId, sharedItemId].sort());
+      // Another study's contribution to the shared pool is not ours to export
+      expect(itemIds).not.toContain(foreignItemId);
+    });
+
+    it("should export the study's draws", async () => {
+      const response = await download("item-draws-raw");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0].drawId).toBe(drawId);
+      expect(response.body[0].itemId).toBe(ownItemId);
+    });
+
+    it("should carry the drawId along with the responses", async () => {
+      const response = await download("responses-raw");
+
+      expect(response.status).toBe(200);
+      for (const row of response.body) {
+        expect(row).toHaveProperty("drawId");
+      }
+    });
+  });
+
+  describe("Deleting a study", () => {
+    it("should remove its pools and draws but leave shared pools alone", async () => {
+      const DELETE_STUDY_ID = "items-deletion";
+      await sequelize.models.Study.create({ studyId: DELETE_STUDY_ID });
+      const sessionId = await createSession(undefined, DELETE_STUDY_ID);
+
+      await createPool("deletion-own", { studyId: DELETE_STUDY_ID });
+      await createPool("deletion-shared");
+
+      const ownItemId = await createItem("deletion-own", {
+        status: "approved",
+      });
+      const sharedItemId = await createItem("deletion-shared", {
+        status: "approved",
+        sourceSessionId: sessionId,
+      });
+
+      const drawn = await endpoint
+        .get(
+          `/v1/item-pool/deletion-own/draw?sessionId=${sessionId}&excludeOwn=false`,
+        )
+        .send();
+      const { drawId } = drawn.body.draws[0];
+      await endpoint
+        .post("/v1/response")
+        .send({ sessionId, name: "reaction", payload: {}, drawId })
+        .expect(200);
+
+      await deleteStudyItems(DELETE_STUDY_ID);
+
+      // The study's own pool and everything in it is gone
+      expect(await getItem(ownItemId)).toBe(null);
+      expect(
+        await sequelize.models.ItemPool.findOne({
+          where: { poolId: "deletion-own" },
+        }),
+      ).toBe(null);
+      expect(
+        await sequelize.models.ItemDraw.findOne({ where: { drawId } }),
+      ).toBe(null);
+
+      // The shared pool survives, its item just loses the link to the study
+      expect(
+        await sequelize.models.ItemPool.findOne({
+          where: { poolId: "deletion-shared" },
+        }),
+      ).not.toBe(null);
+      const sharedItem = await getItem(sharedItemId);
+      expect(sharedItem).not.toBe(null);
+      expect(sharedItem).toHaveProperty("sourceSessionId", null);
+
+      // Responses stay behind for the study's own deletion step to remove,
+      // but must not point at a draw which no longer exists
+      const responses = await sequelize.models.Response.findAll({
+        where: { sessionId },
+      });
+      for (const response of responses as any[]) {
+        expect(response.drawId).toBe(null);
+      }
     });
   });
 });

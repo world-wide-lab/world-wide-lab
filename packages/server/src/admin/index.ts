@@ -9,6 +9,13 @@ import { columnComments } from "../db/models/index.js";
 import { Components, componentLoader } from "./components/index.js";
 import { dashboardHandler } from "./handlers/dashboard.js";
 import { deployDeploymentHandler } from "./handlers/deployment.js";
+import {
+  createModerationHandler,
+  defaultToApprovedItem,
+  defaultToPendingItems,
+  viewItemDrawsHandler,
+  viewItemsHandler,
+} from "./handlers/item.js";
 import { viewLeaderboardScoresHandler } from "./handlers/leaderboard.js";
 import { viewSessionHandler } from "./handlers/session.js";
 import {
@@ -528,6 +535,226 @@ const admin = new AdminJS({
       },
     },
 
+    {
+      resource: sequelize.models.ItemPool,
+      options: {
+        navigation: {
+          name: null,
+          icon: "Layers",
+        },
+
+        properties: {
+          poolId: {
+            isTitle: true,
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            description: columnComments.poolId,
+          },
+
+          studyId: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 1,
+            description:
+              "The study this pool belongs to. Leave this empty to share the pool across all of your studies.",
+          },
+
+          moderation: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 2,
+            availableValues: [
+              { value: "reviewed", label: "Reviewed: only approved items are shown" },
+              {
+                value: "unreviewed",
+                label: "Unreviewed: contributions are shown right away",
+              },
+              { value: "closed", label: "Closed: no contributions accepted" },
+            ],
+            description:
+              "How contributions to this pool are moderated. Only use 'unreviewed' for payloads whose shape makes abuse impossible, e.g. a number, a coordinate or a choice from a fixed set.",
+          },
+
+          maxPayloadBytes: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            description:
+              "The maximum size of an item's payload in bytes. Leave this empty to use the server's default limit.",
+          },
+
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
+          },
+          updatedAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
+          },
+
+          publicInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.publicInfo,
+          },
+          privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.privateInfo,
+          },
+        },
+
+        actions: {
+          viewItems: {
+            actionType: "record",
+            component: false,
+            icon: "Eye",
+            handler: viewItemsHandler,
+          },
+        },
+      },
+    },
+    {
+      resource: sequelize.models.Item,
+      options: {
+        navigation: {
+          name: null,
+          icon: "Grid",
+        },
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
+        },
+
+        properties: {
+          itemId: {
+            isTitle: true,
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.itemId,
+          },
+          poolId: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 1,
+            description: columnComments.poolId,
+          },
+          status: {
+            isVisible: { list: true, filter: true, show: true, edit: true },
+            position: 2,
+            availableValues: [
+              { value: "pending", label: "Pending" },
+              { value: "approved", label: "Approved" },
+              { value: "rejected", label: "Rejected" },
+              { value: "retired", label: "Retired" },
+            ],
+            description:
+              "Whether this item may be shown to other participants. Items in a pool set to 'unreviewed' are also shown while pending.",
+          },
+          publicPayload: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            position: 3,
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.publicPayload,
+          },
+
+          createdAt: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+            description: columnComments.createdAt,
+          },
+          updatedAt: {
+            isVisible: { list: false, filter: true, show: true, edit: false },
+            description: columnComments.updatedAt,
+          },
+
+          sourceSessionId: {
+            isVisible: { list: false, filter: true, show: true, edit: false },
+          },
+          sourceResponseId: {
+            isVisible: { list: false, filter: true, show: true, edit: false },
+          },
+          parentItemId: {
+            isVisible: { list: false, filter: true, show: true, edit: true },
+          },
+          generation: {
+            isVisible: { list: false, filter: true, show: true, edit: true },
+          },
+          timesDrawn: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+          timesCompleted: {
+            isVisible: { list: true, filter: true, show: true, edit: false },
+          },
+
+          privateInfo: {
+            isVisible: { list: false, filter: false, show: true, edit: true },
+            components: {
+              show: Components.ShowJsonProp,
+              edit: Components.EditJsonProp,
+            },
+            description: columnComments.privateInfo,
+          },
+        },
+
+        actions: {
+          list: {
+            before: defaultToPendingItems,
+          },
+          new: {
+            before: defaultToApprovedItem,
+          },
+          approve: {
+            actionType: "bulk",
+            component: false,
+            icon: "Check",
+            handler: createModerationHandler("approved"),
+          },
+          reject: {
+            actionType: "bulk",
+            component: false,
+            icon: "X",
+            handler: createModerationHandler("rejected"),
+          },
+          retire: {
+            actionType: "bulk",
+            component: false,
+            icon: "Archive",
+            handler: createModerationHandler("retired"),
+          },
+          viewDraws: {
+            actionType: "record",
+            component: false,
+            icon: "Eye",
+            handler: viewItemDrawsHandler,
+          },
+        },
+      },
+    },
+    {
+      resource: sequelize.models.ItemDraw,
+      options: {
+        // Invisible in navigation, this is for debugging a stuck pool rather
+        // than for day-to-day work.
+        navigation: false,
+
+        sort: {
+          sortBy: "updatedAt",
+          direction: "desc",
+        },
+
+        actions: {
+          new: {
+            isAccessible: false,
+          },
+          edit: {
+            isAccessible: false,
+          },
+        },
+      },
+    },
+
     ...deploymentResource,
     ...instancesResource,
   ],
@@ -551,6 +778,9 @@ const admin = new AdminJS({
           wwl_deployments: "Deployments",
           wwl_leaderboards: "Leaderboards",
           wwl_leaderboard_scores: "Leaderboard Scores",
+          wwl_item_pools: "Item Pools",
+          wwl_items: "Items",
+          wwl_item_draws: "Item Draws",
           wwl_internal_instances: "Instances",
         },
         resources: {
@@ -579,6 +809,32 @@ const admin = new AdminJS({
           wwl_responses: {
             actions: {
               show: "View Response",
+            },
+          },
+          wwl_item_pools: {
+            actions: {
+              new: "Create New Item Pool",
+              show: "Item Pool Info",
+              edit: "Edit Item Pool",
+              delete: "Delete Item Pool",
+              viewItems: "View Items",
+            },
+          },
+          wwl_items: {
+            actions: {
+              new: "Add New Item",
+              show: "Item Info",
+              edit: "Edit Item",
+              delete: "Delete Item",
+              approve: "Approve",
+              reject: "Reject",
+              retire: "Retire",
+              viewDraws: "View Draws",
+            },
+          },
+          wwl_item_draws: {
+            actions: {
+              show: "View Draw",
             },
           },
           wwl_deployments: {
