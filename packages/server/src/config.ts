@@ -150,6 +150,15 @@ const config = {
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
   leaderboardsToCreate: getArrayFromEnv("CREATE_LEADERBOARDS"),
+  itemPoolsToCreate: getArrayFromEnv("CREATE_ITEM_POOLS"),
+
+  items: {
+    // Fallback for pools which do not set their own maxPayloadBytes. The
+    // global request size limit is not a meaningful limit for a public write
+    // endpoint whose content other participants get to see.
+    defaultMaxPayloadBytes:
+      getIntFromEnv("ITEMS_DEFAULT_MAX_PAYLOAD_BYTES") || 64 * 1024,
+  },
 
   instances: {
     // Only enabled in development mode (by default)

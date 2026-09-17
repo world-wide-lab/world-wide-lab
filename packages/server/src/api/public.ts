@@ -9,6 +9,12 @@ import { date, number, object, string } from "yup";
 import { cache } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
+import {
+  completeDraw,
+  drawItems,
+  itemTransaction,
+  visibleItemStatuses,
+} from "../db/items.js";
 import { getDbVersion } from "../db/replication.js";
 import { AppError } from "../errors.js";
 import { sanitizeNullBytes } from "../validation/sanitization.js";
@@ -16,17 +22,22 @@ import { sanitizeNullBytes } from "../validation/sanitization.js";
 import {
   type CreateLeaderboardScoreParams,
   type CreateSessionParams,
+  type ItemParams,
+  type ItemPoolParams,
   type LeaderboardScoreParams,
   type ParticipantParams,
   type ResponseParams,
   type SessionParams,
   type StudyParams,
   ValidationError,
+  drawQuerySchema,
   fullParticipantSchema,
   fullSessionSchema,
+  itemContributionSchema,
+  itemListQuerySchema,
   leaderboardScoreSchema,
   participantSchema,
-  responseSchema,
+  responseCreationRequestSchema,
   sessionCreationRequestSchema,
   sessionSchema,
   studySchema,
@@ -35,6 +46,9 @@ import {
 const routerPublic = express.Router();
 
 const successfulResponsePayload = { success: true };
+
+// How many items the gallery endpoint returns when no limit is requested
+const DEFAULT_ITEM_LIST_LIMIT = 100;
 
 /**
  * @openapi
@@ -538,6 +552,18 @@ routerPublic.get(
  *                 type: string
  *               payload:
  *                 type: object
+ *               drawId:
+ *                 type: string
+ *                 description: >
+ *                   The draw this response was produced in reaction to, if the
+ *                   participant was reacting to an item drawn from a pool.
+ *               completesDraw:
+ *                 type: boolean
+ *                 default: true
+ *                 description: >
+ *                   Whether this response completes the draw it refers to.
+ *                   Set this to false on trials which only make up part of a
+ *                   reaction, so that the last one closes the draw.
  *             required:
  *               - sessionId
  *               - name
@@ -546,7 +572,7 @@ routerPublic.get(
  *       '200':
  *         description: Response created successfully
  *       '400':
- *         description: Invalid request body, either misformatted or the sessionId does not exist
+ *         description: Invalid request body, either misformatted or the sessionId or drawId does not exist
  *       '500':
  *         description: Failed to create response
  */
@@ -554,16 +580,55 @@ routerPublic.post(
   "/response",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const responseParams = sanitizeNullBytes(
-        responseSchema.validateSync(req.body),
+      const { completesDraw, ...responseParams } = sanitizeNullBytes(
+        responseCreationRequestSchema.validateSync(req.body),
       );
-      const response = (await sequelize.models.Response.create(
-        responseParams,
-      )) as any as ResponseParams;
+
+      if (responseParams.drawId === undefined) {
+        const response = (await sequelize.models.Response.create(
+          responseParams,
+        )) as any as ResponseParams;
+        res.json({
+          ...successfulResponsePayload,
+
+          responseId: response.responseId,
+        });
+        return;
+      }
+
+      // A response reacting to a drawn item is written together with the
+      // completion of its draw, so that the two can never disagree.
+      const { drawId, sessionId } = responseParams;
+      const responseId = await itemTransaction(async (transaction) => {
+        const draw = await sequelize.models.ItemDraw.findOne({
+          where: { drawId, sessionId },
+          transaction,
+        });
+        if (!draw) {
+          // Also covers a draw which belongs to somebody else's session
+          throw new AppError("Unknown drawId", 400);
+        }
+
+        const response = (await sequelize.models.Response.create(
+          responseParams,
+          { transaction },
+        )) as any as ResponseParams;
+
+        // Closing the draw is the default, since reacting to an item with a
+        // single response is the common case. Trials which only make up part
+        // of a reaction pass completesDraw: false and let the last one close
+        // the draw.
+        if (completesDraw !== false) {
+          await completeDraw(drawId as string, sessionId, transaction);
+        }
+
+        return response.responseId;
+      });
+
       res.json({
         ...successfulResponsePayload,
 
-        responseId: response.responseId,
+        responseId,
       });
     } catch (error) {
       if (error instanceof ForeignKeyConstraintError) {
@@ -1176,6 +1241,572 @@ routerPublic.get(
       }
 
       res.status(200).json({ scores });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// --- Item Pools ------------------------------------------------------------
+// Pools let participants see what other participants produced: a session
+// contributes an item to a pool, and other sessions draw items back out of it.
+// Which items may be handed out is decided by the pool (moderation), what to
+// hand out right now is decided by the query (policy, caps, exclusions).
+
+// Only ever hand these fields back out on the public API. Everything else on
+// an item (who contributed it, its privateInfo, how often it has been served)
+// is internal.
+function toPublicItem(item: any) {
+  return {
+    itemId: item.itemId,
+    publicPayload: item.publicPayload,
+    generation: item.generation,
+    parentItemId: item.parentItemId,
+  };
+}
+
+async function getPoolOrFail(poolId: string) {
+  const pool = (await sequelize.models.ItemPool.findOne({
+    where: { poolId },
+  })) as any as ItemPoolParams | null;
+  if (!pool) {
+    throw new AppError("Unknown poolId", 400);
+  }
+  return pool;
+}
+
+/**
+ * @openapi
+ * /item-pool/{poolId}/item:
+ *   post:
+ *     summary: Contribute an item to a pool
+ *     description: >
+ *       Add a new item to a pool, so that it can be shown to other
+ *       participants. Whether the item is shown right away depends on the
+ *       pool's moderation setting.
+ *     tags:
+ *       - items
+ *     parameters:
+ *       - in: path
+ *         name: poolId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the pool to contribute to
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               publicPayload:
+ *                 type: object
+ *                 description: >
+ *                   The content of the item. This is shown to other
+ *                   participants, so it must not contain sensitive information.
+ *               sessionId:
+ *                 type: string
+ *                 description: >
+ *                   The session contributing the item. Optional, but strongly
+ *                   encouraged: without it the item cannot be attributed,
+ *                   excluded from its own author or retracted.
+ *               responseId:
+ *                 type: integer
+ *                 description: The response this item was generated from.
+ *               parentItemId:
+ *                 type: string
+ *                 description: >
+ *                   The item this one was generated from, e.g. the previous
+ *                   link of a transmission chain.
+ *               privateInfo:
+ *                 type: object
+ *             required:
+ *               - publicPayload
+ *     responses:
+ *       '200':
+ *         description: Item contributed successfully. Will return the itemId and its status.
+ *       '400':
+ *         description: Invalid request body, unknown poolId, or the pool is closed for contributions.
+ *       '500':
+ *         description: Failed to contribute item
+ */
+routerPublic.post(
+  "/item-pool/:poolId/item",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { poolId } = object({
+        poolId: string().required(),
+      }).validateSync(req.params);
+      const contribution = sanitizeNullBytes(
+        itemContributionSchema.validateSync(req.body),
+      );
+
+      const pool = await getPoolOrFail(poolId);
+
+      if (pool.moderation === "closed") {
+        throw new AppError(
+          "This pool is closed and does not accept contributions",
+          400,
+        );
+      }
+
+      // The global request size limit is not a meaningful limit for content
+      // other participants get to see, so pools have their own.
+      const maxPayloadBytes =
+        pool.maxPayloadBytes ?? config.items.defaultMaxPayloadBytes;
+      const payloadBytes = Buffer.byteLength(
+        JSON.stringify(contribution.publicPayload),
+        "utf8",
+      );
+      if (payloadBytes > maxPayloadBytes) {
+        throw new AppError(
+          `The item's publicPayload is too large (${payloadBytes} bytes, the limit for this pool is ${maxPayloadBytes} bytes)`,
+          400,
+        );
+      }
+
+      // Items are always one generation further along than their parent
+      let generation = 0;
+      if (contribution.parentItemId !== undefined) {
+        const parent = (await sequelize.models.Item.findOne({
+          where: { itemId: contribution.parentItemId, poolId },
+        })) as any as ItemParams | null;
+        if (!parent) {
+          throw new AppError("Unknown parentItemId", 400);
+        }
+        generation = (parent.generation || 0) + 1;
+      }
+
+      if (contribution.sessionId !== undefined) {
+        const session = await sequelize.models.Session.findOne({
+          where: { sessionId: contribution.sessionId },
+        });
+        if (!session) {
+          throw new AppError("Unknown sessionId", 400);
+        }
+      }
+      if (contribution.responseId !== undefined) {
+        const response = await sequelize.models.Response.findOne({
+          where: { responseId: contribution.responseId },
+        });
+        if (!response) {
+          throw new AppError("Unknown responseId", 400);
+        }
+      }
+
+      const item = (await sequelize.models.Item.create({
+        poolId,
+        publicPayload: contribution.publicPayload,
+        sourceSessionId: contribution.sessionId ?? null,
+        sourceResponseId: contribution.responseId ?? null,
+        parentItemId: contribution.parentItemId ?? null,
+        generation,
+        privateInfo: contribution.privateInfo,
+      })) as any as ItemParams;
+
+      res.json({
+        ...successfulResponsePayload,
+
+        itemId: item.itemId,
+        status: item.status,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /item-pool/{poolId}/draw:
+ *   get:
+ *     summary: Draw one or more items from a pool
+ *     description: >
+ *       Hand items from a pool to a session and record that they have been
+ *       served to it. Since this endpoint changes data, its results can not be
+ *       cached.
+ *     tags:
+ *       - items
+ *     parameters:
+ *       - in: path
+ *         name: poolId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the pool to draw from
+ *       - in: query
+ *         name: sessionId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The session the items are served to.
+ *       - in: query
+ *         name: count
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         default: 1
+ *         description: How many items to draw.
+ *       - in: query
+ *         name: policy
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             random,
+ *             least-drawn,
+ *             newest,
+ *             oldest
+ *           ]
+ *         required: false
+ *         default: random
+ *         description: >
+ *           Which items to prefer. Use least-drawn to spread participants
+ *           evenly across the pool, which is what balanced ratings and
+ *           transmission chains want.
+ *       - in: query
+ *         name: excludeOwn
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         default: true
+ *         description: >
+ *           Skip items this session contributed and, if the session belongs to
+ *           a participant, items contributed in any of their other sessions.
+ *       - in: query
+ *         name: excludeSeen
+ *         schema:
+ *           type: boolean
+ *         required: false
+ *         default: true
+ *         description: Skip items which have already been served to this session.
+ *       - in: query
+ *         name: maxDrawsPerItem
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Only draw items which have been served fewer than this many times.
+ *           Note that a draw counts as soon as it is served and is never
+ *           returned, so a participant who abandons the study keeps their draw.
+ *       - in: query
+ *         name: maxCompletionsPerItem
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Only draw items whose draws have been completed fewer than this
+ *           many times. This is how an item retires after n completions.
+ *       - in: query
+ *         name: minGeneration
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Only draw items at or beyond this generation of a chain.
+ *       - in: query
+ *         name: maxGeneration
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Only draw items at or below this generation of a chain.
+ *     responses:
+ *       '200':
+ *         description: >
+ *           Successfully drew items. The list of draws can be shorter than the
+ *           requested count, or empty, when the pool has run out of items
+ *           matching the query.
+ *       '400':
+ *         description: Invalid query, unknown poolId or unknown sessionId.
+ *       '500':
+ *         description: Failed to draw items
+ */
+routerPublic.get(
+  "/item-pool/:poolId/draw",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { poolId } = object({
+        poolId: string().required(),
+      }).validateSync(req.params);
+      const query = drawQuerySchema.validateSync(req.query);
+
+      if (
+        query.minGeneration !== undefined &&
+        query.maxGeneration !== undefined &&
+        query.minGeneration > query.maxGeneration
+      ) {
+        throw new AppError(
+          "minGeneration can not be larger than maxGeneration",
+          400,
+        );
+      }
+
+      const pool = await getPoolOrFail(poolId);
+
+      // A draw is by definition served to someone, so unlike on contribute the
+      // session is required here and has to exist.
+      const session = (await sequelize.models.Session.findOne({
+        where: { sessionId: query.sessionId },
+      })) as any as SessionParams | null;
+      if (!session) {
+        throw new AppError("Unknown sessionId", 400);
+      }
+
+      const results = await drawItems({
+        poolId,
+        moderation: pool.moderation as any,
+        sessionId: query.sessionId,
+        participantId: session.participantId,
+        count: query.count,
+        policy: query.policy as any,
+        excludeOwn: query.excludeOwn,
+        excludeSeen: query.excludeSeen,
+        maxDrawsPerItem: query.maxDrawsPerItem,
+        maxCompletionsPerItem: query.maxCompletionsPerItem,
+        minGeneration: query.minGeneration,
+        maxGeneration: query.maxGeneration,
+      });
+
+      res.status(200).json({
+        draws: results.map(({ draw, item }) => ({
+          drawId: draw.drawId,
+          ...toPublicItem(item),
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /draw/{drawId}/complete:
+ *   post:
+ *     summary: Complete a draw without storing a response
+ *     description: >
+ *       Mark a draw as completed. Responses can do this on their own via their
+ *       drawId, so this endpoint is for tasks whose outcome is not logged as
+ *       study data, or where the completion signal arrives separately.
+ *     tags:
+ *       - items
+ *     parameters:
+ *       - in: path
+ *         name: drawId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the draw to complete
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *             required:
+ *               - sessionId
+ *     responses:
+ *       '200':
+ *         description: Draw completed successfully
+ *       '400':
+ *         description: Unknown drawId, or the draw belongs to another session.
+ *       '500':
+ *         description: Failed to complete draw
+ */
+routerPublic.post(
+  "/draw/:drawId/complete",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { drawId } = object({
+        drawId: string().uuid().required(),
+      }).validateSync(req.params);
+      const { sessionId } = object({
+        sessionId: string().uuid().required(),
+      })
+        .noUnknown()
+        .validateSync(req.body);
+
+      await completeDraw(drawId, sessionId);
+
+      res.status(200).send(successfulResponsePayload);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /item-pool/{poolId}/items:
+ *   get:
+ *     summary: Retrieve items from a pool
+ *     description: >
+ *       Read items from a pool without drawing them, e.g. to show a wall of
+ *       what other participants have produced. Nothing is recorded, so results
+ *       can be cached.
+ *     tags:
+ *       - items
+ *     parameters:
+ *       - in: path
+ *         name: poolId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the pool to retrieve items from
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         default: 100
+ *         description: How many items to return (maximally).
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [
+ *             newest,
+ *             oldest,
+ *             random
+ *           ]
+ *         required: false
+ *         default: newest
+ *         description: In which order to return the items.
+ *       - in: query
+ *         name: cacheFor
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Cache the result for this many seconds. Retracted items can still
+ *           show up until the cache expires, so pick this based on how fresh
+ *           the list needs to be.
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved items.
+ *       '400':
+ *         description: Unknown poolId.
+ *       '500':
+ *         description: Failed to retrieve items
+ */
+routerPublic.get(
+  "/item-pool/:poolId/items",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { poolId } = object({
+        poolId: string().required(),
+      }).validateSync(req.params);
+      const { limit, sort, cacheFor } = itemListQuerySchema.validateSync(
+        req.query,
+      );
+
+      const pool = await getPoolOrFail(poolId);
+
+      let order: any;
+      if (sort === "oldest") {
+        order = [["createdAt", "ASC"]];
+      } else if (sort === "random") {
+        order = sequelize.random();
+      } else {
+        order = [["createdAt", "DESC"]];
+      }
+
+      // Not raw, so that the payload comes back as JSON on every dialect
+      const getItems = async () =>
+        (
+          await sequelize.models.Item.findAll({
+            attributes: ["itemId", "publicPayload", "generation"],
+            where: {
+              poolId,
+              status: visibleItemStatuses(pool.moderation as any),
+            },
+            order,
+            limit: limit || DEFAULT_ITEM_LIST_LIMIT,
+          })
+        ).map((item) => item.toJSON());
+
+      const items =
+        cacheFor === undefined
+          ? await getItems()
+          : await cache.wrap(
+              `${req.path}?${JSON.stringify(req.query)}`,
+              getItems,
+              cacheFor * 1000,
+            );
+
+      res.status(200).json({ items });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @openapi
+ * /item/{itemId}:
+ *   delete:
+ *     summary: Retract an item
+ *     description: >
+ *       Withdraw an item a session contributed, so that it is no longer shown
+ *       to anyone. This is also what a participant asking for their data to be
+ *       withdrawn needs.
+ *     tags:
+ *       - items
+ *     parameters:
+ *       - in: path
+ *         name: itemId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID of the item to retract
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *             required:
+ *               - sessionId
+ *     responses:
+ *       '200':
+ *         description: Item retracted successfully
+ *       '400':
+ *         description: Unknown itemId, or the item was not contributed by this session.
+ *       '500':
+ *         description: Failed to retract item
+ */
+routerPublic.delete(
+  "/item/:itemId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { itemId } = object({
+        itemId: string().uuid().required(),
+      }).validateSync(req.params);
+      const { sessionId } = object({
+        sessionId: string().uuid().required(),
+      })
+        .noUnknown()
+        .validateSync(req.body);
+
+      // A session may only ever retract what it contributed itself
+      const [updatedRows] = await sequelize.models.Item.update(
+        { status: "rejected" },
+        { where: { itemId, sourceSessionId: sessionId } },
+      );
+
+      if (updatedRows === 1) {
+        res.status(200).send(successfulResponsePayload);
+      } else {
+        throw new AppError(
+          "Unable to retract item. Most likely issue: Unknown itemId, or the item was not contributed by this session.",
+          400,
+        );
+      }
     } catch (error) {
       next(error);
     }
