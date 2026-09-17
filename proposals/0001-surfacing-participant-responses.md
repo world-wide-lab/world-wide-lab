@@ -80,8 +80,8 @@ Derived from the use cases above:
 
 ## 4. Approach
 
-Three new tables — `wwl_item_pools`, `wwl_items`, `wwl_item_draws` — shipped
-together.
+Three new tables — `wwl_item_pools`, `wwl_items`, `wwl_item_draws` — plus one
+nullable column on `wwl_responses`, shipped together.
 
 The first two mirror `Leaderboard` / `LeaderboardScore`: a researcher-created
 pool, and item rows that may be seeded by the researcher or contributed by a
@@ -90,9 +90,9 @@ session. That covers R1–R3, R5 and R7.
 The third, one row per "item *I* was served to session *S*", is what separates
 "usually right" from "correct under concurrency". Counters on the item alone
 cannot express "don't show this participant anything they have already seen"
-(R4), and give only an approximate record of who saw what (R6). The draw row is
-also the natural place to hang the link to the response it produced, which makes
-chain analysis a plain join rather than payload archaeology.
+(R4), and give only an approximate record of who saw what (R6). Responses then
+point back at the draw they were produced under, which makes chain analysis a
+plain join rather than payload archaeology.
 
 Naming: **item**, not stimulus. `stimulus` is precise for psychology and opaque
 outside it; `item` reads well in the API (`/item-pool/:poolId/draw`), in the
@@ -113,7 +113,6 @@ wwl_item_pools                          -- researcher-created, mirrors wwl_leade
   updatedAt         DATE
   studyId           STRING   nullable FK → wwl_studies   (null = shared across studies)
   moderation        STRING   'reviewed' | 'unreviewed' | 'closed'   default 'reviewed'
-  drawPolicy        STRING   'random' | 'least-drawn' | 'newest' | 'oldest'   default 'random'
   maxPayloadBytes   INTEGER  nullable   -- null = server default
   publicInfo        JSON     nullable   -- e.g. prompt text the frontend renders
   privateInfo       JSON     nullable
@@ -140,7 +139,9 @@ wwl_item_draws
   itemId            UUID     FK → wwl_items, not null
   sessionId         UUID     FK → wwl_sessions, not null
   status            STRING   'served' | 'completed'   default 'served'
-  responseId        INTEGER  nullable FK → wwl_responses   -- the response that completed it
+
+wwl_responses
+  + drawId          UUID     nullable FK → wwl_item_draws   -- what this response reacted to
 ```
 
 `wwl_item_draws` is the source of truth for who saw what; `timesDrawn` and
@@ -148,11 +149,19 @@ wwl_item_draws
 order by them without a `COUNT` join on every draw. They are maintained in the
 same statement that writes the draw (§5.5).
 
+The provenance link lives on the **response**, not on the draw, because one
+drawn item routinely produces several responses: a rating trial, a confidence
+judgement and a free-text justification are three separate `session.response()`
+calls in a jsPsych timeline. A pointer on the draw could only name one of them
+and would leave the rest to be correlated by session and timestamp. Pointing the
+other way makes it many-to-one for free, and keeps a single source of truth for
+the link.
+
 Indices, following the pattern of the leaderboards migration: on items `poolId`,
 `status`, `sourceSessionId`, `parentItemId`, `timesDrawn`, `updatedAt`, and a
 composite `(poolId, status, timesDrawn)` for the hot draw query; on draws
-`itemId`, `sessionId`, `responseId`, `status`, and a composite
-`(sessionId, itemId)` for the exclude-already-seen filter.
+`itemId`, `sessionId`, `status`, and a composite `(sessionId, itemId)` for the
+exclude-already-seen filter; on responses `drawId`.
 
 Note the field name: **`publicPayload`, not `payload`**. The codebase already
 uses the `public*` prefix to mean "this can be read from the public API", and
@@ -211,7 +220,7 @@ session. `parentItemId` sets `generation = parent.generation + 1`.
 
 ```
 GET /v1/item-pool/:poolId/draw
-  query sessionId (required), count=1, policy?, excludeOwn=true, excludeSeen=true,
+  query sessionId (required), count=1, policy=random, excludeOwn=true, excludeSeen=true,
         maxDrawsPerItem?, maxCompletionsPerItem?, minGeneration?, maxGeneration?
   →     { draws: [ { drawId, itemId, publicPayload, generation, parentItemId } ] }
 ```
@@ -223,23 +232,32 @@ sessions of that participant; `excludeSeen` filters out items with an existing
 draw for this session. This endpoint mutates, so it does not accept `cacheFor`.
 
 ```
-POST /v1/draw/:drawId/complete
-  body  { sessionId, responseId? }
-  →     { success: true }
+POST /v1/response
+  body  { ..., drawId?, completesDraw? }   -- existing endpoint, two new optional fields
 ```
-Marks the draw `completed`, links `responseId` if given, and increments
-`timesCompleted` on the item.
+When `drawId` is supplied, the response is created with that link and — unless
+`completesDraw: false` — the draw is marked `completed` and the item's
+`timesCompleted` incremented, all in one transaction. A single-trial reaction
+therefore needs one call and no extra arguments. A multi-trial reaction passes
+`completesDraw: false` on the early trials and lets the last one close the draw.
+
+`completesDraw` defaults to **true** because the single-response case is the
+common one, and because the failure mode of forgetting it is mild: the draw
+completes early, which only inflates `timesCompleted` and so slightly
+*under*-serves the item. The opposite default would make the common case carry a
+flag and would silently leave draws open.
+
+An unknown `drawId`, or one belonging to another session, is a 400 — the same
+`ForeignKeyConstraintError` handling `POST /v1/response` already does for
+`sessionId`.
 
 ```
-POST /v1/response
-  body  { ..., drawId? }        -- existing endpoint, one new optional field
+POST /v1/draw/:drawId/complete
+  body  { sessionId }
+  →     { success: true }
 ```
-When `drawId` is supplied, the response is created and the matching draw is
-completed and linked to the new `responseId` in a single transaction. This is
-the convenient path for the common case where one response *is* the completion,
-and it means a study does not have to make two calls in sequence and handle the
-second one failing. `POST /v1/draw/:drawId/complete` stays for completions that
-are not a single response (or not a response at all).
+Completes a draw without a response — for tasks whose outcome is not logged as
+study data, or where the completion signal arrives separately.
 
 ```
 GET /v1/item-pool/:poolId/items
@@ -259,21 +277,31 @@ DELETE /v1/item/:itemId
 A session retracts its own contribution (sets `status = 'rejected'`). This is
 also the mechanism a participant withdrawal request needs.
 
-### 5.4 Draw limits: query parameters, not pool columns
+### 5.4 Selection knobs: query parameters, not pool columns
 
-`maxDrawsPerItem` and `maxCompletionsPerItem` are **query parameters on the draw
-endpoint**, not columns on the pool. They are just filters on the selection
-query (`timesDrawn < :maxDraws`, `timesCompleted < :maxCompletions`), this
-matches how `limit` / `sort` / `aggregate` already work on the leaderboard
-endpoint, and it means tuning a study's *k* does not need a migration or an
-admin round-trip.
+`policy`, `maxDrawsPerItem` and `maxCompletionsPerItem` are **query parameters
+on the draw endpoint**, not columns on the pool. This matches how `limit` /
+`sort` / `aggregate` already work on the leaderboard endpoint, and it means
+tuning a study does not need a migration or an admin round-trip.
 
-The honest cost: the threshold comes from the client, so a buggy study could
-over-serve an item. The atomic claim in §5.5 still prevents two concurrent draws
-from both slipping past the same threshold, so this is a "wrong number" risk,
-not a race. If a study ever needs a guarantee the client cannot weaken, the
-answer is pool-level caps that a query may tighten but not loosen — additive
-later, deliberately not built now.
+It also draws a line that keeps every future knob from being a judgement call:
+
+> The **pool** governs what may exist and who may see it — moderation, study
+> scope, payload limits. The **query** governs what to hand out right now —
+> policy, caps, exclusions.
+
+Keeping `policy` out of the pool buys one thing a column cannot: two draw
+contexts over the same pool can want different policies. The main task draws
+`least-drawn` for balanced coverage while a debrief screen draws one at
+`random` and records that the participant saw it. With a pool column that needs
+two pools over the same content, which is not possible.
+
+The honest cost of query parameters: the values come from the client, so a buggy
+study could over-serve an item. The atomic claim in §5.5 still prevents two
+concurrent draws from both slipping past the same threshold, so this is a "wrong
+number" risk, not a race. If a study ever needs a guarantee the client cannot
+weaken, the answer is pool-level caps that a query may tighten but not loosen —
+additive later, deliberately not built now.
 
 One behaviour to be aware of when choosing these numbers: a draw counts towards
 `maxDrawsPerItem` the moment it is served, and nothing later returns it. A
@@ -318,15 +346,15 @@ for SQLite, which serialises writes anyway — the same
 `sequelize.getDialect() === "sqlite"` branch already used in the
 `usingResponses` count query in `public.ts`. Policy ordering:
 
-| `drawPolicy` | `ORDER BY` |
+| `policy` | `ORDER BY` |
 | --- | --- |
-| `random` | `RANDOM()` |
+| `random` *(default)* | `RANDOM()` |
 | `least-drawn` | `"timesDrawn" ASC, RANDOM()` |
 | `newest` | `"createdAt" DESC` |
 | `oldest` | `"createdAt" ASC` |
 
 `least-drawn` is what makes crowd annotation and balanced *k*-ratings work, and
-it is also the right default for chains: it hands out the least-used tip first.
+it is also the right choice for chains: it hands out the least-used tip first.
 
 ### 5.6 Client
 
@@ -342,6 +370,7 @@ const item = await session.contributeItem("drawings", {
 const [draw] = await client.drawItems("drawings", {
   count: 1,
   sessionId: session.sessionId,
+  policy: "least-drawn",
   excludeOwn: true,
   excludeSeen: true,
   maxCompletionsPerItem: 10,
@@ -354,6 +383,11 @@ await session.response({
   drawId: draw.drawId,
 });
 
+// …or several trials off one drawn item, with only the last one closing it
+await session.response({ name: "rating",     payload: { rating },     drawId: draw.drawId, completesDraw: false });
+await session.response({ name: "confidence", payload: { confidence }, drawId: draw.drawId, completesDraw: false });
+await session.response({ name: "why",        payload: { text },       drawId: draw.drawId });
+
 // Chain: pass your version on as the next link
 await session.contributeItem("chain", {
   publicPayload: { text },
@@ -361,9 +395,9 @@ await session.contributeItem("chain", {
 });
 ```
 
-`session.response()` gains an optional `drawId`, which is the whole of the
-change to the existing response path. The jsPsych integration gets a matching
-`on_finish` helper in a follow-up.
+`session.response()` gains optional `drawId` and `completesDraw`, which is the
+whole of the change to the existing response path. The jsPsych integration gets
+a matching `on_finish` helper in a follow-up.
 
 ### 5.7 Admin UI
 
@@ -386,6 +420,10 @@ responses. Without this, a chain study's data is unanalysable outside the
 database — the chain structure lives entirely in `parentItemId`, and who-saw-what
 lives entirely in the draws table.
 
+The response-side provenance rides along for free: `drawId` is an ordinary
+column on `wwl_responses`, so the existing `responses-raw` export carries it
+without any change to that code path.
+
 Pools with `studyId = NULL` are shared across studies, so a per-study export has
 to decide what to include. Proposed: export the items and draws that are
 reachable from that study's sessions, not the entire shared pool.
@@ -400,50 +438,32 @@ reachable from that study's sessions, not the entire shared pool.
 
 ## 6. Worked examples
 
-**Transmission chain.** Pool `story-chain`, `moderation: 'reviewed'`,
-`drawPolicy: 'least-drawn'`. Researcher seeds generation 0 via the admin UI.
-Each participant draws one item, retells it, and contributes the retelling with
+**Transmission chain.** Pool `story-chain`, `moderation: 'reviewed'`. Researcher
+seeds generation 0 via the admin UI. Each participant draws one item with
+`policy=least-drawn`, retells it, and contributes the retelling with
 `parentItemId` set. Analysis: recursive self-join on `parentItemId`, joined to
-`wwl_item_draws` for timings and the response that each link produced.
+`wwl_responses.drawId` for timings and the responses each link produced.
 
-**Peer rating.** Pool `captions`, `moderation: 'reviewed'`,
-`drawPolicy: 'least-drawn'`. Participants contribute in phase 1; in phase 2 each
-draws 5 with `excludeOwn=true`, `excludeSeen=true` and
-`maxCompletionsPerItem=10`, and rates them. Every caption converges on ~10
-ratings without a coordinator, and nobody rates the same caption twice.
+**Peer rating.** Pool `captions`, `moderation: 'reviewed'`. Participants
+contribute in phase 1; in phase 2 each draws 5 with `policy=least-drawn`,
+`excludeOwn=true`, `excludeSeen=true` and `maxCompletionsPerItem=10`, and rates
+them. Every caption converges on ~10 ratings without a coordinator, and nobody
+rates the same caption twice.
 
 **Gallery.** Pool `answers`, `moderation: 'reviewed'`. Study page calls
 `GET /v1/item-pool/answers/items?limit=20&sort=newest&cacheFor=60`. No draws, no
 completions.
 
 **Async dictator game.** Pool `offers`, `moderation: 'unreviewed'` (payload is a
-single validated integer), `drawPolicy: 'random'`, drawn with
-`maxDrawsPerItem=1` and `excludeOwn=true`. Each new participant responds to
-exactly one real past offer.
+single validated integer), drawn with `policy=random`, `maxDrawsPerItem=1` and
+`excludeOwn=true`. Each new participant responds to exactly one real past offer.
 
-## 7. Open questions
+## 7. Out of scope
 
-1. **Should `wwl_responses` also carry a `drawId`?** As designed, the link is
-   `wwl_item_draws.responseId` — one response per draw, the one that completed
-   it. A trial that produces several responses from one drawn item (a rating
-   plus a confidence judgement plus free text) can only designate one of them.
-   A nullable `wwl_responses.drawId` would make that many-to-one and is one
-   cheap column, at the cost of two places expressing nearly the same link.
-2. **Should `drawPolicy` live on the pool at all?** Every other selection knob
-   ended up as a query parameter (§5.4). `drawPolicy` is currently a pool
-   column for discoverability, but the same argument would move it to the query.
-3. **Sharing granularity.** `studyId = NULL` means "shared with every study on
-   this instance", which covers the stated requirement. Scoping a pool to a
-   *specific subset* of studies would need a join table; is that ever wanted, or
-   is all-or-one enough?
+Deliberately not part of this change:
 
-Explicitly **not** open, for the record:
-
-- **Leaderboards stay separate.** A pool with a numeric payload and a `newest`
-  policy is nearly a leaderboard, and unifying them is an interesting idea, but
-  not now.
-- **Retraction latency.** Eventual consistency within the caller's `cacheFor`
-  window is acceptable, and the frontend chooses that number per request.
-- **Custom payload schemas.** Not in this change; possible later (§5.2).
-- **Expiring and reclaiming abandoned draws.** Not in this change; see the
-  attrition note in §5.4 for what that means in practice.
+- **Media / file upload.** A later extension. When it lands, `wwl_items` is where it belongs, and `maxPayloadBytes` should be set with that in mind.
+- **Expiring and reclaiming abandoned draws.** See the attrition note in §5.4 for what leaving this out means in practice.
+- **Custom payload schemas.** Possible later (§5.2).
+- **Merging with leaderboards.** A pool with a numeric payload and a `newest` policy is nearly a leaderboard, and unifying them is an interesting idea, but not now.
+- **Pool-level caps.** Query parameters cover the need; see §5.4 for when a column would earn its place.
