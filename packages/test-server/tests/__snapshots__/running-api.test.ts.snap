@@ -78,6 +78,7 @@ exports[`API Routes > GET /study/:studyId/data/:dataType > should download a raw
   "name",
   "payload",
   "sessionId",
+  "clientResponseId",
   "Session.participantId",
 ]
 `;
@@ -96,7 +97,7 @@ exports[`API Routes > GET /study/:studyId/data/:dataType > should download a raw
 ]
 `;
 
-exports[`API Routes > GET /study/:studyId/data/:dataType > should download an extracted list of responses (in CSV format) 1`] = `"responseId,createdAt,updatedAt,name,sessionId,key_1,key_2"`;
+exports[`API Routes > GET /study/:studyId/data/:dataType > should download an extracted list of responses (in CSV format) 1`] = `"responseId,createdAt,updatedAt,name,sessionId,clientResponseId,key_1,key_2"`;
 
 exports[`API Routes > GET /study/:studyId/data/:dataType > should download an extracted list of responses 1`] = `
 [
@@ -105,6 +106,7 @@ exports[`API Routes > GET /study/:studyId/data/:dataType > should download an ex
   "updatedAt",
   "name",
   "sessionId",
+  "clientResponseId",
   "key_1",
   "key_2",
 ]
@@ -123,6 +125,7 @@ exports[`API Routes > GET /study/:studyId/data/:dataType > should handle studies
   "updatedAt",
   "name",
   "sessionId",
+  "clientResponseId",
 ]
 `;
 

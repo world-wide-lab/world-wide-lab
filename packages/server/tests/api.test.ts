@@ -1476,4 +1476,147 @@ describe("API Routes", () => {
       expect(score).toHaveProperty("publicGroupName", "TeamAlpha");
     });
   });
+
+  // These tests run at the very end, as they add a study of their own and
+  // would otherwise show up in the counts of the test cases above.
+  describe("POST /response (de-duplication via clientResponseId)", () => {
+    const DEDUPLICATION_STUDY_ID = "deduplication-study";
+    beforeAll(async () => {
+      await endpoint
+        .post("/v1/study")
+        .send({ studyId: DEDUPLICATION_STUDY_ID });
+    });
+    async function createSessionForDeduplication(): Promise<string> {
+      const sessionResponse = await endpoint
+        .post("/v1/session")
+        .send({ studyId: DEDUPLICATION_STUDY_ID });
+      return sessionResponse.body.sessionId;
+    }
+
+    it("should store a response with a clientResponseId", async () => {
+      const dedupSessionId = await createSessionForDeduplication();
+
+      const response = await endpoint.post("/v1/response").send({
+        sessionId: dedupSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+        clientResponseId: 0,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.duplicate).toBe(undefined);
+
+      const storedResponse = await sequelize.models.Response.findOne({
+        where: { responseId: response.body.responseId },
+      });
+      expect(storedResponse).toHaveProperty("clientResponseId", 0);
+    });
+
+    it("should not store the same clientResponseId twice", async () => {
+      const dedupSessionId = await createSessionForDeduplication();
+      const responseData = {
+        sessionId: dedupSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+        clientResponseId: 0,
+      };
+
+      const firstResponse = await endpoint
+        .post("/v1/response")
+        .send(responseData);
+      const secondResponse = await endpoint
+        .post("/v1/response")
+        .send(responseData);
+
+      expect(firstResponse.status).toBe(200);
+      expect(secondResponse.status).toBe(200);
+      // The second request should return the response stored by the first one
+      expect(secondResponse.body.responseId).toBe(
+        firstResponse.body.responseId,
+      );
+      expect(secondResponse.body.duplicate).toBe(true);
+
+      const nResponses = await sequelize.models.Response.count({
+        where: { sessionId: dedupSessionId },
+      });
+      expect(nResponses).toBe(1);
+    });
+
+    it("should store different clientResponseIds separately", async () => {
+      const dedupSessionId = await createSessionForDeduplication();
+
+      for (const clientResponseId of [0, 1, 2]) {
+        const response = await endpoint.post("/v1/response").send({
+          sessionId: dedupSessionId,
+          name: `test_trail_${clientResponseId}`,
+          payload: { key_1: "value 1" },
+          clientResponseId,
+        });
+        expect(response.status).toBe(200);
+        expect(response.body.duplicate).toBe(undefined);
+      }
+
+      const nResponses = await sequelize.models.Response.count({
+        where: { sessionId: dedupSessionId },
+      });
+      expect(nResponses).toBe(3);
+    });
+
+    it("should allow the same clientResponseId in different sessions", async () => {
+      const firstSessionId = await createSessionForDeduplication();
+      const secondSessionId = await createSessionForDeduplication();
+
+      const firstResponse = await endpoint.post("/v1/response").send({
+        sessionId: firstSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+        clientResponseId: 0,
+      });
+      const secondResponse = await endpoint.post("/v1/response").send({
+        sessionId: secondSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+        clientResponseId: 0,
+      });
+
+      expect(firstResponse.status).toBe(200);
+      expect(secondResponse.status).toBe(200);
+      expect(secondResponse.body.duplicate).toBe(undefined);
+      expect(secondResponse.body.responseId).not.toBe(
+        firstResponse.body.responseId,
+      );
+    });
+
+    it("should store multiple responses without a clientResponseId", async () => {
+      const dedupSessionId = await createSessionForDeduplication();
+      const responseData = {
+        sessionId: dedupSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+      };
+
+      // Clients from before clientResponseId existed do not send one, their
+      // responses should all be stored.
+      await endpoint.post("/v1/response").send(responseData);
+      await endpoint.post("/v1/response").send(responseData);
+
+      const nResponses = await sequelize.models.Response.count({
+        where: { sessionId: dedupSessionId },
+      });
+      expect(nResponses).toBe(2);
+    });
+
+    it("should reject an invalid clientResponseId", async () => {
+      const dedupSessionId = await createSessionForDeduplication();
+
+      const response = await endpoint.post("/v1/response").send({
+        sessionId: dedupSessionId,
+        name: "test_trail",
+        payload: { key_1: "value 1" },
+        clientResponseId: -1,
+      });
+
+      expect(response.status).toBe(400);
+    });
+  });
 });

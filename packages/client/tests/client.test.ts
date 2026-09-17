@@ -152,6 +152,59 @@ describe("Client", () => {
     expect(Object.keys(responseJson)).toMatchSnapshot();
   });
 
+  it("should not store a response twice when its confirmation gets lost", async () => {
+    const studyId = "studyId-check-response-deduplication";
+    await client.call("POST", "/study/", { studyId });
+    const session = await client.createSession({ studyId });
+
+    // Let the first response actually reach the server, but make it look like
+    // it failed to the client, so it gets re-sent.
+    const workingFetch = global.fetch;
+    let brokenConfirmations = 1;
+    global.fetch = vi.fn(async (url: any, options: any) => {
+      const response = await workingFetch(url, options);
+      if (
+        String(url).includes("/response/") &&
+        brokenConfirmations > 0 &&
+        response.status === 200
+      ) {
+        brokenConfirmations--;
+        throw new TypeError("Failed to fetch");
+      }
+      return response;
+    }) as any;
+
+    try {
+      expect(
+        await session.response({
+          name: "example_name",
+          payload: { ex_key: "ex_value" },
+        }),
+      ).toBe(true);
+    } finally {
+      global.fetch = workingFetch;
+    }
+
+    const responseJson = await (
+      await client.call(
+        "GET",
+        `/study/${studyId}/data/responses-raw/json`,
+        undefined,
+        {
+          headers: {
+            ContentType: "application/json",
+            Authorization: `Bearer ${API_KEY}`,
+          },
+        },
+      )
+    ).json();
+
+    // The response has been sent twice, but should only be stored once
+    expect(brokenConfirmations).toBe(0);
+    expect(responseJson.length).toBe(1);
+    expect(responseJson[0].clientResponseId).toBe(0);
+  });
+
   it("should store and retrieve participant data", async () => {
     const participant = await client.createParticipant();
 

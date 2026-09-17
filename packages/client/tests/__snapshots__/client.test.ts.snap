@@ -61,6 +61,7 @@ exports[`Client > should store responses 2`] = `
 [
   {
     "Session.participantId": null,
+    "clientResponseId": 0,
     "createdAt": "overwritten-as-it-varies",
     "name": "example_name",
     "payload": "{"ex_key":"ex_value"}",
@@ -70,6 +71,7 @@ exports[`Client > should store responses 2`] = `
   },
   {
     "Session.participantId": null,
+    "clientResponseId": 1,
     "createdAt": "overwritten-as-it-varies",
     "name": null,
     "payload": "{"key_n1":"no-name","numerical":1}",

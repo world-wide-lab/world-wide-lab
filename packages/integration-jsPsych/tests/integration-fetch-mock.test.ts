@@ -63,6 +63,35 @@ global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
   return Promise.reject(reason);
 }) as jest.MockedFunction<typeof fetch>;
 
+/**
+ * Wait for a request to a given endpoint to be made.
+ *
+ * Responses are only considered stored once the server confirms them, so some
+ * requests (e.g. finishing a session) are only sent a few ticks after the
+ * experiment itself is done.
+ */
+async function waitForFetchCalls(
+  endpoint: string,
+  nCalls = 1,
+  timeoutMs = 1000,
+) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    const calls = fetch.mock.calls as Array<[string, object]>;
+    const matchingCalls = calls.filter((call) =>
+      String(call[0]).includes(endpoint),
+    );
+    if (matchingCalls.length >= nCalls) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error(
+    `Less than ${nCalls} request(s) to "${endpoint}" were made within ${timeoutMs}ms.`,
+  );
+}
+
 function resetJsPsychWorldWideLab() {
   // Reset the jsPsychWorldWideLab-Plugin state
   jsPsychWorldWideLab.ready = false;
@@ -91,6 +120,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
     // @ts-ignore (typescript doesn't recognize the mock function)
     fetch.mockClear();
@@ -135,16 +165,21 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
           time_elapsed: 123,
           internal_node_id: "0.0-0.0",
         },
+        // The client counts these up, so responses can be de-duplicated
+        clientResponseId: 0,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
+    await waitForFetchCalls("v1/session/finish");
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -178,6 +213,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
     // @ts-ignore (typescript doesn't recognize the mock function)
     fetch.mockClear();
@@ -202,6 +238,10 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       .values()[0].time_elapsed;
     const rt = jsPsych.data.getLastTrialData().values()[0].rt;
 
+    // Responses are uploaded one after the other, the second one only starts
+    // once the first has been stored.
+    await waitForFetchCalls("v1/response/", 2);
+
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
@@ -214,17 +254,24 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
           time_elapsed: time_elapsed,
           internal_node_id: "0.0-0.0",
         },
+        // The client counts these up, so responses can be de-duplicated.
+        // This is the second response, as the trial's own on_finish saves
+        // its data before the wrapper around on_trial_finish does.
+        clientResponseId: 1,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
 
+    await waitForFetchCalls("v1/session/finish");
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -271,6 +318,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
@@ -287,17 +335,22 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
             internal_node_id: "0.0-0.0",
           },
         ],
+        // The client counts these up, so responses can be de-duplicated
+        clientResponseId: 0,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
 
+    await waitForFetchCalls("v1/session/finish");
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -322,6 +375,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       body: undefined,
       headers: { "Content-Type": "none" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
 
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
@@ -332,6 +386,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
     // @ts-ignore (typescript doesn't recognize the mock function)
     fetch.mockClear();
@@ -356,6 +411,10 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       .values()[0].time_elapsed;
     const rt = jsPsych.data.getLastTrialData().values()[0].rt;
 
+    // Responses are uploaded one after the other, the second one only starts
+    // once the first has been stored.
+    await waitForFetchCalls("v1/response/", 2);
+
     expect(fetch).toHaveBeenCalledWith(`${url}v1/response/`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
@@ -368,17 +427,24 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
           time_elapsed: time_elapsed,
           internal_node_id: "0.0-0.0",
         },
+        // The client counts these up, so responses can be de-duplicated.
+        // This is the second response, as the trial's own on_finish saves
+        // its data before the wrapper around on_trial_finish does.
+        clientResponseId: 1,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
 
+    await waitForFetchCalls("v1/session/finish");
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/finish`, {
       body: JSON.stringify({
         sessionId: "my-session-id",
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
 
     // Reset state
@@ -401,6 +467,7 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       body: undefined,
       headers: { "Content-Type": "none" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
     expect(fetch).toHaveBeenCalledWith(`${url}v1/session/`, {
       body: JSON.stringify({
@@ -410,6 +477,132 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: expect.any(AbortSignal),
     });
+  });
+
+  it("should re-send responses which failed to upload", async () => {
+    // Let the first two attempts at storing a response fail
+    let failingResponses = 2;
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    const workingFetch = fetch.getMockImplementation();
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    fetch.mockImplementation((fetchUrl: string, fetchOptions) => {
+      if (String(fetchUrl).includes("v1/response/") && failingResponses > 0) {
+        failingResponses--;
+        return Promise.resolve({
+          status: 500,
+          json: () => Promise.resolve({}),
+        });
+      }
+      return workingFetch(fetchUrl, fetchOptions);
+    });
+
+    try {
+      const jsPsych = await jsPsychWorldWideLab.initJsPsych(
+        {},
+        {
+          url,
+          studyId: "my-study",
+          responseQueue: {
+            // Keep the test fast
+            initialDelay: 1,
+            maxDelay: 1,
+            jitter: false,
+          },
+        },
+      );
+
+      await startTimeline(
+        [
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: "Please press your favorite key on the keyboard.",
+          },
+        ],
+        jsPsych,
+      );
+      pressKey("a");
+
+      expect(await jsPsychWorldWideLab.flush()).toBe(true);
+
+      // The response should have been sent three times in total, always with
+      // the same id, so the server can recognize the re-sent ones.
+      // @ts-ignore (typescript doesn't recognize the mock function)
+      const responseCalls = (fetch.mock.calls as Array<[string, any]>).filter(
+        (call) => String(call[0]).includes("v1/response/"),
+      );
+      expect(responseCalls.length).toBe(3);
+      for (const call of responseCalls) {
+        expect(JSON.parse(call[1].body).clientResponseId).toBe(0);
+      }
+      expect(failingResponses).toBe(0);
+    } finally {
+      // @ts-ignore (typescript doesn't recognize the mock function)
+      fetch.mockImplementation(workingFetch);
+    }
+  });
+
+  it("should only finish a session once all responses are stored", async () => {
+    // Let the first attempt at storing the response fail, so the session can
+    // only be finished after it has been re-sent successfully.
+    let failingResponses = 1;
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    const workingFetch = fetch.getMockImplementation();
+    // @ts-ignore (typescript doesn't recognize the mock function)
+    fetch.mockImplementation((fetchUrl: string, fetchOptions) => {
+      if (String(fetchUrl).includes("v1/response/") && failingResponses > 0) {
+        failingResponses--;
+        return Promise.resolve({
+          status: 500,
+          json: () => Promise.resolve({}),
+        });
+      }
+      return workingFetch(fetchUrl, fetchOptions);
+    });
+
+    try {
+      const jsPsych = await jsPsychWorldWideLab.initJsPsych(
+        {},
+        {
+          url,
+          studyId: "my-study",
+          responseQueue: {
+            // Keep the test fast
+            initialDelay: 1,
+            maxDelay: 1,
+            jitter: false,
+          },
+        },
+      );
+
+      await startTimeline(
+        [
+          {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: "Please press your favorite key on the keyboard.",
+          },
+        ],
+        jsPsych,
+      );
+      pressKey("a");
+
+      await waitForFetchCalls("v1/session/finish");
+
+      // @ts-ignore (typescript doesn't recognize the mock function)
+      const calledEndpoints = (fetch.mock.calls as Array<[string, any]>).map(
+        (call) => String(call[0]).replace(url, ""),
+      );
+      // The session should only be finished after the last (successful)
+      // attempt at storing the response.
+      expect(calledEndpoints.indexOf("v1/session/finish")).toBeGreaterThan(
+        calledEndpoints.lastIndexOf("v1/response/"),
+      );
+      expect(failingResponses).toBe(0);
+      expect(jsPsychWorldWideLab.pendingResponses).toBe(0);
+    } finally {
+      // @ts-ignore (typescript doesn't recognize the mock function)
+      fetch.mockImplementation(workingFetch);
+    }
   });
 });

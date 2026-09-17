@@ -8,6 +8,12 @@
  * @packageDocumentation
  */
 
+import {
+  DEFAULT_RESPONSE_QUEUE_OPTIONS,
+  ResponseQueue,
+  type ResponseQueueErrorInfo,
+  type ResponseQueueOptions,
+} from "./responseQueue";
 import { VERSION } from "./version";
 
 /**
@@ -19,6 +25,16 @@ export interface ClientOptions {
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
   url: string;
+  /**
+   * Keep responses in a queue until the server has confirmed that it stored
+   * them, re-sending them with an exponential backoff if they fail to upload.
+   *
+   * This is enabled by default. Set it to false to send responses off without
+   * checking whether they arrived.
+   *
+   * @see {@link ResponseQueueOptions}
+   */
+  responseQueue?: false | ResponseQueueOptions;
 }
 
 interface ClientUpdateOptions {
@@ -92,6 +108,16 @@ export interface ClientResponseOptions {
    * The actual data of this response
    */
   payload: object;
+  /**
+   * An id for this response, counting up from 0 within its session.
+   *
+   * @remarks
+   * You will usually not want to set this yourself, as the client keeps track
+   * of these ids for you. The server uses them to recognize responses it has
+   * already stored, so that re-sending a response which previously failed
+   * does not create a duplicate.
+   */
+  clientResponseId?: number;
 }
 
 /**
@@ -198,6 +224,15 @@ export class Client {
    * @internal
    */
   _libraryVersion?: string;
+  /**
+   * The queue holding responses until they have been stored by the server.
+   * This is undefined when the queue has been turned off.
+   */
+  private responseQueue?: ResponseQueue;
+  /**
+   * After how many milliseconds to abort a request to the server.
+   */
+  private requestTimeout: number;
 
   /**
    * Create a new Client instance
@@ -227,6 +262,66 @@ export class Client {
     }
 
     this._library = "@world-wide-lab/client";
+
+    const responseQueueOptions =
+      options.responseQueue === undefined ? {} : options.responseQueue;
+    this.requestTimeout =
+      (responseQueueOptions === false
+        ? undefined
+        : responseQueueOptions.requestTimeout) ??
+      DEFAULT_RESPONSE_QUEUE_OPTIONS.requestTimeout;
+
+    if (responseQueueOptions !== false) {
+      this.responseQueue = new ResponseQueue(
+        (method, endpoint, data, callOptions) =>
+          this.call(method, endpoint, data, callOptions),
+        responseQueueOptions,
+      );
+
+      if (
+        this.responseQueue.options.flushOnUnload &&
+        typeof window !== "undefined" &&
+        typeof window.addEventListener === "function"
+      ) {
+        window.addEventListener("pagehide", () => {
+          this.responseQueue?.flushOnUnload();
+        });
+      }
+    }
+  }
+
+  /**
+   * How many responses are still waiting to be stored by the server.
+   *
+   * @remarks
+   * This is always 0 when the response queue has been turned off.
+   */
+  get pendingResponses(): number {
+    return this.responseQueue?.pending ?? 0;
+  }
+
+  /**
+   * Responses which repeatedly failed to upload and have been given up on.
+   * These responses have *not* been stored by the server.
+   */
+  get failedResponses(): ClientResponseOptions[] {
+    return this.responseQueue?.failedResponses ?? [];
+  }
+
+  /**
+   * Wait for all responses to be stored by the server.
+   *
+   * @remarks
+   * Useful to make sure all data has arrived before e.g. re-directing
+   * participants to another page.
+   * @returns true if all responses have been stored, false if any of them had
+   *   to be given up on.
+   */
+  async flushResponses(): Promise<boolean> {
+    if (!this.responseQueue) {
+      return true;
+    }
+    return this.responseQueue.flush();
   }
 
   /**
@@ -256,8 +351,23 @@ export class Client {
       ...options,
     };
 
-    const response = await fetch(url, fetchOptions);
-    return response;
+    // Abort requests which take too long, so they can be re-tried instead of
+    // blocking everything that comes after them.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    if (fetchOptions.signal === undefined && this.requestTimeout > 0) {
+      const controller = new AbortController();
+      fetchOptions.signal = controller.signal;
+      timeout = setTimeout(() => controller.abort(), this.requestTimeout);
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+      return response;
+    } finally {
+      if (timeout !== undefined) {
+        clearTimeout(timeout);
+      }
+    }
   }
 
   /**
@@ -360,10 +470,22 @@ export class Client {
 
   /**
    * Create a new Response. See also {@link Session.response}
+   *
+   * @remarks
+   * Unless the response queue has been turned off, the returned promise only
+   * resolves once the server has confirmed that it stored the response. Failed
+   * uploads are re-tried automatically, so this can take a while when the
+   * connection is unreliable.
    * @param opts - Options to create the response with
-   * @returns true if the response was created successfully
+   * @returns true if the response was stored, false if it had to be given up on
    */
   async createResponse(opts: ClientResponseOptions): Promise<boolean> {
+    if (this.responseQueue) {
+      // The queue keeps hold of the response until the server confirms that it
+      // has been stored, re-trying it if necessary.
+      return this.responseQueue.enqueue(opts);
+    }
+
     const result = await this.call("POST", "/response/", opts);
     return result.status === 200;
   }
@@ -537,6 +659,11 @@ export class Session extends _ClientModel {
 
   /**
    * Create a new Response.
+   *
+   * @remarks
+   * Unless the response queue has been turned off, the returned promise only
+   * resolves once the server has confirmed that it stored the response.
+   * @returns true if the response was stored, false if it had to be given up on
    */
   response(opts: Omit<ClientResponseOptions, "sessionId">): Promise<boolean> {
     const createResponseOptions = { sessionId: this.sessionId, ...opts };
@@ -686,5 +813,7 @@ export function oneYearAgo(): Date {
   now.setFullYear(now.getFullYear() - 1);
   return now;
 }
+
+export type { ResponseQueueOptions, ResponseQueueErrorInfo };
 
 export { VERSION };

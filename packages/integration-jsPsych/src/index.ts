@@ -13,7 +13,11 @@ import {
   initJsPsych,
 } from "jspsych";
 
-import { Client, type Session } from "@world-wide-lab/client";
+import {
+  Client,
+  type ResponseQueueOptions,
+  type Session,
+} from "@world-wide-lab/client";
 import { VERSION } from "./version";
 
 type SessionResponseOptions = Parameters<Session["response"]>[0];
@@ -61,6 +65,18 @@ export type SetupOptions = {
     privateInfo?: object;
     publicInfo?: object;
   };
+
+  /**
+   * Keep responses in a queue until the World-Wide-Lab server has confirmed
+   * that it stored them, re-sending them with an exponential backoff if they
+   * fail to upload.
+   *
+   * This is enabled by default. Set it to false to send responses off without
+   * checking whether they arrived.
+   *
+   * @see {@link @world-wide-lab/client#ResponseQueueOptions}
+   */
+  responseQueue?: false | ResponseQueueOptions;
 };
 
 /**
@@ -300,6 +316,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     }
     jsPsychWorldWideLab.client = new Client({
       url: options.url,
+      responseQueue: options.responseQueue,
     });
     jsPsychWorldWideLab.client._library = "@world-wide-lab/integration-jspsych";
     jsPsychWorldWideLab.client._libraryVersion = VERSION;
@@ -391,35 +408,86 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return initJsPsych(jsPsychOptions);
   }
 
+  /**
+   * Responses collected before the Session has been created. Once the client
+   * is ready, these are handed over to the client, which keeps hold of them
+   * until the server confirms that it stored them.
+   */
   private static responseQueue: SessionResponseOptions[] = [];
   /**
    * Save a response to World-Wide-Lab.
    * @param trialName - The name of the trial to store the data under.
    * @param data - The data to store.
+   * @returns true if the response was stored, false if it had to be given up on
    */
-  public static async save(trialName: string, data: object) {
+  public static async save(
+    trialName: string,
+    data: object,
+  ): Promise<boolean | undefined> {
     const response: SessionResponseOptions = { name: trialName, payload: data };
     if (jsPsychWorldWideLab.ready) {
-      await jsPsychWorldWideLab._saveResponse(response);
-    } else {
-      // Queue the response until we're ready
-      jsPsychWorldWideLab.responseQueue.push(response);
+      return jsPsychWorldWideLab._saveResponse(response);
     }
+    // Queue the response until we're ready
+    jsPsychWorldWideLab.responseQueue.push(response);
+    return undefined;
   }
-  private static async sendQueuedResponses() {
+  private static sendQueuedResponses() {
+    // Hand the responses over in the order they were collected. They are not
+    // awaited one by one here, as the client already uploads them one after
+    // the other.
     while (jsPsychWorldWideLab.responseQueue.length > 0) {
       const entry = jsPsychWorldWideLab.responseQueue.shift();
-      await jsPsychWorldWideLab._saveResponse(entry);
+      jsPsychWorldWideLab._saveResponse(entry);
     }
   }
-  private static async _saveResponse(response: SessionResponseOptions) {
-    await jsPsychWorldWideLab.session.response(response);
+  private static async _saveResponse(
+    response: SessionResponseOptions,
+  ): Promise<boolean> {
+    return jsPsychWorldWideLab.session.response(response);
+  }
+
+  /**
+   * How many responses have not been stored by the server yet.
+   */
+  public static get pendingResponses(): number {
+    return (
+      jsPsychWorldWideLab.responseQueue.length +
+      (jsPsychWorldWideLab.client?.pendingResponses ?? 0)
+    );
+  }
+
+  /**
+   * Wait for all responses to be stored by the server.
+   *
+   * @remarks
+   * Useful to make sure all data has arrived before e.g. re-directing
+   * participants to another page.
+   * @returns true if all responses have been stored, false if any of them had
+   *   to be given up on.
+   */
+  public static async flush(): Promise<boolean> {
+    await jsPsychWorldWideLab.setupCompleted();
+
+    return jsPsychWorldWideLab.client.flushResponses();
   }
 
   /**
    * Finish the experiment and mark the {@link @world-wide-lab/client#Session} as finished.
+   *
+   * @remarks
+   * This waits for all responses to be stored before finishing the session, so
+   * that sessions are only marked as finished once all of their data has
+   * arrived.
    */
   public static async onExperimentFinish() {
+    const everythingStored = await jsPsychWorldWideLab.flush();
+    if (!everythingStored) {
+      console.error(
+        `[World-Wide-Lab] ${jsPsychWorldWideLab.client.failedResponses.length} response(s) could not be stored and are lost.`,
+      );
+    }
+
     await jsPsychWorldWideLab.session.finish();
   }
 
