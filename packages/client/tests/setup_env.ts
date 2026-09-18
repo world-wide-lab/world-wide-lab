@@ -6,3 +6,4 @@ process.env.DATABASE_URL = "sqlite::memory:";
 process.env.DEFAULT_API_KEY = "jest-key";
 
 process.env.CREATE_LEADERBOARDS = "lb-test";
+process.env.CREATE_ITEM_POOLS = "pool-test,gallery-test";
