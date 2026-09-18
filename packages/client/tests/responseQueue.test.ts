@@ -37,7 +37,6 @@ function mockFetch(results: Array<FakeResponse | Error>) {
       },
       json: () => Promise.resolve(result.body ?? {}),
     });
-
   }) as any;
 
   return { calls };
