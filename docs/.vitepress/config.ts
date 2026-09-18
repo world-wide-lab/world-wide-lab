@@ -54,6 +54,10 @@ export default defineConfig({
         items: [{ text: "Leaderboards", link: "/guides/leaderboards" }],
       },
       {
+        text: "Participant-Generated Content",
+        items: [{ text: "Items", link: "/guides/items" }],
+      },
+      {
         text: "Running World-Wide-Lab",
         items: [
           { text: "Running Locally", link: "/guides/running-locally" },

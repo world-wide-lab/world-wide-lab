@@ -10,4 +10,4 @@ documentation lives in `docs/guides/`.
 
 | Proposal | Status |
 | --- | --- |
-| [0001 – Surfacing participant responses to other participants](./0001-surfacing-participant-responses.md) | Draft |
+| [0001 – Surfacing participant responses to other participants](./0001-surfacing-participant-responses.md) | Implemented – see the [items guide](../docs/guides/items.md) |

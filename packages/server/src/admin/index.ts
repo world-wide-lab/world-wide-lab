@@ -561,7 +561,10 @@ const admin = new AdminJS({
             isVisible: { list: true, filter: true, show: true, edit: true },
             position: 2,
             availableValues: [
-              { value: "reviewed", label: "Reviewed: only approved items are shown" },
+              {
+                value: "reviewed",
+                label: "Reviewed: only approved items are shown",
+              },
               {
                 value: "unreviewed",
                 label: "Unreviewed: contributions are shown right away",

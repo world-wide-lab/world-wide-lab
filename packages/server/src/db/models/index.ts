@@ -547,10 +547,19 @@ function defineModels(sequelize: Sequelize) {
     as: "contributedItems",
     foreignKey: "sourceSessionId",
   });
-  Item.belongsTo(Session, { as: "sourceSession", foreignKey: "sourceSessionId" });
+  Item.belongsTo(Session, {
+    as: "sourceSession",
+    foreignKey: "sourceSessionId",
+  });
 
-  Response.hasMany(Item, { as: "generatedItems", foreignKey: "sourceResponseId" });
-  Item.belongsTo(Response, { as: "sourceResponse", foreignKey: "sourceResponseId" });
+  Response.hasMany(Item, {
+    as: "generatedItems",
+    foreignKey: "sourceResponseId",
+  });
+  Item.belongsTo(Response, {
+    as: "sourceResponse",
+    foreignKey: "sourceResponseId",
+  });
 
   Item.hasMany(Item, { as: "childItems", foreignKey: "parentItemId" });
   Item.belongsTo(Item, { as: "parentItem", foreignKey: "parentItemId" });

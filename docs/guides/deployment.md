@@ -112,3 +112,14 @@ After the deployment is finished, you will receive a URL where you can access Wo
 If you have experience with Docker, you can also easily deploy World-Wide-Lab yourself. You will only need to run the Docker container and provide it with a connection to a Postgres database. You can find the Docker images for World-Wide-Lab on the [GitHub Container Registry](https://github.com/world-wide-lab/world-wide-lab/pkgs/container/server).
 
 We also reccomend taking a look at the example [docker compose file](https://github.com/world-wide-lab/world-wide-lab/blob/main/docker/docker-compose.yml) in the World-Wide-Lab repository, which contains a working configuration of World-Wide-Lab and a Postgres database.
+
+## Rate Limiting
+
+World-Wide-Lab does not rate-limit its public API, so whatever sits in front
+of it — a load balancer, a reverse proxy, or a CDN — is where a limit belongs.
+
+This matters most if you use [items](./items): contributing is a public write
+endpoint whose content other participants get to see, which makes it a more
+attractive target than the rest of the API. A modest per-IP limit on
+`POST /v1/item-pool/:poolId/item` is a good idea for any study that is open to
+the internet, alongside keeping the pool's moderation set to `reviewed`.

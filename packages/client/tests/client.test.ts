@@ -224,7 +224,6 @@ describe("Client", () => {
     expect(sessionFinishResult).toBe(true);
   });
 
-
   it("should contribute an item, draw it and react to it", async () => {
     const author = await client.createSession({ studyId: "example" });
 

@@ -31,7 +31,10 @@ async function createPool(
   await sequelize.models.ItemPool.create({ poolId, ...options });
 }
 
-async function createItem(poolId: string, options: { [key: string]: any } = {}) {
+async function createItem(
+  poolId: string,
+  options: { [key: string]: any } = {},
+) {
   const item: any = await sequelize.models.Item.create({
     poolId,
     publicPayload: { text: "hello" },
@@ -298,7 +301,9 @@ describe("Items", () => {
       });
 
       const response = await endpoint
-        .get(`/v1/item-pool/exclude-participant/draw?sessionId=${secondSessionId}`)
+        .get(
+          `/v1/item-pool/exclude-participant/draw?sessionId=${secondSessionId}`,
+        )
         .send();
 
       expect(response.status).toBe(200);
@@ -397,7 +402,9 @@ describe("Items", () => {
       }
 
       const response = await endpoint
-        .get(`/v1/item-pool/many/draw?sessionId=${await createSession()}&count=3`)
+        .get(
+          `/v1/item-pool/many/draw?sessionId=${await createSession()}&count=3`,
+        )
         .send();
 
       expect(response.body.draws).toHaveLength(3);
@@ -430,9 +437,9 @@ describe("Items", () => {
 
       const item = await getItem(itemId);
       expect(item).toHaveProperty("timesDrawn", 2);
-      expect(
-        await sequelize.models.ItemDraw.count({ where: { itemId } }),
-      ).toBe(2);
+      expect(await sequelize.models.ItemDraw.count({ where: { itemId } })).toBe(
+        2,
+      );
     });
 
     it("should reject an unknown poolId", async () => {
