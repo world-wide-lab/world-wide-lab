@@ -6,7 +6,7 @@ import express, {
 import Sequelize from "sequelize";
 import { ForeignKeyConstraintError } from "sequelize";
 import { date, number, object, string } from "yup";
-import { cache } from "../cache.js";
+import { cache, getCacheKey } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
 import {
@@ -753,7 +753,7 @@ routerPublic.get(
       const count =
         cacheFor === undefined
           ? await getCount()
-          : await cache.wrap(req.path, getCount, cacheFor * 1000);
+          : await cache.wrap(getCacheKey(req), getCount, cacheFor * 1000);
 
       // When the count is 0, check whether it may be due to the study not existing
       if (count === 0) {
@@ -845,7 +845,7 @@ routerPublic.get(
       const finalCounts =
         cacheFor === undefined
           ? await getCounts()
-          : await cache.wrap(req.path, getCounts, cacheFor * 1000);
+          : await cache.wrap(getCacheKey(req), getCounts, cacheFor * 1000);
 
       res.status(200).json(finalCounts);
     } catch (error) {
@@ -1224,7 +1224,7 @@ routerPublic.get(
       const scores =
         cacheFor === undefined
           ? await getScores()
-          : await cache.wrap(req.path + req.query, getScores, cacheFor * 1000);
+          : await cache.wrap(getCacheKey(req), getScores, cacheFor * 1000);
 
       // When the count is 0, check whether it may be due to the study not existing
       if (scores.length === 0) {
