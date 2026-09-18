@@ -27,6 +27,7 @@ exports[`Replication > API of Replication Source > should download a raw list of
   "name",
   "payload",
   "sessionId",
+  "clientResponseId",
 ]
 `;
 
@@ -107,5 +108,6 @@ exports[`Replication > API of Replication Source > should support proper chunkin
   "name",
   "payload",
   "sessionId",
+  "clientResponseId",
 ]
 `;
