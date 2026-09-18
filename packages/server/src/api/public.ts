@@ -10,6 +10,8 @@ import { cache } from "../cache.js";
 import config from "../config.js";
 import sequelize from "../db/index.js";
 import {
+  type DrawPolicy,
+  type ModerationMode,
   completeDraw,
   drawItems,
   itemTransaction,
@@ -46,9 +48,6 @@ import {
 const routerPublic = express.Router();
 
 const successfulResponsePayload = { success: true };
-
-// How many items the gallery endpoint returns when no limit is requested
-const DEFAULT_ITEM_LIST_LIMIT = 100;
 
 /**
  * @openapi
@@ -554,16 +553,13 @@ routerPublic.get(
  *                 type: object
  *               drawId:
  *                 type: string
- *                 description: >
- *                   The draw this response was produced in reaction to, if the
- *                   participant was reacting to an item drawn from a pool.
+ *                 description: The draw this response was produced in reaction to.
  *               completesDraw:
  *                 type: boolean
  *                 default: true
  *                 description: >
  *                   Whether this response completes the draw it refers to.
- *                   Set this to false on trials which only make up part of a
- *                   reaction, so that the last one closes the draw.
+ *                   False on trials which are only part of a reaction.
  *             required:
  *               - sessionId
  *               - name
@@ -1253,9 +1249,10 @@ routerPublic.get(
 // Which items may be handed out is decided by the pool (moderation), what to
 // hand out right now is decided by the query (policy, caps, exclusions).
 
-// Only ever hand these fields back out on the public API. Everything else on
-// an item (who contributed it, its privateInfo, how often it has been served)
-// is internal.
+const poolIdSchema = object({ poolId: string().required() });
+
+// Only ever hand these fields back out. Everything else on an item (who
+// contributed it, its privateInfo, how often it has been served) is internal.
 function toPublicItem(item: any) {
   return {
     itemId: item.itemId,
@@ -1281,9 +1278,8 @@ async function getPoolOrFail(poolId: string) {
  *   post:
  *     summary: Contribute an item to a pool
  *     description: >
- *       Add a new item to a pool, so that it can be shown to other
- *       participants. Whether the item is shown right away depends on the
- *       pool's moderation setting.
+ *       Add a new item to a pool. Whether it is shown to others right away
+ *       depends on the pool's moderation setting.
  *     tags:
  *       - items
  *     parameters:
@@ -1303,22 +1299,20 @@ async function getPoolOrFail(poolId: string) {
  *               publicPayload:
  *                 type: object
  *                 description: >
- *                   The content of the item. This is shown to other
- *                   participants, so it must not contain sensitive information.
+ *                   The content of the item. Shown to other participants, so
+ *                   it must not contain sensitive information.
  *               sessionId:
  *                 type: string
  *                 description: >
- *                   The session contributing the item. Optional, but strongly
- *                   encouraged: without it the item cannot be attributed,
- *                   excluded from its own author or retracted.
+ *                   The session contributing the item. Optional, but without
+ *                   it the item cannot be attributed, excluded from its own
+ *                   author or retracted.
  *               responseId:
  *                 type: integer
  *                 description: The response this item was generated from.
  *               parentItemId:
  *                 type: string
- *                 description: >
- *                   The item this one was generated from, e.g. the previous
- *                   link of a transmission chain.
+ *                 description: The item this one was generated from.
  *               privateInfo:
  *                 type: object
  *             required:
@@ -1335,9 +1329,7 @@ routerPublic.post(
   "/item-pool/:poolId/item",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { poolId } = object({
-        poolId: string().required(),
-      }).validateSync(req.params);
+      const { poolId } = poolIdSchema.validateSync(req.params);
       const contribution = sanitizeNullBytes(
         itemContributionSchema.validateSync(req.body),
       );
@@ -1375,7 +1367,7 @@ routerPublic.post(
         if (!parent) {
           throw new AppError("Unknown parentItemId", 400);
         }
-        generation = (parent.generation || 0) + 1;
+        generation = (parent.generation ?? 0) + 1;
       }
 
       if (contribution.sessionId !== undefined) {
@@ -1423,9 +1415,8 @@ routerPublic.post(
  *   get:
  *     summary: Draw one or more items from a pool
  *     description: >
- *       Hand items from a pool to a session and record that they have been
- *       served to it. Since this endpoint changes data, its results can not be
- *       cached.
+ *       Hand items from a pool to a session and record that they were served
+ *       to it. This changes data, so results can not be cached.
  *     tags:
  *       - items
  *     parameters:
@@ -1460,19 +1451,14 @@ routerPublic.post(
  *           ]
  *         required: false
  *         default: random
- *         description: >
- *           Which items to prefer. Use least-drawn to spread participants
- *           evenly across the pool, which is what balanced ratings and
- *           transmission chains want.
+ *         description: Which items to prefer.
  *       - in: query
  *         name: excludeOwn
  *         schema:
  *           type: boolean
  *         required: false
  *         default: true
- *         description: >
- *           Skip items this session contributed and, if the session belongs to
- *           a participant, items contributed in any of their other sessions.
+ *         description: Skip items this participant contributed themselves.
  *       - in: query
  *         name: excludeSeen
  *         schema:
@@ -1486,17 +1472,14 @@ routerPublic.post(
  *           type: integer
  *         required: false
  *         description: >
- *           Only draw items which have been served fewer than this many times.
- *           Note that a draw counts as soon as it is served and is never
- *           returned, so a participant who abandons the study keeps their draw.
+ *           Only draw items served fewer than this many times. A draw counts
+ *           as soon as it is served and is never returned.
  *       - in: query
  *         name: maxCompletionsPerItem
  *         schema:
  *           type: integer
  *         required: false
- *         description: >
- *           Only draw items whose draws have been completed fewer than this
- *           many times. This is how an item retires after n completions.
+ *         description: Only draw items completed fewer than this many times.
  *       - in: query
  *         name: minGeneration
  *         schema:
@@ -1512,9 +1495,8 @@ routerPublic.post(
  *     responses:
  *       '200':
  *         description: >
- *           Successfully drew items. The list of draws can be shorter than the
- *           requested count, or empty, when the pool has run out of items
- *           matching the query.
+ *           Successfully drew items. The list can be shorter than the
+ *           requested count, or empty, if the pool has run out of matches.
  *       '400':
  *         description: Invalid query, unknown poolId or unknown sessionId.
  *       '500':
@@ -1524,15 +1506,12 @@ routerPublic.get(
   "/item-pool/:poolId/draw",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { poolId } = object({
-        poolId: string().required(),
-      }).validateSync(req.params);
+      const { poolId } = poolIdSchema.validateSync(req.params);
       const query = drawQuerySchema.validateSync(req.query);
 
       if (
-        query.minGeneration !== undefined &&
-        query.maxGeneration !== undefined &&
-        query.minGeneration > query.maxGeneration
+        (query.minGeneration ?? 0) >
+        (query.maxGeneration ?? Number.POSITIVE_INFINITY)
       ) {
         throw new AppError(
           "minGeneration can not be larger than maxGeneration",
@@ -1552,18 +1531,11 @@ routerPublic.get(
       }
 
       const results = await drawItems({
+        ...query,
         poolId,
-        moderation: pool.moderation as any,
-        sessionId: query.sessionId,
+        moderation: pool.moderation as ModerationMode,
+        policy: query.policy as DrawPolicy,
         participantId: session.participantId,
-        count: query.count,
-        policy: query.policy as any,
-        excludeOwn: query.excludeOwn,
-        excludeSeen: query.excludeSeen,
-        maxDrawsPerItem: query.maxDrawsPerItem,
-        maxCompletionsPerItem: query.maxCompletionsPerItem,
-        minGeneration: query.minGeneration,
-        maxGeneration: query.maxGeneration,
       });
 
       res.status(200).json({
@@ -1584,9 +1556,8 @@ routerPublic.get(
  *   post:
  *     summary: Complete a draw without storing a response
  *     description: >
- *       Mark a draw as completed. Responses can do this on their own via their
- *       drawId, so this endpoint is for tasks whose outcome is not logged as
- *       study data, or where the completion signal arrives separately.
+ *       Mark a draw as completed. Responses do this via their own drawId, so
+ *       this is for outcomes which are not logged as study data.
  *     tags:
  *       - items
  *     parameters:
@@ -1644,8 +1615,7 @@ routerPublic.post(
  *     summary: Retrieve items from a pool
  *     description: >
  *       Read items from a pool without drawing them, e.g. to show a wall of
- *       what other participants have produced. Nothing is recorded, so results
- *       can be cached.
+ *       what other participants produced. Nothing is recorded, so this caches.
  *     tags:
  *       - items
  *     parameters:
@@ -1681,8 +1651,7 @@ routerPublic.post(
  *         required: false
  *         description: >
  *           Cache the result for this many seconds. Retracted items can still
- *           show up until the cache expires, so pick this based on how fresh
- *           the list needs to be.
+ *           show up until the cache expires.
  *     responses:
  *       '200':
  *         description: Successfully retrieved items.
@@ -1695,23 +1664,22 @@ routerPublic.get(
   "/item-pool/:poolId/items",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { poolId } = object({
-        poolId: string().required(),
-      }).validateSync(req.params);
+      const { poolId } = poolIdSchema.validateSync(req.params);
       const { limit, sort, cacheFor } = itemListQuerySchema.validateSync(
         req.query,
       );
 
       const pool = await getPoolOrFail(poolId);
 
-      let order: any;
-      if (sort === "oldest") {
-        order = [["createdAt", "ASC"]];
-      } else if (sort === "random") {
-        order = sequelize.random();
-      } else {
-        order = [["createdAt", "DESC"]];
-      }
+      // itemId breaks ties between items created in the same millisecond
+      const direction = sort === "oldest" ? "ASC" : "DESC";
+      const order: any =
+        sort === "random"
+          ? sequelize.random()
+          : [
+              ["createdAt", direction],
+              ["itemId", direction],
+            ];
 
       // Not raw, so that the payload comes back as JSON on every dialect
       const getItems = async () =>
@@ -1720,10 +1688,10 @@ routerPublic.get(
             attributes: ["itemId", "publicPayload", "generation"],
             where: {
               poolId,
-              status: visibleItemStatuses(pool.moderation as any),
+              status: visibleItemStatuses(pool.moderation as ModerationMode),
             },
             order,
-            limit: limit || DEFAULT_ITEM_LIST_LIMIT,
+            limit,
           })
         ).map((item) => item.toJSON());
 
@@ -1750,8 +1718,7 @@ routerPublic.get(
  *     summary: Retract an item
  *     description: >
  *       Withdraw an item a session contributed, so that it is no longer shown
- *       to anyone. This is also what a participant asking for their data to be
- *       withdrawn needs.
+ *       to anyone. Also serves participant withdrawal requests.
  *     tags:
  *       - items
  *     parameters:

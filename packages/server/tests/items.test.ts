@@ -625,13 +625,17 @@ describe("Items", () => {
 
     beforeAll(async () => {
       await createPool(POOL_ID);
+      // Explicit timestamps, since two items contributed in the same
+      // millisecond have no defined order relative to each other
       await createItem(POOL_ID, {
         status: "approved",
         publicPayload: { text: "first" },
+        createdAt: new Date("2026-01-01T00:00:00Z"),
       });
       await createItem(POOL_ID, {
         status: "approved",
         publicPayload: { text: "second" },
+        createdAt: new Date("2026-01-02T00:00:00Z"),
       });
       // Neither of these should ever show up on the wall
       await createItem(POOL_ID, { publicPayload: { text: "unapproved" } });

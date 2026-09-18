@@ -189,7 +189,7 @@ const drawQuerySchema = object({
 
 // Query parameters of the read-only gallery endpoint
 const itemListQuerySchema = object({
-  limit: number().integer().min(1).max(1000).optional(),
+  limit: number().integer().min(1).max(1000).optional().default(100),
   sort: string().oneOf(["newest", "oldest", "random"]).optional(),
   cacheFor: number().integer().optional(),
 }).noUnknown();

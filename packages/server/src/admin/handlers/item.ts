@@ -6,48 +6,38 @@ import {
 } from "adminjs";
 import sequelize from "../../db/index.js";
 
-async function viewItemsHandler(
-  request: ActionRequest,
-  response: ActionResponse,
-  context: ActionContext,
-): Promise<ActionResponse> {
-  const { record, currentAdmin, h } = context;
+// Jump from a record to the rows belonging to it, e.g. from a pool to its
+// items or from an item to the sessions it was served to.
+function createViewHandler(resourceId: string, filterKey: string) {
+  return async (
+    request: ActionRequest,
+    response: ActionResponse,
+    context: ActionContext,
+  ): Promise<ActionResponse> => {
+    const { record, currentAdmin, h } = context;
 
-  if (!request.params.recordId || !record) {
-    throw new NotFoundError(
-      ['You have to pass "recordId" to the View Items Action'].join("\n"),
-      "Action#handler",
-    );
-  }
+    if (!request.params.recordId || !record) {
+      throw new NotFoundError(
+        'You have to pass "recordId" to this action',
+        "Action#handler",
+      );
+    }
 
-  return {
-    record: record.toJSON(currentAdmin),
-    redirectUrl: h.listUrl("wwl_items", `?filters.poolId=${record.id()}`),
+    return {
+      record: record.toJSON(currentAdmin),
+      redirectUrl: h.listUrl(
+        resourceId,
+        `?filters.${filterKey}=${record.id()}`,
+      ),
+    };
   };
 }
 
-async function viewItemDrawsHandler(
-  request: ActionRequest,
-  response: ActionResponse,
-  context: ActionContext,
-): Promise<ActionResponse> {
-  const { record, currentAdmin, h } = context;
-
-  if (!request.params.recordId || !record) {
-    throw new NotFoundError(
-      ['You have to pass "recordId" to the View Draws Action'].join("\n"),
-      "Action#handler",
-    );
-  }
-
-  return {
-    record: record.toJSON(currentAdmin),
-    redirectUrl: h.listUrl("wwl_item_draws", `?filters.itemId=${record.id()}`),
-  };
-}
+const viewItemsHandler = createViewHandler("wwl_items", "poolId");
+const viewItemDrawsHandler = createViewHandler("wwl_item_draws", "itemId");
 
 // The moderation queue works on many items at a time, so approving, rejecting
-// and retiring are all bulk actions over the same update.
+// and retiring are bulk actions over the same update.
 function createModerationHandler(status: "approved" | "rejected" | "retired") {
   return async (
     request: ActionRequest,
@@ -58,7 +48,7 @@ function createModerationHandler(status: "approved" | "rejected" | "retired") {
 
     if (!records || records.length === 0) {
       throw new NotFoundError(
-        ["You have to select at least one item"].join("\n"),
+        "You have to select at least one item",
         "Action#handler",
       );
     }
