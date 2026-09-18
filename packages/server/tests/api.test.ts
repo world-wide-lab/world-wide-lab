@@ -1486,26 +1486,31 @@ describe("API Routes", () => {
         .post("/v1/study")
         .send({ studyId: DEDUPLICATION_STUDY_ID });
     });
-    async function createSessionForDeduplication(): Promise<string> {
+    async function newSession(): Promise<string> {
       const sessionResponse = await endpoint
         .post("/v1/session")
         .send({ studyId: DEDUPLICATION_STUDY_ID });
       return sessionResponse.body.sessionId;
     }
-
-    it("should store a response with a clientResponseId", async () => {
-      const dedupSessionId = await createSessionForDeduplication();
-
-      const response = await endpoint.post("/v1/response").send({
-        sessionId: dedupSessionId,
+    function postResponse(sessionId: string, clientResponseId?: number) {
+      return endpoint.post("/v1/response").send({
+        sessionId,
         name: "test_trail",
         payload: { key_1: "value 1" },
-        clientResponseId: 0,
+        ...(clientResponseId !== undefined && { clientResponseId }),
       });
+    }
+    function countResponses(sessionId: string) {
+      return sequelize.models.Response.count({ where: { sessionId } });
+    }
+
+    it("should store a response with a clientResponseId", async () => {
+      const sessionId = await newSession();
+
+      const response = await postResponse(sessionId, 0);
 
       expect(response.status).toBe(200);
       expect(response.body.duplicate).toBe(undefined);
-
       const storedResponse = await sequelize.models.Response.findOne({
         where: { responseId: response.body.responseId },
       });
@@ -1513,20 +1518,10 @@ describe("API Routes", () => {
     });
 
     it("should not store the same clientResponseId twice", async () => {
-      const dedupSessionId = await createSessionForDeduplication();
-      const responseData = {
-        sessionId: dedupSessionId,
-        name: "test_trail",
-        payload: { key_1: "value 1" },
-        clientResponseId: 0,
-      };
+      const sessionId = await newSession();
 
-      const firstResponse = await endpoint
-        .post("/v1/response")
-        .send(responseData);
-      const secondResponse = await endpoint
-        .post("/v1/response")
-        .send(responseData);
+      const firstResponse = await postResponse(sessionId, 0);
+      const secondResponse = await postResponse(sessionId, 0);
 
       expect(firstResponse.status).toBe(200);
       expect(secondResponse.status).toBe(200);
@@ -1535,51 +1530,25 @@ describe("API Routes", () => {
         firstResponse.body.responseId,
       );
       expect(secondResponse.body.duplicate).toBe(true);
-
-      const nResponses = await sequelize.models.Response.count({
-        where: { sessionId: dedupSessionId },
-      });
-      expect(nResponses).toBe(1);
+      expect(await countResponses(sessionId)).toBe(1);
     });
 
     it("should store different clientResponseIds separately", async () => {
-      const dedupSessionId = await createSessionForDeduplication();
+      const sessionId = await newSession();
 
       for (const clientResponseId of [0, 1, 2]) {
-        const response = await endpoint.post("/v1/response").send({
-          sessionId: dedupSessionId,
-          name: `test_trail_${clientResponseId}`,
-          payload: { key_1: "value 1" },
-          clientResponseId,
-        });
+        const response = await postResponse(sessionId, clientResponseId);
         expect(response.status).toBe(200);
         expect(response.body.duplicate).toBe(undefined);
       }
 
-      const nResponses = await sequelize.models.Response.count({
-        where: { sessionId: dedupSessionId },
-      });
-      expect(nResponses).toBe(3);
+      expect(await countResponses(sessionId)).toBe(3);
     });
 
     it("should allow the same clientResponseId in different sessions", async () => {
-      const firstSessionId = await createSessionForDeduplication();
-      const secondSessionId = await createSessionForDeduplication();
+      const firstResponse = await postResponse(await newSession(), 0);
+      const secondResponse = await postResponse(await newSession(), 0);
 
-      const firstResponse = await endpoint.post("/v1/response").send({
-        sessionId: firstSessionId,
-        name: "test_trail",
-        payload: { key_1: "value 1" },
-        clientResponseId: 0,
-      });
-      const secondResponse = await endpoint.post("/v1/response").send({
-        sessionId: secondSessionId,
-        name: "test_trail",
-        payload: { key_1: "value 1" },
-        clientResponseId: 0,
-      });
-
-      expect(firstResponse.status).toBe(200);
       expect(secondResponse.status).toBe(200);
       expect(secondResponse.body.duplicate).toBe(undefined);
       expect(secondResponse.body.responseId).not.toBe(
@@ -1588,33 +1557,17 @@ describe("API Routes", () => {
     });
 
     it("should store multiple responses without a clientResponseId", async () => {
-      const dedupSessionId = await createSessionForDeduplication();
-      const responseData = {
-        sessionId: dedupSessionId,
-        name: "test_trail",
-        payload: { key_1: "value 1" },
-      };
+      const sessionId = await newSession();
 
-      // Clients from before clientResponseId existed do not send one, their
-      // responses should all be stored.
-      await endpoint.post("/v1/response").send(responseData);
-      await endpoint.post("/v1/response").send(responseData);
+      // Clients from before clientResponseId existed do not send one
+      await postResponse(sessionId);
+      await postResponse(sessionId);
 
-      const nResponses = await sequelize.models.Response.count({
-        where: { sessionId: dedupSessionId },
-      });
-      expect(nResponses).toBe(2);
+      expect(await countResponses(sessionId)).toBe(2);
     });
 
     it("should reject an invalid clientResponseId", async () => {
-      const dedupSessionId = await createSessionForDeduplication();
-
-      const response = await endpoint.post("/v1/response").send({
-        sessionId: dedupSessionId,
-        name: "test_trail",
-        payload: { key_1: "value 1" },
-        clientResponseId: -1,
-      });
+      const response = await postResponse(await newSession(), -1);
 
       expect(response.status).toBe(400);
     });

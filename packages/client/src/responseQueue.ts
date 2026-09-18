@@ -7,58 +7,32 @@ import type { ClientResponseOptions, HTTPMethod } from "./index";
  * @public
  */
 export interface ResponseQueueOptions {
-  /**
-   * How often to try uploading a response before giving up on it.
-   * This includes the first attempt, so a value of 1 disables retrying.
-   *
-   * Default: 10
-   */
+  /** How often to try uploading a response, including the first attempt (default: 10) */
   maxAttempts?: number;
-  /**
-   * How long to wait before the first retry, in milliseconds.
-   *
-   * Default: 1000
-   */
+  /** How long to wait before the first retry, in ms (default: 1000) */
   initialDelay?: number;
-  /**
-   * The maximum time to wait between two attempts, in milliseconds.
-   *
-   * Default: 30000
-   */
+  /** The maximum time to wait between two attempts, in ms (default: 30000) */
   maxDelay?: number;
-  /**
-   * By how much to multiply the delay after every failed attempt.
-   *
-   * Default: 2
-   */
+  /** By how much to multiply the delay after every failed attempt (default: 2) */
   factor?: number;
   /**
-   * Whether to randomize the delays between attempts. This avoids many
-   * participants hitting the server at the exact same time, once it comes
-   * back up again.
-   *
-   * Default: true
+   * Whether to randomize the delays between attempts, so not all participants
+   * retry at the same time once the server is back up (default: true)
    */
   jitter?: boolean;
   /**
-   * How long to wait for a single request before aborting and re-trying it,
-   * in milliseconds. This also applies to all other requests made by the
-   * client.
-   *
-   * Default: 30000
+   * When to abort a request and try again, in ms. This also applies to all
+   * other requests made by the client (default: 30000)
    */
   requestTimeout?: number;
   /**
-   * Whether to try sending off any remaining responses when the page is
-   * being closed. This is always just a best effort and can fail.
-   *
-   * Default: true
+   * Whether to try sending off any remaining responses when the page is being
+   * closed. This is always just a best effort (default: true)
    */
   flushOnUnload?: boolean;
   /**
-   * Called whenever an attempt to upload a response fails, in addition to
-   * the message being logged to the console. Useful to forward these events
-   * to your own error tracking.
+   * Called whenever an attempt to upload a response fails, in addition to the
+   * message being logged to the console.
    */
   onError?: (info: ResponseQueueErrorInfo) => void;
 }
@@ -70,49 +44,21 @@ export interface ResponseQueueOptions {
  * @public
  */
 export interface ResponseQueueErrorInfo {
-  /**
-   * The response which failed to upload.
-   */
+  /** The response which failed to upload */
   response: ClientResponseOptions;
-  /**
-   * How often uploading this response has been attempted so far.
-   */
+  /** How often uploading this response has been attempted so far */
   attempt: number;
-  /**
-   * How often uploading this response will be attempted in total.
-   */
+  /** How often uploading this response will be attempted in total */
   maxAttempts: number;
-  /**
-   * Whether the response will be re-sent. If this is false, the response has
-   * been given up on and is lost.
-   */
+  /** Whether the response will be re-sent. If false, it is lost. */
   willRetry: boolean;
-  /**
-   * How long we will wait before the next attempt, in milliseconds.
-   */
+  /** How long we will wait before the next attempt, in ms */
   retryInMs?: number;
-  /**
-   * The HTTP status code the server responded with (if it responded).
-   */
+  /** The status code the server responded with (if it responded) */
   status?: number;
-  /**
-   * The underlying error (if the request failed before getting a response).
-   */
+  /** The underlying error (if the request failed before getting a response) */
   error?: unknown;
 }
-
-/**
- * A function used by the {@link ResponseQueue} to actually send a response to
- * the server.
- *
- * @internal
- */
-export type ResponseQueueSendFunction = (
-  method: HTTPMethod,
-  endpoint: string,
-  data: object,
-  options?: object,
-) => Promise<Response>;
 
 /**
  * The default options used by the {@link ResponseQueue}.
@@ -129,41 +75,24 @@ export const DEFAULT_RESPONSE_QUEUE_OPTIONS = {
   flushOnUnload: true,
 } as const;
 
-/**
- * How often we re-assign a new clientResponseId to a response, when the id it
- * was given is already taken by another response in the same session.
- */
+/** How often to try a new clientResponseId, when the one we picked is taken */
 const MAX_ID_REASSIGNMENTS = 5;
 
-/**
- * Status codes which indicate a problem that might go away on its own.
- */
+/** Status codes which indicate a problem that might go away on its own */
 const RETRYABLE_STATUS_CODES = [408, 425, 429];
 
 const LOG_PREFIX = "[World-Wide-Lab]";
 
-/**
- * Responses in which the payload is bigger than this are not re-sent when the
- * page is being closed, since fetch() with keepalive only supports small
- * bodies.
- */
+/** fetch() with keepalive only supports small bodies */
 const KEEPALIVE_MAX_BODY_SIZE = 64 * 1024;
 
 type QueuedResponse = ClientResponseOptions & { clientResponseId: number };
 
 interface QueueItem {
   response: QueuedResponse;
-  /**
-   * How often we tried to send this response.
-   */
   attempts: number;
-  /**
-   * How often this response had to be given a new clientResponseId.
-   */
   idReassignments: number;
-  /**
-   * Resolves the promise returned when the response was queued.
-   */
+  /** Resolves the promise returned when the response was queued */
   resolve: (acknowledged: boolean) => void;
 }
 
@@ -181,10 +110,7 @@ function describeResponse(response: ClientResponseOptions): string {
   return response.name !== undefined ? `"${response.name}"` : "(unnamed)";
 }
 
-/**
- * Parse the Retry-After header, which can either be a number of seconds or an
- * HTTP date.
- */
+/** Parse Retry-After, which is either a number of seconds or an HTTP date */
 function parseRetryAfter(header: string | null): number | undefined {
   if (!header) {
     return undefined;
@@ -211,17 +137,13 @@ function parseRetryAfter(header: string | null): number | undefined {
  */
 export class ResponseQueue {
   private queue: QueueItem[] = [];
-  /**
-   * The next clientResponseId to use, per session.
-   */
+  /** The next clientResponseId to use, per session */
   private nextClientResponseIds: Map<string, number> = new Map();
   private processing = false;
   private drainListeners: Array<(everythingStored: boolean) => void> = [];
   private lostResponseSinceDrain = false;
 
-  /**
-   * Responses which could not be uploaded and have been given up on.
-   */
+  /** Responses which could not be uploaded and have been given up on */
   public readonly failedResponses: ClientResponseOptions[] = [];
 
   public readonly options: Required<Omit<ResponseQueueOptions, "onError">> & {
@@ -229,15 +151,18 @@ export class ResponseQueue {
   };
 
   constructor(
-    private send: ResponseQueueSendFunction,
+    private send: (
+      method: HTTPMethod,
+      endpoint: string,
+      data: object,
+      options?: object,
+    ) => Promise<Response>,
     options: ResponseQueueOptions = {},
   ) {
     this.options = { ...DEFAULT_RESPONSE_QUEUE_OPTIONS, ...options };
   }
 
-  /**
-   * How many responses are still waiting to be uploaded.
-   */
+  /** How many responses are still waiting to be uploaded */
   public get pending(): number {
     return this.queue.length;
   }
@@ -249,13 +174,14 @@ export class ResponseQueue {
    *   to false if it had to be given up on.
    */
   public enqueue(response: ClientResponseOptions): Promise<boolean> {
-    const clientResponseId =
-      response.clientResponseId !== undefined
-        ? response.clientResponseId
-        : this.claimClientResponseId(response.sessionId);
-
+    const { sessionId } = response;
+    const nextId = this.nextClientResponseIds.get(sessionId) ?? 0;
+    const clientResponseId = response.clientResponseId ?? nextId;
     // Keep our counter ahead of any manually provided ids
-    this.bumpClientResponseId(response.sessionId, clientResponseId);
+    this.nextClientResponseIds.set(
+      sessionId,
+      Math.max(nextId, clientResponseId + 1),
+    );
 
     return new Promise((resolve) => {
       this.queue.push({
@@ -307,34 +233,19 @@ export class ResponseQueue {
         continue;
       }
 
-      try {
-        // Not awaited on purpose, keepalive keeps the request alive after the
-        // page is gone.
-        this.send("POST", "/response/", item.response, {
-          keepalive: true,
-        }).catch(() => {
-          // Nothing we can do about this anymore
-        });
-      } catch (error) {
-        // Nothing we can do about this anymore
-      }
+      // Not awaited on purpose, keepalive keeps the request alive after the
+      // page is gone and a failure cannot be handled anymore anyway.
+      this.send("POST", "/response/", item.response, { keepalive: true }).catch(
+        () => {},
+      );
     }
   }
 
-  /**
-   * Get the next clientResponseId for a session and count it up.
-   */
+  /** Get the next clientResponseId for a session and count it up */
   private claimClientResponseId(sessionId: string): number {
     const clientResponseId = this.nextClientResponseIds.get(sessionId) ?? 0;
     this.nextClientResponseIds.set(sessionId, clientResponseId + 1);
     return clientResponseId;
-  }
-
-  private bumpClientResponseId(sessionId: string, usedId: number): void {
-    const nextId = this.nextClientResponseIds.get(sessionId) ?? 0;
-    if (usedId >= nextId) {
-      this.nextClientResponseIds.set(sessionId, usedId + 1);
-    }
   }
 
   private async process(): Promise<void> {
@@ -345,8 +256,7 @@ export class ResponseQueue {
 
     try {
       while (this.queue.length > 0) {
-        // Responses are uploaded one by one and in order, so the first entry
-        // stays in the queue until it has been dealt with.
+        // The first entry stays in the queue until it has been dealt with
         const item = this.queue[0];
         const acknowledged = await this.processItem(item);
         this.queue.shift();
@@ -367,10 +277,7 @@ export class ResponseQueue {
     }
   }
 
-  /**
-   * Try uploading a single response until it has been stored or until we give
-   * up on it.
-   */
+  /** Try uploading a response until it is stored or we give up on it */
   private async processItem(item: QueueItem): Promise<boolean> {
     while (true) {
       item.attempts++;
@@ -424,8 +331,7 @@ export class ResponseQueue {
         return false;
       }
 
-      const status = "status" in outcome ? outcome.status : undefined;
-      const error = "error" in outcome ? outcome.error : undefined;
+      const { status, error, retryAfterMs } = outcome;
 
       if (item.attempts >= this.options.maxAttempts) {
         this.giveUp(item, {
@@ -436,8 +342,6 @@ export class ResponseQueue {
         return false;
       }
 
-      const retryAfterMs =
-        outcome.type === "retry" ? outcome.retryAfterMs : undefined;
       const delay = this.getDelay(item.attempts, retryAfterMs);
 
       console.warn(

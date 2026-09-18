@@ -17,7 +17,7 @@ function mockFetch(results: Array<FakeResponse | Error>) {
   const calls: Array<{ url: string; body: any; options: any }> = [];
   let callIndex = 0;
 
-  const fetchMock = vi.fn((url: string, options: any) => {
+  global.fetch = vi.fn((url: string, options: any) => {
     calls.push({
       url,
       body: options.body ? JSON.parse(options.body) : undefined,
@@ -37,11 +37,10 @@ function mockFetch(results: Array<FakeResponse | Error>) {
       },
       json: () => Promise.resolve(result.body ?? {}),
     });
-  });
 
-  global.fetch = fetchMock as any;
+  }) as any;
 
-  return { calls, fetchMock };
+  return { calls };
 }
 
 const OK: FakeResponse = {
@@ -67,6 +66,32 @@ function createClient(options = {}) {
   });
 }
 
+/**
+ * Create a client which keeps track of how long it waits between attempts,
+ * without actually waiting for these delays.
+ */
+function trackDelays(options = {}) {
+  const delays: number[] = [];
+  vi.spyOn(global, "setTimeout").mockImplementation(((callback: () => void) => {
+    callback();
+    return 0;
+  }) as any);
+
+  const client = new Client({
+    url: URL,
+    responseQueue: {
+      jitter: false,
+      onError: (info) => {
+        if (info.retryInMs !== undefined) {
+          delays.push(info.retryInMs);
+        }
+      },
+      ...options,
+    },
+  });
+  return { client, delays };
+}
+
 const exampleResponse = {
   sessionId: "11111111-1111-1111-1111-111111111111",
   name: "my-trial",
@@ -76,10 +101,9 @@ const exampleResponse = {
 describe("ResponseQueue", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(console, "info").mockImplementation(() => {});
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    for (const level of ["log", "info", "warn", "error"] as const) {
+      vi.spyOn(console, level).mockImplementation(() => {});
+    }
   });
 
   it("should be enabled by default", async () => {
@@ -265,30 +289,12 @@ describe("ResponseQueue", () => {
 
   it("should back off exponentially", async () => {
     mockFetch([SERVER_ERROR]);
-    const delays: number[] = [];
-    const client = new Client({
-      url: URL,
-      responseQueue: {
-        maxAttempts: 5,
-        initialDelay: 1000,
-        maxDelay: 4000,
-        factor: 2,
-        jitter: false,
-        onError: (info) => {
-          if (info.retryInMs !== undefined) {
-            delays.push(info.retryInMs);
-          }
-        },
-      },
+    const { client, delays } = trackDelays({
+      maxAttempts: 5,
+      initialDelay: 1000,
+      maxDelay: 4000,
+      factor: 2,
     });
-
-    // Resolve all delays immediately, but keep track of how long they were
-    vi.spyOn(global, "setTimeout").mockImplementation(((
-      callback: () => void,
-    ) => {
-      callback();
-      return 0;
-    }) as any);
 
     await client.createResponse(exampleResponse);
 
@@ -297,27 +303,7 @@ describe("ResponseQueue", () => {
 
   it("should respect the Retry-After header", async () => {
     mockFetch([{ status: 429, headers: { "Retry-After": "2" } }]);
-    const delays: number[] = [];
-    const client = new Client({
-      url: URL,
-      responseQueue: {
-        maxAttempts: 2,
-        maxDelay: 30000,
-        jitter: false,
-        onError: (info) => {
-          if (info.retryInMs !== undefined) {
-            delays.push(info.retryInMs);
-          }
-        },
-      },
-    });
-
-    vi.spyOn(global, "setTimeout").mockImplementation(((
-      callback: () => void,
-    ) => {
-      callback();
-      return 0;
-    }) as any);
+    const { client, delays } = trackDelays({ maxAttempts: 2, maxDelay: 30000 });
 
     await client.createResponse(exampleResponse);
 

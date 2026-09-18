@@ -88,7 +88,7 @@ jsPsych.run(timeline);
 
 Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, responses are kept in a queue until the World-Wide-Lab server has confirmed that it stored them. Responses which fail to upload are re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
 
-This is enabled by default, so there is nothing you need to do to use it. The session of an experiment is also only marked as finished once all of its responses have been stored.
+This is enabled by default. A session is also only marked as finished once all of its responses have been stored.
 
 If you want to show participants a "saving your data" screen at the end of your experiment, you can wait for all responses yourself:
 

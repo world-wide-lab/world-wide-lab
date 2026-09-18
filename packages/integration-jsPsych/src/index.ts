@@ -67,9 +67,8 @@ export type SetupOptions = {
   };
 
   /**
-   * Keep responses in a queue until the World-Wide-Lab server has confirmed
-   * that it stored them, re-sending them with an exponential backoff if they
-   * fail to upload.
+   * Keep responses in a queue until the server has confirmed that it stored
+   * them, re-sending them with an exponential backoff if they fail to upload.
    *
    * This is enabled by default. Set it to false to send responses off without
    * checking whether they arrived.
@@ -408,34 +407,24 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return initJsPsych(jsPsychOptions);
   }
 
-  /**
-   * Responses collected before the Session has been created. Once the client
-   * is ready, these are handed over to the client, which keeps hold of them
-   * until the server confirms that it stored them.
-   */
+  /** Responses collected before the Session has been created */
   private static responseQueue: SessionResponseOptions[] = [];
   /**
    * Save a response to World-Wide-Lab.
    * @param trialName - The name of the trial to store the data under.
    * @param data - The data to store.
-   * @returns true if the response was stored, false if it had to be given up on
    */
-  public static async save(
-    trialName: string,
-    data: object,
-  ): Promise<boolean | undefined> {
+  public static async save(trialName: string, data: object) {
     const response: SessionResponseOptions = { name: trialName, payload: data };
     if (jsPsychWorldWideLab.ready) {
-      return jsPsychWorldWideLab._saveResponse(response);
+      await jsPsychWorldWideLab._saveResponse(response);
+    } else {
+      // Queue the response until we're ready
+      jsPsychWorldWideLab.responseQueue.push(response);
     }
-    // Queue the response until we're ready
-    jsPsychWorldWideLab.responseQueue.push(response);
-    return undefined;
   }
   private static sendQueuedResponses() {
-    // Hand the responses over in the order they were collected. They are not
-    // awaited one by one here, as the client already uploads them one after
-    // the other.
+    // Not awaited one by one, the client already uploads them in order
     while (jsPsychWorldWideLab.responseQueue.length > 0) {
       const entry = jsPsychWorldWideLab.responseQueue.shift();
       jsPsychWorldWideLab._saveResponse(entry);
@@ -447,9 +436,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return jsPsychWorldWideLab.session.response(response);
   }
 
-  /**
-   * How many responses have not been stored by the server yet.
-   */
+  /** How many responses have not been stored by the server yet. */
   public static get pendingResponses(): number {
     return (
       jsPsychWorldWideLab.responseQueue.length +
@@ -458,13 +445,9 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   }
 
   /**
-   * Wait for all responses to be stored by the server.
-   *
-   * @remarks
-   * Useful to make sure all data has arrived before e.g. re-directing
-   * participants to another page.
-   * @returns true if all responses have been stored, false if any of them had
-   *   to be given up on.
+   * Wait for all responses to be stored by the server, e.g. before
+   * re-directing participants to another page.
+   * @returns true if all responses have been stored, false if any were lost
    */
   public static async flush(): Promise<boolean> {
     await jsPsychWorldWideLab.setupCompleted();
@@ -476,9 +459,8 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
    * Finish the experiment and mark the {@link @world-wide-lab/client#Session} as finished.
    *
    * @remarks
-   * This waits for all responses to be stored before finishing the session, so
-   * that sessions are only marked as finished once all of their data has
-   * arrived.
+   * Waits for all responses to be stored first, so a session is only marked as
+   * finished once all of its data has arrived.
    */
   public static async onExperimentFinish() {
     const everythingStored = await jsPsychWorldWideLab.flush();

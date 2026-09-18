@@ -263,19 +263,11 @@ export class Client {
 
     this._library = "@world-wide-lab/client";
 
-    const responseQueueOptions =
-      options.responseQueue === undefined ? {} : options.responseQueue;
-    this.requestTimeout =
-      (responseQueueOptions === false
-        ? undefined
-        : responseQueueOptions.requestTimeout) ??
-      DEFAULT_RESPONSE_QUEUE_OPTIONS.requestTimeout;
-
-    if (responseQueueOptions !== false) {
+    if (options.responseQueue !== false) {
       this.responseQueue = new ResponseQueue(
         (method, endpoint, data, callOptions) =>
           this.call(method, endpoint, data, callOptions),
-        responseQueueOptions,
+        options.responseQueue,
       );
 
       if (
@@ -288,6 +280,9 @@ export class Client {
         });
       }
     }
+    this.requestTimeout =
+      this.responseQueue?.options.requestTimeout ??
+      DEFAULT_RESPONSE_QUEUE_OPTIONS.requestTimeout;
   }
 
   /**

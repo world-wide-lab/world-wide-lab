@@ -137,9 +137,7 @@ const sessionPublicInfo = await session.getPublicInfo();
 
 Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, the client keeps every response in a queue until the World-Wide-Lab server has confirmed that it stored it. Responses which fail to upload are re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
 
-This is enabled by default, so there is nothing you need to do to use it. Responses are uploaded one after the other, so they are stored in the same order in which they were collected.
-
-Since responses are only marked as done once the server confirms them, awaiting a response now means that it has really been stored:
+This is enabled by default and responses are uploaded one after the other, so they are stored in the order in which they were collected. Since responses are only done once the server confirms them, awaiting one means that it has really been stored:
 
 ```js
 // This resolves to true once the response has been stored and to false if it
@@ -150,7 +148,7 @@ const stored = await session.response({
 });
 ```
 
-You usually do not want to await every single response, as this would slow down your experiment. Instead, you can wait for all responses at the end of your study, e.g. before re-directing participants somewhere else:
+You usually do not want to await every single response, as this would slow down your experiment. Instead, you can wait for all of them at the end of your study, e.g. before re-directing participants somewhere else:
 
 ```js
 // Wait for all responses to be stored
@@ -209,7 +207,7 @@ const client = new Client({
 
 ### Avoiding Duplicate Responses
 
-When a response fails to upload, it is not always clear whether it actually failed: the response may well have been stored, with only the server's confirmation getting lost on the way back. To handle this, the client gives every response a `clientResponseId`, counting up from 0 within its session. The server uses these ids to recognize responses it has already stored, so a response which is sent twice is still only stored once.
+When a response fails to upload, it is not always clear whether it actually failed: it may well have been stored, with only the server's confirmation getting lost on the way back. The client therefore gives every response a `clientResponseId`, counting up from 0 within its session. The server uses these ids to recognize responses it already stored, so a response which is sent twice is still only stored once.
 
 These ids are also part of the data you download, where they provide a reliable ordering of the responses within each session.
 

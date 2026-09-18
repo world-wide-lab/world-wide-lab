@@ -63,12 +63,17 @@ global.fetch = jest.fn((fetchUrl: string, fetchOptions) => {
   return Promise.reject(reason);
 }) as jest.MockedFunction<typeof fetch>;
 
+function getFetchCalls(endpoint: string): Array<[string, any]> {
+  // @ts-ignore (typescript doesn't recognize the mock function)
+  return (fetch.mock.calls as Array<[string, any]>).filter((call) =>
+    String(call[0]).includes(endpoint),
+  );
+}
+
 /**
- * Wait for a request to a given endpoint to be made.
- *
- * Responses are only considered stored once the server confirms them, so some
- * requests (e.g. finishing a session) are only sent a few ticks after the
- * experiment itself is done.
+ * Wait for requests to a given endpoint to be made. Responses are only
+ * considered stored once the server confirms them, so some requests (e.g.
+ * finishing a session) are only sent a few ticks after the experiment is done.
  */
 async function waitForFetchCalls(
   endpoint: string,
@@ -77,12 +82,7 @@ async function waitForFetchCalls(
 ) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    // @ts-ignore (typescript doesn't recognize the mock function)
-    const calls = fetch.mock.calls as Array<[string, object]>;
-    const matchingCalls = calls.filter((call) =>
-      String(call[0]).includes(endpoint),
-    );
-    if (matchingCalls.length >= nCalls) {
+    if (getFetchCalls(endpoint).length >= nCalls) {
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -91,6 +91,26 @@ async function waitForFetchCalls(
     `Less than ${nCalls} request(s) to "${endpoint}" were made within ${timeoutMs}ms.`,
   );
 }
+
+/** Make the next n attempts at storing a response fail, returns a reset fn */
+function failNextResponses(nFailures: number): () => void {
+  // @ts-ignore (typescript doesn't recognize the mock function)
+  const workingFetch = fetch.getMockImplementation();
+  let failuresLeft = nFailures;
+  // @ts-ignore (typescript doesn't recognize the mock function)
+  fetch.mockImplementation((fetchUrl: string, fetchOptions) => {
+    if (String(fetchUrl).includes("v1/response/") && failuresLeft > 0) {
+      failuresLeft--;
+      return Promise.resolve({ status: 500, json: () => Promise.resolve({}) });
+    }
+    return workingFetch(fetchUrl, fetchOptions);
+  });
+  // @ts-ignore (typescript doesn't recognize the mock function)
+  return () => fetch.mockImplementation(workingFetch);
+}
+
+// Retry without waiting around in tests
+const FAST_RETRIES = { initialDelay: 1, maxDelay: 1, jitter: false };
 
 function resetJsPsychWorldWideLab() {
   // Reset the jsPsychWorldWideLab-Plugin state
@@ -482,35 +502,12 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
   });
 
   it("should re-send responses which failed to upload", async () => {
-    // Let the first two attempts at storing a response fail
-    let failingResponses = 2;
-    // @ts-ignore (typescript doesn't recognize the mock function)
-    const workingFetch = fetch.getMockImplementation();
-    // @ts-ignore (typescript doesn't recognize the mock function)
-    fetch.mockImplementation((fetchUrl: string, fetchOptions) => {
-      if (String(fetchUrl).includes("v1/response/") && failingResponses > 0) {
-        failingResponses--;
-        return Promise.resolve({
-          status: 500,
-          json: () => Promise.resolve({}),
-        });
-      }
-      return workingFetch(fetchUrl, fetchOptions);
-    });
+    const resetFetch = failNextResponses(2);
 
     try {
       const jsPsych = await jsPsychWorldWideLab.initJsPsych(
         {},
-        {
-          url,
-          studyId: "my-study",
-          responseQueue: {
-            // Keep the test fast
-            initialDelay: 1,
-            maxDelay: 1,
-            jitter: false,
-          },
-        },
+        { url, studyId: "my-study", responseQueue: FAST_RETRIES },
       );
 
       await startTimeline(
@@ -528,52 +525,24 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
 
       // The response should have been sent three times in total, always with
       // the same id, so the server can recognize the re-sent ones.
-      // @ts-ignore (typescript doesn't recognize the mock function)
-      const responseCalls = (fetch.mock.calls as Array<[string, any]>).filter(
-        (call) => String(call[0]).includes("v1/response/"),
-      );
+      const responseCalls = getFetchCalls("v1/response/");
       expect(responseCalls.length).toBe(3);
       for (const call of responseCalls) {
         expect(JSON.parse(call[1].body).clientResponseId).toBe(0);
       }
-      expect(failingResponses).toBe(0);
     } finally {
-      // @ts-ignore (typescript doesn't recognize the mock function)
-      fetch.mockImplementation(workingFetch);
+      resetFetch();
     }
   });
 
   it("should only finish a session once all responses are stored", async () => {
-    // Let the first attempt at storing the response fail, so the session can
-    // only be finished after it has been re-sent successfully.
-    let failingResponses = 1;
-    // @ts-ignore (typescript doesn't recognize the mock function)
-    const workingFetch = fetch.getMockImplementation();
-    // @ts-ignore (typescript doesn't recognize the mock function)
-    fetch.mockImplementation((fetchUrl: string, fetchOptions) => {
-      if (String(fetchUrl).includes("v1/response/") && failingResponses > 0) {
-        failingResponses--;
-        return Promise.resolve({
-          status: 500,
-          json: () => Promise.resolve({}),
-        });
-      }
-      return workingFetch(fetchUrl, fetchOptions);
-    });
+    // The session can only be finished after the response has been re-sent
+    const resetFetch = failNextResponses(1);
 
     try {
       const jsPsych = await jsPsychWorldWideLab.initJsPsych(
         {},
-        {
-          url,
-          studyId: "my-study",
-          responseQueue: {
-            // Keep the test fast
-            initialDelay: 1,
-            maxDelay: 1,
-            jitter: false,
-          },
-        },
+        { url, studyId: "my-study", responseQueue: FAST_RETRIES },
       );
 
       await startTimeline(
@@ -589,20 +558,16 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
 
       await waitForFetchCalls("v1/session/finish");
 
-      // @ts-ignore (typescript doesn't recognize the mock function)
-      const calledEndpoints = (fetch.mock.calls as Array<[string, any]>).map(
-        (call) => String(call[0]).replace(url, ""),
+      const calledEndpoints = getFetchCalls("v1/").map((call) =>
+        String(call[0]).replace(url, ""),
       );
-      // The session should only be finished after the last (successful)
-      // attempt at storing the response.
       expect(calledEndpoints.indexOf("v1/session/finish")).toBeGreaterThan(
         calledEndpoints.lastIndexOf("v1/response/"),
       );
-      expect(failingResponses).toBe(0);
+      expect(getFetchCalls("v1/response/").length).toBe(2);
       expect(jsPsychWorldWideLab.pendingResponses).toBe(0);
     } finally {
-      // @ts-ignore (typescript doesn't recognize the mock function)
-      fetch.mockImplementation(workingFetch);
+      resetFetch();
     }
   });
 });
