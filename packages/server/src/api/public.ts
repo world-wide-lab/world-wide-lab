@@ -1698,11 +1698,7 @@ routerPublic.get(
       const items =
         cacheFor === undefined
           ? await getItems()
-          : await cache.wrap(
-              `${req.path}?${JSON.stringify(req.query)}`,
-              getItems,
-              cacheFor * 1000,
-            );
+          : await cache.wrap(getCacheKey(req), getItems, cacheFor * 1000);
 
       res.status(200).json({ items });
     } catch (error) {
