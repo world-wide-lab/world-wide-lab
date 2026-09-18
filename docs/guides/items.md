@@ -171,6 +171,10 @@ const items = await client.getItems("my-awesome-pool", {
 });
 ```
 
+`limit` defaults to 100 if you leave it out, and `sort` to `newest`. Items
+contributed in the same millisecond have no defined order between them, so do
+not rely on `newest` to separate near-simultaneous contributions.
+
 Because of the cache, a retracted item can still show up until the window
 passes. Pick `cacheFor` based on how fresh the wall needs to be.
 
