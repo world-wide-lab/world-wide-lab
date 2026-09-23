@@ -84,6 +84,37 @@ const timeline = [
 jsPsych.run(timeline);
 ```
 
+### Re-sending Failed Responses
+
+Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, responses which failed to upload can be re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
+
+This is turned off by default. Turn it on via the `responseQueue` option during setup, which also takes the options described in [the client's documentation](./client.md#configuring-re-sending).
+
+```js
+const jsPsych = jsPsychWorldWideLab.initJsPsych(
+  {
+    // Options for jsPsych
+  },
+  {
+    url: "https://localhost:8787",
+    studyId: "my-study",
+
+    responseQueue: true,
+  },
+);
+```
+
+Re-sending happens in the background and never holds up your experiment, so a session can be marked as finished while a response is still on its way. If you want to show participants a "saving your data" screen at the end of your experiment, you can wait for these responses yourself:
+
+```js
+// Resolves to true once everything has been stored and to false if any
+// response had to be given up on
+const everythingStored = await jsPsychWorldWideLab.flush();
+
+// You can also check how many responses are still being re-sent
+console.log(`${jsPsychWorldWideLab.pendingResponses} response(s) left`);
+```
+
 ### Advanced
 
 Alternatively, you can separately initialze jsPsych and the jsPsychWorldWideLab plugin. This allows you to use the plugin's `save()` and `onExperimentFinish()` functions to save data to World-Wide-Lab in a more fine-grained manner. However, you will have to manually call `onExperimentFinish()` to mark the experiment as finished and `save()` to save data.

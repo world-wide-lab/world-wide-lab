@@ -8,6 +8,12 @@
  * @packageDocumentation
  */
 
+import {
+  ResponseQueue,
+  type ResponseQueueErrorInfo,
+  type ResponseQueueOptions,
+  type SendResponseResult,
+} from "./responseQueue";
 import { VERSION } from "./version";
 
 /**
@@ -19,6 +25,23 @@ export interface ClientOptions {
    * The URL of the World-Wide-Lab server, e.g. https://localhost:8787/
    */
   url: string;
+  /**
+   * After how many milliseconds to abort a request to the server.
+   *
+   * Default: 60000
+   */
+  requestTimeout?: number;
+  /**
+   * Re-send responses which failed to upload, waiting a bit longer before
+   * every attempt (an exponential backoff).
+   *
+   * Responses are always sent off right away, this only adds re-sending them
+   * when that fails. It is turned off by default, set it to true (or pass
+   * options) to turn it on.
+   *
+   * @see {@link ResponseQueueOptions}
+   */
+  responseQueue?: boolean | ResponseQueueOptions;
 }
 
 interface ClientUpdateOptions {
@@ -92,6 +115,16 @@ export interface ClientResponseOptions {
    * The actual data of this response
    */
   payload: object;
+  /**
+   * An id for this response, counting up from 0 within its session.
+   *
+   * @remarks
+   * You will usually not want to set this yourself, as the client keeps track
+   * of these ids for you. The server uses them to recognize responses it has
+   * already stored, so that re-sending a response which previously failed
+   * does not create a duplicate.
+   */
+  clientResponseId?: number;
 }
 
 /**
@@ -168,6 +201,21 @@ export type HTTPMethod = "GET" | "POST" | "PUT";
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID";
 
+/** After how many milliseconds to abort a request to the server */
+const DEFAULT_REQUEST_TIMEOUT = 60000;
+
+/**
+ * How often to try a new clientResponseId, when the one we picked is already
+ * in use by another client in the same session.
+ */
+const MAX_ID_REASSIGNMENTS = 5;
+
+/**
+ * By how much to jump ahead when a clientResponseId is already in use. The
+ * gap makes it obvious in the data that something unexpected happened.
+ */
+const ID_COLLISION_JUMP = 1000;
+
 export class WorldWideLabError extends Error {
   constructor(public message: string) {
     super(message);
@@ -198,6 +246,22 @@ export class Client {
    * @internal
    */
   _libraryVersion?: string;
+  /**
+   * Re-sends responses which failed to upload. Undefined unless it has been
+   * turned on via the responseQueue option.
+   */
+  private responseQueue?: ResponseQueue;
+  /**
+   * After how many milliseconds to abort a request to the server.
+   */
+  private requestTimeout: number;
+  /** The next clientResponseId to use, per session */
+  private nextClientResponseIds: Map<string, number> = new Map();
+  /**
+   * Responses which could not be uploaded and have been given up on.
+   * These responses have *not* been stored by the server.
+   */
+  public readonly failedResponses: ClientResponseOptions[] = [];
 
   /**
    * Create a new Client instance
@@ -227,6 +291,50 @@ export class Client {
     }
 
     this._library = "@world-wide-lab/client";
+
+    this.requestTimeout = options.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT;
+
+    if (options.responseQueue) {
+      this.responseQueue = new ResponseQueue(
+        (response, callOptions) => this._sendResponse(response, callOptions),
+        options.responseQueue === true ? {} : options.responseQueue,
+      );
+
+      if (
+        typeof window !== "undefined" &&
+        typeof window.addEventListener === "function"
+      ) {
+        window.addEventListener("pagehide", () => {
+          this.responseQueue?.flushOnUnload();
+        });
+      }
+    }
+  }
+
+  /**
+   * How many responses failed to upload and are still being re-sent.
+   *
+   * @remarks
+   * This is always 0 when the response queue is turned off.
+   */
+  get pendingResponses(): number {
+    return this.responseQueue?.pending ?? 0;
+  }
+
+  /**
+   * Wait for all responses which are still being re-sent.
+   *
+   * @remarks
+   * Useful to make sure all data has arrived before e.g. re-directing
+   * participants to another page.
+   * @returns true if all responses have been stored, false if any of them had
+   *   to be given up on.
+   */
+  async flushResponses(): Promise<boolean> {
+    if (!this.responseQueue) {
+      return true;
+    }
+    return this.responseQueue.flush();
   }
 
   /**
@@ -256,8 +364,23 @@ export class Client {
       ...options,
     };
 
-    const response = await fetch(url, fetchOptions);
-    return response;
+    // Abort requests which take too long, so they can be re-tried instead of
+    // blocking everything that comes after them.
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    if (fetchOptions.signal === undefined && this.requestTimeout > 0) {
+      const controller = new AbortController();
+      fetchOptions.signal = controller.signal;
+      timeout = setTimeout(() => controller.abort(), this.requestTimeout);
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+      return response;
+    } finally {
+      if (timeout !== undefined) {
+        clearTimeout(timeout);
+      }
+    }
   }
 
   /**
@@ -360,12 +483,112 @@ export class Client {
 
   /**
    * Create a new Response. See also {@link Session.response}
+   *
+   * @remarks
+   * The response is sent off right away. When the response queue is turned on
+   * and sending fails, the response is re-sent in the background, which this
+   * function does not wait for. Use {@link Client.flushResponses} for that.
    * @param opts - Options to create the response with
-   * @returns true if the response was created successfully
+   * @returns true if the response has been stored by the server
    */
   async createResponse(opts: ClientResponseOptions): Promise<boolean> {
-    const result = await this.call("POST", "/response/", opts);
-    return result.status === 200;
+    const response = {
+      ...opts,
+      clientResponseId:
+        opts.clientResponseId ?? this.claimClientResponseId(opts.sessionId),
+    };
+
+    let result = await this._sendResponse(response);
+
+    // Another client is already using this id in this session, so we jump
+    // ahead and try again, rather than losing the response.
+    for (
+      let reassignments = 0;
+      result.type === "duplicate" && reassignments < MAX_ID_REASSIGNMENTS;
+      reassignments++
+    ) {
+      const newId = this.jumpClientResponseId(
+        response.sessionId,
+        response.clientResponseId,
+      );
+      console.warn(
+        `[World-Wide-Lab] The id of response ${response.name ?? "(unnamed)"} (clientResponseId ${response.clientResponseId}) is already in use in session ${response.sessionId}. Re-sending it as ${newId}. Are multiple clients using the same session?`,
+      );
+      response.clientResponseId = newId;
+      result = await this._sendResponse(response);
+    }
+
+    if (result.type === "stored") {
+      return true;
+    }
+
+    if (result.type === "duplicate") {
+      // We ran out of ids to try, which should not normally happen
+      console.error(
+        `[World-Wide-Lab] Giving up on response ${response.name ?? "(unnamed)"}, because ${MAX_ID_REASSIGNMENTS} of its ids were already in use. This response was NOT saved.`,
+      );
+      this.failedResponses.push(response);
+      return false;
+    }
+
+    if (this.responseQueue) {
+      // Re-send the response in the background, so a failing upload never
+      // holds up the rest of the study.
+      this.responseQueue.retry(response, result).then((stored) => {
+        if (!stored) {
+          this.failedResponses.push(response);
+        }
+      });
+    } else {
+      this.failedResponses.push(response);
+    }
+    return false;
+  }
+
+  /** Send a single response to the server */
+  private async _sendResponse(
+    response: ClientResponseOptions,
+    options?: object,
+  ): Promise<SendResponseResult> {
+    let result: Response;
+    try {
+      result = await this.call("POST", "/response/", response, options);
+    } catch (error) {
+      // Network errors, timeouts, CORS problems, ...
+      return { type: "failed", error };
+    }
+
+    if (result.status !== 200) {
+      return { type: "failed", status: result.status };
+    }
+
+    let body: any;
+    try {
+      body = await result.json();
+    } catch (error) {
+      // The server said it worked, we just cannot read its answer
+      return { type: "stored" };
+    }
+    return body?.duplicate === true
+      ? { type: "duplicate" }
+      : { type: "stored" };
+  }
+
+  /** Get the next clientResponseId for a session and count it up */
+  private claimClientResponseId(sessionId: string): number {
+    const clientResponseId = this.nextClientResponseIds.get(sessionId) ?? 0;
+    this.nextClientResponseIds.set(sessionId, clientResponseId + 1);
+    return clientResponseId;
+  }
+
+  /**
+   * Replace a clientResponseId which is already in use with one far ahead of
+   * it, so the collision is obvious in the data.
+   */
+  private jumpClientResponseId(sessionId: string, usedId: number): number {
+    const clientResponseId = usedId + ID_COLLISION_JUMP;
+    this.nextClientResponseIds.set(sessionId, clientResponseId + 1);
+    return clientResponseId;
   }
 
   /**
@@ -537,6 +760,8 @@ export class Session extends _ClientModel {
 
   /**
    * Create a new Response.
+   *
+   * @returns true if the response has been stored by the server
    */
   response(opts: Omit<ClientResponseOptions, "sessionId">): Promise<boolean> {
     const createResponseOptions = { sessionId: this.sessionId, ...opts };
@@ -686,5 +911,7 @@ export function oneYearAgo(): Date {
   now.setFullYear(now.getFullYear() - 1);
   return now;
 }
+
+export type { ResponseQueueOptions, ResponseQueueErrorInfo };
 
 export { VERSION };
