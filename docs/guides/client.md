@@ -195,6 +195,8 @@ const client = new Client({
 });
 ```
 
+Requests to the server are aborted and counted as failed after 60 seconds, so a hanging request does not keep a response from being re-sent. You can change this via the client's `requestTimeout` option.
+
 ### Avoiding Duplicate Responses
 
 When a response fails to upload, it is not always clear whether it actually failed: it may well have been stored, with only the server's confirmation getting lost on the way back. The client therefore gives every response a `clientResponseId`, counting up from 0 within its session. The server uses these ids to recognize responses it already stored, so a response which is sent twice is still only stored once.
