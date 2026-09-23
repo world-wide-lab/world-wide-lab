@@ -37,6 +37,7 @@ export default defineConfig({
           },
           { text: "Getting Started", link: "/guides/getting-started" },
           { text: "Downloading Data", link: "/guides/download-data" },
+          { text: "Statistics", link: "/guides/statistics" },
         ],
       },
       {
