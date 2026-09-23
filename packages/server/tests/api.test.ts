@@ -499,6 +499,27 @@ describe("API Routes", () => {
       expect(cachedResponse.status).toBe(200);
       expect(cachedResponse.body.count).toBe(4);
     });
+
+    it("should not share cached counts between different query parameters", async () => {
+      const twoOrMore = await endpoint
+        .get(
+          `/v1/study/${studyId}/count/usingResponses?cacheFor=300&minResponseCount=2`,
+        )
+        .send();
+
+      expect(twoOrMore.status).toBe(200);
+      expect(twoOrMore.body.count).toBe(1);
+
+      // Same path, different parameters, so this must not hit the entry above
+      const fiftyOrMore = await endpoint
+        .get(
+          `/v1/study/${studyId}/count/usingResponses?cacheFor=300&minResponseCount=50`,
+        )
+        .send();
+
+      expect(fiftyOrMore.status).toBe(200);
+      expect(fiftyOrMore.body.count).toBe(0);
+    });
   });
 
   describe("GET /study/count-all/:countType", () => {
@@ -1267,6 +1288,39 @@ describe("API Routes", () => {
         { score: 300, publicGroupName: "GRP-B" },
         { score: 200, publicGroupName: "GRP-A" },
         { score: 100, publicGroupName: "GRP-A" },
+      ]);
+    });
+
+    it("should not share cached scores between different query parameters", async () => {
+      const descending = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?cacheFor=300&sort=desc`,
+        )
+        .send();
+
+      expect(descending.status).toBe(200);
+      expect(descending.body.scores).toMatchObject([
+        { score: 500, publicIndividualName: "E" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 300, publicIndividualName: "C" },
+        { score: 200, publicIndividualName: "B" },
+        { score: 100, publicIndividualName: "A" },
+      ]);
+
+      // Same path, different parameters, so this must not hit the entry above
+      const ascending = await endpoint
+        .get(
+          `/v1/leaderboard/${LEADERBOARD_ID}/scores/individual?cacheFor=300&sort=asc`,
+        )
+        .send();
+
+      expect(ascending.status).toBe(200);
+      expect(ascending.body.scores).toMatchObject([
+        { score: 100, publicIndividualName: "A" },
+        { score: 200, publicIndividualName: "B" },
+        { score: 300, publicIndividualName: "C" },
+        { score: 400, publicIndividualName: "D" },
+        { score: 500, publicIndividualName: "E" },
       ]);
     });
   });
