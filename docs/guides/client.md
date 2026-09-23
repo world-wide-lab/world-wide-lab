@@ -133,28 +133,37 @@ const participantPublicInfo = await participant.getPublicInfo();
 const sessionPublicInfo = await session.getPublicInfo();
 ```
 
-## Reliable Response Uploading
+## Re-sending Failed Responses
 
-Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, the client keeps every response in a queue until the World-Wide-Lab server has confirmed that it stored it. Responses which fail to upload are re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
+Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, the client can re-send responses which failed to upload, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
 
-This is enabled by default and responses are uploaded one after the other, so they are stored in the order in which they were collected. Since responses are only done once the server confirms them, awaiting one means that it has really been stored:
+This is turned off by default, since it keeps responses around in memory until they have been stored. Turn it on via the `responseQueue` option:
 
 ```js
-// This resolves to true once the response has been stored and to false if it
-// had to be given up on (e.g. when a participant is offline for a long time)
+const client = new Client({
+  url: "http://localhost:8787",
+  responseQueue: true,
+});
+```
+
+Responses are always sent off right away, this only adds re-sending them when that fails. Re-sending happens in the background, so a response which cannot be uploaded never holds up the rest of your study. This also means that `session.response()` resolves before a failed response has made it:
+
+```js
+// true if the response has been stored, false if it failed and is now being
+// re-sent in the background (or was lost, if re-sending is turned off)
 const stored = await session.response({
   name: "my-trial",
   payload: { some: "data" },
 });
 ```
 
-You usually do not want to await every single response, as this would slow down your experiment. Instead, you can wait for all of them at the end of your study, e.g. before re-directing participants somewhere else:
+To wait for the responses which are being re-sent, e.g. before re-directing participants somewhere else, use `flushResponses()`:
 
 ```js
-// Wait for all responses to be stored
+// Wait for all responses which are still being re-sent
 const everythingStored = await client.flushResponses();
 
-// You can also check how many responses are still waiting to be uploaded
+// You can also check how many responses are still being re-sent
 console.log(`${client.pendingResponses} response(s) left to upload`);
 
 // Responses which had to be given up on are kept around, so you can inspect
@@ -162,31 +171,21 @@ console.log(`${client.pendingResponses} response(s) left to upload`);
 console.log(client.failedResponses);
 ```
 
-### Configuring the Queue
+### Configuring Re-sending
 
-The behaviour of the queue can be adjusted when creating the client. All of these options are optional.
+Instead of `true`, you can pass options to adjust how responses are re-sent. All of them are optional.
 
 ```js
 const client = new Client({
   url: "http://localhost:8787",
 
   responseQueue: {
-    // How often to try uploading a response before giving up (default: 10)
+    // How often to try uploading a response in total (default: 10)
     maxAttempts: 10,
     // How long to wait before the first retry, in ms (default: 1000)
     initialDelay: 1000,
     // The maximum time to wait between two attempts, in ms (default: 30000)
     maxDelay: 30000,
-    // By how much to multiply the delay after every failed attempt (default: 2)
-    factor: 2,
-    // Randomize delays, so not all participants retry at the same time
-    // (default: true)
-    jitter: true,
-    // When to abort a request and try again, in ms (default: 30000)
-    requestTimeout: 30000,
-    // Try sending off remaining responses when the page is closed
-    // (default: true)
-    flushOnUnload: true,
     // Called whenever an attempt to upload a response failed, useful to
     // forward these events to your own error tracking
     onError: (info) => {
@@ -196,20 +195,13 @@ const client = new Client({
 });
 ```
 
-To turn the queue off and send responses off without checking whether they arrived, set `responseQueue` to `false`.
-
-```js
-const client = new Client({
-  url: "http://localhost:8787",
-  responseQueue: false,
-});
-```
-
 ### Avoiding Duplicate Responses
 
 When a response fails to upload, it is not always clear whether it actually failed: it may well have been stored, with only the server's confirmation getting lost on the way back. The client therefore gives every response a `clientResponseId`, counting up from 0 within its session. The server uses these ids to recognize responses it already stored, so a response which is sent twice is still only stored once.
 
-These ids are also part of the data you download, where they provide a reliable ordering of the responses within each session.
+These ids are set on every response, whether re-sending is turned on or not. They are part of the data you download, where they provide a reliable ordering of the responses within each session.
+
+If an id turns out to be in use already, which happens when several clients share the same session, the response is re-sent with an id 1000 further ahead. Such a gap in the ids makes it easy to spot that this happened.
 
 ## Advanced Usage
 

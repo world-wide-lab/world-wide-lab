@@ -84,24 +84,11 @@ const timeline = [
 jsPsych.run(timeline);
 ```
 
-### Reliable Response Uploading
+### Re-sending Failed Responses
 
-Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, responses are kept in a queue until the World-Wide-Lab server has confirmed that it stored them. Responses which fail to upload are re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
+Participants often take part in studies on shaky connections and servers can have hiccups. To avoid losing data, responses which failed to upload can be re-sent automatically, waiting a bit longer before every attempt (an exponential backoff) and logging what went wrong to the browser console.
 
-This is enabled by default. A session is also only marked as finished once all of its responses have been stored.
-
-If you want to show participants a "saving your data" screen at the end of your experiment, you can wait for all responses yourself:
-
-```js
-// Resolves to true once everything has been stored and to false if any
-// response had to be given up on
-const everythingStored = await jsPsychWorldWideLab.flush();
-
-// You can also check how many responses are still waiting to be uploaded
-console.log(`${jsPsychWorldWideLab.pendingResponses} response(s) left`);
-```
-
-The queue can be configured (or turned off) via the `responseQueue` option during setup. See [the client's documentation](./client.md#configuring-the-queue) for all available options.
+This is turned off by default. Turn it on via the `responseQueue` option during setup, which also takes the options described in [the client's documentation](./client.md#configuring-re-sending).
 
 ```js
 const jsPsych = jsPsychWorldWideLab.initJsPsych(
@@ -112,12 +99,20 @@ const jsPsych = jsPsychWorldWideLab.initJsPsych(
     url: "https://localhost:8787",
     studyId: "my-study",
 
-    responseQueue: {
-      // How often to try uploading a response before giving up (default: 10)
-      maxAttempts: 10,
-    },
+    responseQueue: true,
   },
 );
+```
+
+Re-sending happens in the background and never holds up your experiment, so a session can be marked as finished while a response is still on its way. If you want to show participants a "saving your data" screen at the end of your experiment, you can wait for these responses yourself:
+
+```js
+// Resolves to true once everything has been stored and to false if any
+// response had to be given up on
+const everythingStored = await jsPsychWorldWideLab.flush();
+
+// You can also check how many responses are still being re-sent
+console.log(`${jsPsychWorldWideLab.pendingResponses} response(s) left`);
 ```
 
 ### Advanced

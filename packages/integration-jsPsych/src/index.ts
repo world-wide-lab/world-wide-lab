@@ -67,15 +67,16 @@ export type SetupOptions = {
   };
 
   /**
-   * Keep responses in a queue until the server has confirmed that it stored
-   * them, re-sending them with an exponential backoff if they fail to upload.
+   * Re-send responses which failed to upload, waiting a bit longer before
+   * every attempt (an exponential backoff).
    *
-   * This is enabled by default. Set it to false to send responses off without
-   * checking whether they arrived.
+   * Responses are always sent off right away, this only adds re-sending them
+   * when that fails. It is turned off by default, set it to true (or pass
+   * options) to turn it on.
    *
    * @see {@link @world-wide-lab/client#ResponseQueueOptions}
    */
-  responseQueue?: false | ResponseQueueOptions;
+  responseQueue?: boolean | ResponseQueueOptions;
 };
 
 /**
@@ -445,8 +446,12 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
   }
 
   /**
-   * Wait for all responses to be stored by the server, e.g. before
+   * Wait for all responses which are still being re-sent, e.g. before
    * re-directing participants to another page.
+   *
+   * @remarks
+   * Nothing else waits for these responses, so they never hold up an
+   * experiment. Call this when you do want to wait for them.
    * @returns true if all responses have been stored, false if any were lost
    */
   public static async flush(): Promise<boolean> {
@@ -457,19 +462,8 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
 
   /**
    * Finish the experiment and mark the {@link @world-wide-lab/client#Session} as finished.
-   *
-   * @remarks
-   * Waits for all responses to be stored first, so a session is only marked as
-   * finished once all of its data has arrived.
    */
   public static async onExperimentFinish() {
-    const everythingStored = await jsPsychWorldWideLab.flush();
-    if (!everythingStored) {
-      console.error(
-        `[World-Wide-Lab] ${jsPsychWorldWideLab.client.failedResponses.length} response(s) could not be stored and are lost.`,
-      );
-    }
-
     await jsPsychWorldWideLab.session.finish();
   }
 

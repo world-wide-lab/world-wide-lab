@@ -521,10 +521,11 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       );
       pressKey("a");
 
+      // The response should be sent three times in total, always with the
+      // same id, so the server can recognize the re-sent ones.
+      await waitForFetchCalls("v1/response/", 3);
       expect(await jsPsychWorldWideLab.flush()).toBe(true);
 
-      // The response should have been sent three times in total, always with
-      // the same id, so the server can recognize the re-sent ones.
       const responseCalls = getFetchCalls("v1/response/");
       expect(responseCalls.length).toBe(3);
       for (const call of responseCalls) {
@@ -535,14 +536,21 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
     }
   });
 
-  it("should only finish a session once all responses are stored", async () => {
-    // The session can only be finished after the response has been re-sent
+  it("should not let a failing response hold up the experiment", async () => {
+    // The response fails and is re-sent in the background, which should not
+    // stop the experiment from finishing.
     const resetFetch = failNextResponses(1);
 
     try {
       const jsPsych = await jsPsychWorldWideLab.initJsPsych(
         {},
-        { url, studyId: "my-study", responseQueue: FAST_RETRIES },
+        {
+          url,
+          studyId: "my-study",
+          // Wait long enough that the response is definitely still being
+          // re-sent when the experiment finishes
+          responseQueue: { initialDelay: 300, maxDelay: 300 },
+        },
       );
 
       await startTimeline(
@@ -556,16 +564,19 @@ describe("jsPsychWorldWideLab with mocked fetch", () => {
       );
       pressKey("a");
 
-      await waitForFetchCalls("v1/session/finish");
+      // Wait for the response to be re-sent successfully
+      await waitForFetchCalls("v1/response/", 2);
+      expect(await jsPsychWorldWideLab.flush()).toBe(true);
+      expect(jsPsychWorldWideLab.pendingResponses).toBe(0);
 
+      // The session should have been finished before that, rather than
+      // waiting for the response to make it
       const calledEndpoints = getFetchCalls("v1/").map((call) =>
         String(call[0]).replace(url, ""),
       );
-      expect(calledEndpoints.indexOf("v1/session/finish")).toBeGreaterThan(
+      expect(calledEndpoints.indexOf("v1/session/finish")).toBeLessThan(
         calledEndpoints.lastIndexOf("v1/response/"),
       );
-      expect(getFetchCalls("v1/response/").length).toBe(2);
-      expect(jsPsychWorldWideLab.pendingResponses).toBe(0);
     } finally {
       resetFetch();
     }

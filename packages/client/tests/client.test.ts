@@ -155,7 +155,13 @@ describe("Client", () => {
   it("should not store a response twice when its confirmation gets lost", async () => {
     const studyId = "studyId-check-response-deduplication";
     await client.call("POST", "/study/", { studyId });
-    const session = await client.createSession({ studyId });
+
+    // Re-sending responses is opt-in
+    const retryingClient = new Client({
+      url: client.options.url,
+      responseQueue: { initialDelay: 1, maxDelay: 1 },
+    });
+    const session = await retryingClient.createSession({ studyId });
 
     // Let the first response actually reach the server, but make it look like
     // it failed to the client, so it gets re-sent.
@@ -175,12 +181,14 @@ describe("Client", () => {
     }) as any;
 
     try {
+      // The first attempt looks like it failed, so it is re-sent
       expect(
         await session.response({
           name: "example_name",
           payload: { ex_key: "ex_value" },
         }),
-      ).toBe(true);
+      ).toBe(false);
+      expect(await retryingClient.flushResponses()).toBe(true);
     } finally {
       global.fetch = workingFetch;
     }
