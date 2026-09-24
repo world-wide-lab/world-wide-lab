@@ -54,7 +54,7 @@ export default defineConfig({
         items: [{ text: "Leaderboards", link: "/guides/leaderboards" }],
       },
       {
-        text: "Participant-Generated Content",
+        text: "Participant-Generated and Structured Content",
         items: [{ text: "Items", link: "/guides/items" }],
       },
       {
