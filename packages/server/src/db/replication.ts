@@ -146,6 +146,15 @@ async function replicateTable(tableName: string) {
   }
 }
 
+// The tables to replicate, in order. A table has to come after every table it
+// references, since rows are imported table by table.
+const tablesToReplicate = [
+  "wwl_studies",
+  "wwl_participants",
+  "wwl_sessions",
+  "wwl_responses",
+];
+
 // Perform a full replication update across all supported tables
 async function runReplication() {
   logger.info("Starting replication");
@@ -153,17 +162,6 @@ async function runReplication() {
   // Check whether both databases are compatible
   await verifyDatabaseVersion();
   logger.info("Database versions OK");
-
-  const tablesToReplicate = [
-    // sequelize.models.Study.tableName,
-    // sequelize.models.Participant.tableName,
-    // sequelize.models.Session.tableName,
-    // sequelize.models.Responses.tableName,
-    "wwl_studies",
-    "wwl_participants",
-    "wwl_sessions",
-    "wwl_responses",
-  ];
 
   // Replicate each database table one by one
   for (const tableName of tablesToReplicate) {
@@ -178,4 +176,5 @@ export {
   findModelByTableName,
   runReplication,
   getDbVersion,
+  tablesToReplicate,
 };
