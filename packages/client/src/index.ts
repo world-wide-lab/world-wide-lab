@@ -147,6 +147,12 @@ export interface DrawItemsOptions {
    */
   maxCompletionsPerItem?: number;
   /**
+   * Only draw items which have fewer than this many child items, i.e. items
+   * contributed with this one as their parentItemId. Rejected children do not
+   * count. Use 1 to keep a transmission chain from branching.
+   */
+  maxChildrenPerItem?: number;
+  /**
    * Only draw items at or beyond this generation of a chain.
    */
   minGeneration?: number;

@@ -412,6 +412,35 @@ describe("Items", () => {
       expect(item).toHaveProperty("timesCompleted", 1);
     });
 
+    it("should respect maxChildrenPerItem", async () => {
+      await createPool("children-cap");
+      const parentId = await createItem("children-cap", { status: "approved" });
+      const childId = await createItem("children-cap", {
+        parentItemId: parentId,
+        generation: 1,
+      });
+
+      const draw = async (maxChildrenPerItem: number) =>
+        (
+          await endpoint
+            .get(
+              `/v1/item-pool/children-cap/draw?sessionId=${await createSession()}&maxChildrenPerItem=${maxChildrenPerItem}`,
+            )
+            .send()
+        ).body.draws.map((d: any) => d.itemId);
+
+      // The child is still pending, but already continues the chain
+      expect(await draw(1)).toEqual([]);
+      expect(await draw(2)).toEqual([parentId]);
+
+      // A rejected continuation hands the parent back out
+      await sequelize.models.Item.update(
+        { status: "rejected" },
+        { where: { itemId: childId } },
+      );
+      expect(await draw(1)).toEqual([parentId]);
+    });
+
     it("should hand out the least-drawn item first", async () => {
       await createPool("least-drawn-pool");
       const hotItemId = await createItem("least-drawn-pool", {

@@ -183,6 +183,7 @@ const drawQuerySchema = object({
   excludeSeen: boolean().optional().default(true),
   maxDrawsPerItem: number().integer().min(1).optional(),
   maxCompletionsPerItem: number().integer().min(1).optional(),
+  maxChildrenPerItem: number().integer().min(1).optional(),
   minGeneration: number().integer().min(0).optional(),
   maxGeneration: number().integer().min(0).optional(),
 }).noUnknown();

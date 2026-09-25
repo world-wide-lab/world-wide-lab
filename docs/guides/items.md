@@ -84,6 +84,7 @@ participant who contributed it.
 | `excludeSeen` | Skip items this session has already been shown | `true` |
 | `maxDrawsPerItem` | Only draw items served fewer than this many times | _no limit_ |
 | `maxCompletionsPerItem` | Only draw items completed fewer than this many times | _no limit_ |
+| `maxChildrenPerItem` | Only draw items that fewer than this many items have been contributed as a continuation of (see [Building a Chain](#building-a-chain)) | _no limit_ |
 | `minGeneration` / `maxGeneration` | Only draw items within this part of a chain | _no limit_ |
 
 `least-drawn` is the one to reach for most of the time: it spreads
@@ -102,9 +103,9 @@ const draws = await session.drawItems("my-awesome-pool", {
 ::: tip
 A draw counts the moment it is served and is never given back, so a
 participant who closes their tab keeps their draw forever. With
-`maxDrawsPerItem: 1` — the obvious setting for a strict chain — an abandoned
-tab takes that link out of circulation for good. Either pair a looser draw
-limit with `maxCompletionsPerItem`, or accept some attrition.
+`maxDrawsPerItem: 1` an abandoned tab takes that item out of circulation for
+good. For chains, use `maxChildrenPerItem` instead (see
+[Building a Chain](#building-a-chain)).
 :::
 
 ## Reacting to an Item
@@ -145,6 +146,8 @@ counts the generations for you.
 ```js
 const [draw] = await session.drawItems("story-chain", {
   policy: "least-drawn",
+  // Only hand out links nobody has continued yet
+  maxChildrenPerItem: 1,
 });
 
 const retelling = await getRetellingFromParticipant(draw.publicPayload);
@@ -156,6 +159,13 @@ await session.contributeItem("story-chain", {
 ```
 
 Seed generation 0 yourself in the admin interface, under `Items` > `Add New`.
+
+`maxChildrenPerItem` counts the items contributed with a given parent, so the
+latest link of a chain is handed out until someone has continued it, and then
+never again. A continuation that is still waiting for review counts, so the
+chain does not branch while you get to it. If you reject it, its parent goes
+back into circulation. A participant who draws a link and then closes their
+tab therefore costs you nothing, unlike with `maxDrawsPerItem: 1`.
 
 ## Showing a Gallery
 

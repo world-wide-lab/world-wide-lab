@@ -58,6 +58,7 @@ interface DrawOptions {
   excludeSeen: boolean;
   maxDrawsPerItem?: number;
   maxCompletionsPerItem?: number;
+  maxChildrenPerItem?: number;
   minGeneration?: number;
   maxGeneration?: number;
 }
@@ -83,6 +84,18 @@ async function drawItems(options: DrawOptions) {
   if (options.maxCompletionsPerItem !== undefined) {
     conditions.push('i."timesCompleted" < :maxCompletionsPerItem');
     replacements.maxCompletionsPerItem = options.maxCompletionsPerItem;
+  }
+  if (options.maxChildrenPerItem !== undefined) {
+    // Rejected children do not count, so that a chain link whose continuation
+    // was thrown out goes back into circulation. Children still waiting for
+    // review do count, so that the chain does not branch in the meantime.
+    conditions.push(`
+      (SELECT COUNT(*) FROM wwl_items c
+        WHERE c."parentItemId" = i."itemId"
+          AND c."status" NOT IN (:uncountedChildStatuses)
+      ) < :maxChildrenPerItem`);
+    replacements.maxChildrenPerItem = options.maxChildrenPerItem;
+    replacements.uncountedChildStatuses = ["rejected"];
   }
   if (options.minGeneration !== undefined) {
     conditions.push('i."generation" >= :minGeneration');

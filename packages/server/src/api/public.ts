@@ -1495,6 +1495,16 @@ routerPublic.post(
  *         required: false
  *         description: Only draw items completed fewer than this many times.
  *       - in: query
+ *         name: maxChildrenPerItem
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: >
+ *           Only draw items with fewer than this many child items i.e. items
+ *           contributed with this one as their parentItemId. Rejected
+ *           children do not count. Use 1 to keep a transmission chain from
+ *           branching.
+ *       - in: query
  *         name: minGeneration
  *         schema:
  *           type: integer
