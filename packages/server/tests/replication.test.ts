@@ -276,6 +276,86 @@ describe("Replication", () => {
                 response: "Response #2",
               },
               sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
+              drawId: "5d0f8a52-7c4e-4a6b-9f3e-2b1c0d9e8f70",
+            },
+          ],
+        },
+        "/v1/replication/source/get-table/wwl_item_pools/?": {
+          GET: [
+            {
+              poolId: "replication-pool",
+              createdAt: "2024-02-09T22:16:56.536Z",
+              updatedAt: "2024-02-09T22:16:56.536Z",
+              studyId: "replication-test",
+              moderation: "reviewed",
+              maxPayloadBytes: null,
+              publicInfo: null,
+              privateInfo: null,
+            },
+          ],
+        },
+        // Ordered by updatedAt like the source does it, which puts the child
+        // into an earlier chunk than its parent, since the parent has been
+        // drawn (and therefore updated) later on
+        "/v1/replication/source/get-table/wwl_items/?": {
+          GET: [
+            {
+              itemId: "7b8e3a1c-2d4f-4e5a-8b6c-9d0e1f2a3b4c",
+              createdAt: "2024-02-13T22:16:56.541Z",
+              updatedAt: "2024-02-13T22:16:56.541Z",
+              poolId: "replication-pool",
+              publicPayload: { text: "Retelling" },
+              status: "approved",
+              sourceSessionId: "8c8facd9-050e-4643-abe5-ed563e8da70a",
+              // Responses are replicated after items
+              sourceResponseId: 1,
+              parentItemId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+              generation: 1,
+              timesDrawn: 1,
+              timesCompleted: 1,
+              privateInfo: null,
+            },
+            {
+              itemId: "9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f",
+              createdAt: "2024-02-09T22:16:56.536Z",
+              updatedAt: "2024-02-13T22:16:56.542Z",
+              poolId: "replication-pool",
+              publicPayload: { text: "Another story" },
+              status: "approved",
+              sourceSessionId: null,
+              sourceResponseId: null,
+              parentItemId: null,
+              generation: 0,
+              timesDrawn: 0,
+              timesCompleted: 0,
+              privateInfo: null,
+            },
+            {
+              itemId: "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+              createdAt: "2024-02-09T22:16:56.536Z",
+              updatedAt: "2024-02-13T22:16:56.543Z",
+              poolId: "replication-pool",
+              publicPayload: { text: "Original story" },
+              status: "approved",
+              sourceSessionId: null,
+              sourceResponseId: null,
+              parentItemId: null,
+              generation: 0,
+              timesDrawn: 1,
+              timesCompleted: 0,
+              privateInfo: null,
+            },
+          ],
+        },
+        "/v1/replication/source/get-table/wwl_item_draws/?": {
+          GET: [
+            {
+              drawId: "5d0f8a52-7c4e-4a6b-9f3e-2b1c0d9e8f70",
+              createdAt: "2024-02-13T22:16:56.543Z",
+              updatedAt: "2024-02-13T22:16:56.544Z",
+              itemId: "7b8e3a1c-2d4f-4e5a-8b6c-9d0e1f2a3b4c",
+              sessionId: "d6533e79-ea6b-4b04-a142-946f5e861b43",
+              status: "completed",
             },
           ],
         },
@@ -456,6 +536,31 @@ describe("Replication", () => {
         },
       });
       expect(nResponses).toBe(5);
+
+      // Items, including the links which can only be set once every table
+      // has been replicated
+      const items = await sequelize.models.Item.findAll({
+        where: { poolId: "replication-pool" },
+      });
+      expect(items.length).toBe(3);
+      const child = (await sequelize.models.Item.findByPk(
+        "7b8e3a1c-2d4f-4e5a-8b6c-9d0e1f2a3b4c",
+      )) as any;
+      expect(child.parentItemId).toBe("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d");
+      expect(child.sourceResponseId).toBe(1);
+      // Setting the links must not touch updatedAt, which decides what the
+      // next replication fetches
+      expect(new Date(child.updatedAt).toISOString()).toBe(
+        "2024-02-13T22:16:56.541Z",
+      );
+
+      const draw = (await sequelize.models.ItemDraw.findByPk(
+        "5d0f8a52-7c4e-4a6b-9f3e-2b1c0d9e8f70",
+      )) as any;
+      expect(draw.itemId).toBe(child.itemId);
+
+      const reaction = (await sequelize.models.Response.findByPk(5)) as any;
+      expect(reaction.drawId).toBe(draw.drawId);
     });
 
     it("should fail when not configured to act as destination source", async () => {

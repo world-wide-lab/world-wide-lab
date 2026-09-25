@@ -80,6 +80,9 @@ describe("Replication Coverage", () => {
     const problems: string[] = [];
 
     for (const [index, tableName] of tablesToReplicate.entries()) {
+      const columns = await sequelize
+        .getQueryInterface()
+        .describeTable(tableName);
       for (const foreignKey of await getForeignKeys(tableName)) {
         const referencedIndex = tablesToReplicate.indexOf(
           foreignKey.referencedTableName,
@@ -88,9 +91,14 @@ describe("Replication Coverage", () => {
           problems.push(
             `${tableName}.${foreignKey.columnName} references ${foreignKey.referencedTableName}, which is not replicated`,
           );
-        } else if (referencedIndex >= index) {
+        } else if (
+          referencedIndex >= index &&
+          !columns[foreignKey.columnName].allowNull
+        ) {
+          // Nullable references like this are set in a second pass once all
+          // tables are there, but a required one can not wait for that
           problems.push(
-            `${tableName}.${foreignKey.columnName} references ${foreignKey.referencedTableName}, which is replicated after it`,
+            `${tableName}.${foreignKey.columnName} references ${foreignKey.referencedTableName}, which is not replicated before it, and can not be left empty in the meantime`,
           );
         }
       }
