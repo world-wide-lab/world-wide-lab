@@ -415,7 +415,7 @@ function defineModels(sequelize: Sequelize) {
         allowNull: false,
         defaultValue: "pending",
         validate: {
-          isIn: [["pending", "approved", "rejected", "retired"]],
+          isIn: [["pending", "approved", "rejected", "retired", "withdrawn"]],
         },
         comment:
           "The moderation status of this item. Whether an item is actually shown to other participants also depends on the moderation setting of its pool.",

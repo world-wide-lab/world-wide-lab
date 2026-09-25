@@ -2,6 +2,7 @@
 import "./setup_env";
 
 import request from "supertest";
+import { createModerationHandler } from "../src/admin/handlers/item";
 import { deleteStudyItems } from "../src/admin/handlers/study";
 import app from "../src/app";
 import sequelize from "../src/db";
@@ -433,9 +434,14 @@ describe("Items", () => {
       expect(await draw(1)).toEqual([]);
       expect(await draw(2)).toEqual([parentId]);
 
-      // A rejected continuation hands the parent back out
+      // A rejected or withdrawn continuation hands the parent back out
       await sequelize.models.Item.update(
         { status: "rejected" },
+        { where: { itemId: childId } },
+      );
+      expect(await draw(1)).toEqual([parentId]);
+      await sequelize.models.Item.update(
+        { status: "withdrawn" },
         { where: { itemId: childId } },
       );
       expect(await draw(1)).toEqual([parentId]);
@@ -784,7 +790,8 @@ describe("Items", () => {
         .send({ sessionId });
 
       expect(response.status).toBe(200);
-      expect(await getItem(itemId)).toHaveProperty("status", "rejected");
+      // Kept apart from a moderator's rejection
+      expect(await getItem(itemId)).toHaveProperty("status", "withdrawn");
 
       const gallery = await endpoint
         .get("/v1/item-pool/retraction/items")
@@ -805,6 +812,37 @@ describe("Items", () => {
 
       expect(response.status).toBe(400);
       expect(await getItem(itemId)).toHaveProperty("status", "approved");
+    });
+  });
+
+  describe("Moderation", () => {
+    function moderate(
+      status: "approved" | "rejected" | "retired",
+      itemIds: string[],
+    ) {
+      const context: any = {
+        records: itemIds.map((itemId) => ({
+          id: () => itemId,
+          toJSON: () => ({ id: itemId }),
+        })),
+        resource: { id: () => "wwl_items" },
+        h: { resourceUrl: () => "/admin/resources/wwl_items" },
+      };
+      return createModerationHandler(status)({} as any, {} as any, context);
+    }
+
+    it("should not approve items their participant withdrew", async () => {
+      await createPool("moderation");
+      const pendingId = await createItem("moderation");
+      const withdrawnId = await createItem("moderation", {
+        status: "withdrawn",
+      });
+
+      const result = await moderate("approved", [pendingId, withdrawnId]);
+
+      expect(await getItem(pendingId)).toHaveProperty("status", "approved");
+      expect(await getItem(withdrawnId)).toHaveProperty("status", "withdrawn");
+      expect(result.notice?.message).toMatch(/skipped 1/);
     });
   });
 

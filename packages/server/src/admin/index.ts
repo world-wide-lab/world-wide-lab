@@ -649,6 +649,7 @@ const admin = new AdminJS({
               { value: "approved", label: "Approved" },
               { value: "rejected", label: "Rejected" },
               { value: "retired", label: "Retired" },
+              { value: "withdrawn", label: "Withdrawn by participant" },
             ],
             description:
               "Whether this item may be shown to other participants. Items in a pool set to 'unreviewed' are also shown while pending.",

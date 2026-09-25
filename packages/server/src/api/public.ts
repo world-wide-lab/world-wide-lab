@@ -1503,8 +1503,8 @@ routerPublic.post(
  *         required: false
  *         description: >
  *           Only draw items with fewer than this many child items i.e. items
- *           contributed with this one as their parentItemId. Rejected
- *           children do not count. Use 1 to keep a transmission chain from
+ *           contributed with this one as their parentItemId. Rejected or
+ *           withdrawn children do not count. Use 1 to keep a transmission chain from
  *           branching. Draws which have not been continued yet do not count,
  *           so concurrent draws can still overshoot this.
  *       - in: query
@@ -1741,7 +1741,9 @@ routerPublic.get(
  *     summary: Retract an item
  *     description: >
  *       Withdraw an item a session contributed, so that it is no longer shown
- *       to anyone. Also serves participant withdrawal requests.
+ *       to anyone. Also serves participant withdrawal requests. The item is
+ *       marked as withdrawn, which keeps it apart from items a moderator
+ *       rejected.
  *     tags:
  *       - items
  *     parameters:
@@ -1783,9 +1785,11 @@ routerPublic.delete(
         .noUnknown()
         .validateSync(req.body);
 
-      // A session may only ever retract what it contributed itself
+      // A session may only ever retract what it contributed itself. This gets
+      // its own status, so that the data tells a participant's withdrawal
+      // apart from a moderator's rejection.
       const [updatedRows] = await sequelize.models.Item.update(
-        { status: "rejected" },
+        { status: "withdrawn" },
         { where: { itemId, sourceSessionId: sessionId } },
       );
 

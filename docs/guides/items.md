@@ -237,6 +237,12 @@ Participants can withdraw what they contributed themselves:
 await session.retractItem(item.itemId);
 ```
 
+This marks the item as **withdrawn**, which hides it just like rejecting it
+would, but keeps the two apart in your data. The `Approve`, `Reject` and
+`Retire` actions skip withdrawn items, so a participant's withdrawal is not
+undone by accident. Should you ever need to, you can still change the status
+of a single withdrawn item by editing it.
+
 ## Payload Size
 
 An item's payload is limited to 64 KB by default. Pools can set their own

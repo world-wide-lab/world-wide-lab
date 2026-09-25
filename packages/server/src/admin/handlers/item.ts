@@ -4,6 +4,7 @@ import {
   type ActionResponse,
   NotFoundError,
 } from "adminjs";
+import { Op } from "sequelize";
 import sequelize from "../../db/index.js";
 
 // Jump from a record to the rows belonging to it, e.g. from a pool to its
@@ -37,7 +38,9 @@ const viewItemsHandler = createViewHandler("wwl_items", "poolId");
 const viewItemDrawsHandler = createViewHandler("wwl_item_draws", "itemId");
 
 // The moderation queue works on many items at a time, so approving, rejecting
-// and retiring are bulk actions over the same update.
+// and retiring are bulk actions over the same update. Items a participant
+// withdrew are left alone, so that selecting them by accident can not put
+// them back up. Editing a single item can still change them on purpose.
 function createModerationHandler(status: "approved" | "rejected" | "retired") {
   return async (
     request: ActionRequest,
@@ -53,10 +56,16 @@ function createModerationHandler(status: "approved" | "rejected" | "retired") {
       );
     }
 
-    await sequelize.models.Item.update(
+    const [updatedRows] = await sequelize.models.Item.update(
       { status },
-      { where: { itemId: records.map((record) => record.id()) } },
+      {
+        where: {
+          itemId: records.map((record) => record.id()),
+          status: { [Op.ne]: "withdrawn" },
+        },
+      },
     );
+    const skippedRows = records.length - updatedRows;
 
     return {
       records: records.map((record) => record.toJSON(currentAdmin)),
@@ -64,7 +73,10 @@ function createModerationHandler(status: "approved" | "rejected" | "retired") {
         resourceId: resource._decorated?.id() || resource.id(),
       }),
       notice: {
-        message: `Marked ${records.length} item(s) as ${status}.`,
+        message:
+          skippedRows > 0
+            ? `Marked ${updatedRows} item(s) as ${status}, skipped ${skippedRows} withdrawn by their participant.`
+            : `Marked ${updatedRows} item(s) as ${status}.`,
         type: "success",
       },
     };

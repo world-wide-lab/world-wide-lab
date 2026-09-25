@@ -139,7 +139,7 @@ const fullItemSchema = object({
     .required(),
   publicPayload: object().required(),
   status: string()
-    .oneOf(["pending", "approved", "rejected", "retired"])
+    .oneOf(["pending", "approved", "rejected", "retired", "withdrawn"])
     .optional(),
   sourceSessionId: string().uuid().nullable().optional(),
   sourceResponseId: number().integer().nullable().optional(),

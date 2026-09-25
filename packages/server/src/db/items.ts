@@ -6,7 +6,7 @@ import { AppError } from "../errors.js";
 import sequelize from "./index.js";
 
 type ModerationMode = "reviewed" | "unreviewed" | "closed";
-type ItemStatus = "pending" | "approved" | "rejected" | "retired";
+type ItemStatus = "pending" | "approved" | "rejected" | "retired" | "withdrawn";
 type DrawPolicy = "random" | "least-drawn" | "newest" | "oldest";
 
 // Visibility depends on the pool's mode and the item's status together, so
@@ -86,16 +86,17 @@ async function drawItems(options: DrawOptions) {
     replacements.maxCompletionsPerItem = options.maxCompletionsPerItem;
   }
   if (options.maxChildrenPerItem !== undefined) {
-    // Rejected children do not count, so that a chain link whose continuation
-    // was thrown out goes back into circulation. Children still waiting for
-    // review do count, so that the chain does not branch in the meantime.
+    // Rejected or withdrawn children do not count, so that a chain link whose
+    // continuation was thrown out goes back into circulation. Children still
+    // waiting for review do count, so that the chain does not branch in the
+    // meantime.
     conditions.push(`
       (SELECT COUNT(*) FROM wwl_items c
         WHERE c."parentItemId" = i."itemId"
           AND c."status" NOT IN (:uncountedChildStatuses)
       ) < :maxChildrenPerItem`);
     replacements.maxChildrenPerItem = options.maxChildrenPerItem;
-    replacements.uncountedChildStatuses = ["rejected"];
+    replacements.uncountedChildStatuses = ["rejected", "withdrawn"];
   }
   if (options.minGeneration !== undefined) {
     conditions.push('i."generation" >= :minGeneration');
