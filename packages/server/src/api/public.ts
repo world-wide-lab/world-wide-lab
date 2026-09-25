@@ -592,8 +592,7 @@ routerPublic.post(
         return;
       }
 
-      // A response reacting to a drawn item is written together with the
-      // completion of its draw, so that the two can never disagree.
+      // Write the response and complete its draw together, so the two never disagree
       const { drawId, sessionId } = responseParams;
       const responseId = await itemTransaction(async (transaction) => {
         const draw = await sequelize.models.ItemDraw.findOne({
@@ -610,10 +609,6 @@ routerPublic.post(
           { transaction },
         )) as any as ResponseParams;
 
-        // Closing the draw is the default, since reacting to an item with a
-        // single response is the common case. Trials which only make up part
-        // of a reaction pass completesDraw: false and let the last one close
-        // the draw.
         if (completesDraw !== false) {
           await completeDraw(drawId as string, sessionId, transaction);
         }
@@ -1244,15 +1239,10 @@ routerPublic.get(
 );
 
 // --- Item Pools ------------------------------------------------------------
-// Pools let participants see what other participants produced: a session
-// contributes an item to a pool, and other sessions draw items back out of it.
-// Which items may be handed out is decided by the pool (moderation), what to
-// hand out right now is decided by the query (policy, caps, exclusions).
 
 const poolIdSchema = object({ poolId: string().required() });
 
-// Only ever hand these fields back out. Everything else on an item (who
-// contributed it, its privateInfo, how often it has been served) is internal.
+// Only ever hand these fields back out, everything else on an item is internal
 function toPublicItem(item: any) {
   return {
     itemId: item.itemId,
@@ -1366,8 +1356,7 @@ routerPublic.post(
         }
       }
       if (contribution.responseId !== undefined) {
-        // Response ids are sequential and therefore guessable, so an item may
-        // only point at a response of the session contributing it
+        // Response ids are guessable, so only allow the contributing session's own
         if (contribution.sessionId === undefined) {
           throw new AppError(
             "A responseId can only be passed along with the sessionId it belongs to",
@@ -1533,8 +1522,7 @@ routerPublic.get(
 
       const pool = await getPoolOrFail(poolId);
 
-      // A draw is by definition served to someone, so unlike on contribute the
-      // session is required here and has to exist.
+      // Unlike on contribute, a draw requires an existing session
       const session = (await sequelize.models.Session.findOne({
         where: { sessionId: query.sessionId },
       })) as any as SessionParams | null;
@@ -1770,9 +1758,7 @@ routerPublic.delete(
         .noUnknown()
         .validateSync(req.body);
 
-      // A session may only ever retract what it contributed itself. This gets
-      // its own status, so that the data tells a participant's withdrawal
-      // apart from a moderator's rejection.
+      // Own status, so a participant's withdrawal stays distinct from a rejection
       const [updatedRows] = await sequelize.models.Item.update(
         { status: "withdrawn" },
         { where: { itemId, sourceSessionId: sessionId } },

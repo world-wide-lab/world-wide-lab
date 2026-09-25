@@ -82,8 +82,7 @@ export const up: Migration = async ({ context }) => {
     name: "idx_wwl_item_pools_studyId",
   });
 
-  // The items themselves, either seeded by the researcher or contributed by
-  // participants.
+  // The items themselves, seeded by the researcher or contributed by participants
   await context.createTable("wwl_items", {
     itemId: {
       type: DataTypes.UUID,
@@ -194,8 +193,7 @@ export const up: Migration = async ({ context }) => {
     name: "idx_wwl_items_poolId_status_timesDrawn",
   });
 
-  // One row per "item has been served to session", the source of truth for
-  // who has seen what.
+  // One row per "item has been served to session"
   await context.createTable("wwl_item_draws", {
     drawId: {
       type: DataTypes.UUID,

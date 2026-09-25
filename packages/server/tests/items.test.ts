@@ -558,8 +558,7 @@ describe("Items", () => {
   describe("POST /response with a drawId", () => {
     let poolCount = 0;
 
-    // Draw a single item from a pool of its own, so that every test knows
-    // exactly which item it is reacting to
+    // Draw a single item from a pool of its own
     async function drawOne(sessionId: string) {
       const poolId = `reactions-${poolCount++}`;
       await createPool(poolId);
@@ -707,8 +706,7 @@ describe("Items", () => {
 
     beforeAll(async () => {
       await createPool(POOL_ID);
-      // Explicit timestamps, since two items contributed in the same
-      // millisecond have no defined order relative to each other
+      // Explicit timestamps, since same-millisecond items have no defined order
       await createItem(POOL_ID, {
         status: "approved",
         publicPayload: { text: "first" },
@@ -847,8 +845,7 @@ describe("Items", () => {
       await sequelize.models.Study.create({ studyId: EXPORT_STUDY_ID });
       const sessionId = await createSession(undefined, EXPORT_STUDY_ID);
 
-      // A pool of the study's own, plus a pool shared across studies which
-      // this study both contributes to and draws from
+      // A pool of the study's own, plus a pool shared across studies
       await createPool("export-own", { studyId: EXPORT_STUDY_ID });
       await createPool("export-shared");
 
@@ -857,8 +854,7 @@ describe("Items", () => {
         status: "approved",
         sourceSessionId: sessionId,
       });
-      // Somebody else's contribution to the shared pool, which this study
-      // never touched
+      // Somebody else's contribution to the shared pool
       foreignItemId = await createItem("export-shared", {
         status: "approved",
         sourceSessionId: await createSession(undefined, OTHER_STUDY_ID),
@@ -959,8 +955,7 @@ describe("Items", () => {
       expect(sharedItem).not.toBe(null);
       expect(sharedItem).toHaveProperty("sourceSessionId", null);
 
-      // Responses stay behind for the study's own deletion step to remove,
-      // but must not point at a draw which no longer exists
+      // Responses stay behind, but must not point at a deleted draw
       const responses = await sequelize.models.Response.findAll({
         where: { sessionId },
       });

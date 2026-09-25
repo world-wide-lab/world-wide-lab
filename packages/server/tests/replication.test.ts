@@ -293,9 +293,7 @@ describe("Replication", () => {
             },
           ],
         },
-        // Ordered by updatedAt like the source does it, which puts the child
-        // into an earlier chunk than its parent, since the parent has been
-        // drawn (and therefore updated) later on
+        // Ordered by updatedAt like the source, putting the child in an earlier chunk than its parent
         "/v1/replication/source/get-table/wwl_items/?": {
           GET: [
             {
@@ -536,8 +534,7 @@ describe("Replication", () => {
       });
       expect(nResponses).toBe(5);
 
-      // Items, including the links which can only be set once every table
-      // has been replicated
+      // Items, including the deferred links
       const items = await sequelize.models.Item.findAll({
         where: { poolId: "replication-pool" },
       });
@@ -547,8 +544,7 @@ describe("Replication", () => {
       )) as any;
       expect(child.parentItemId).toBe("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d");
       expect(child.sourceResponseId).toBe(1);
-      // Setting the links must not touch updatedAt, which decides what the
-      // next replication fetches
+      // Setting the links must not touch updatedAt
       expect(new Date(child.updatedAt).toISOString()).toBe(
         "2024-02-13T22:16:56.541Z",
       );

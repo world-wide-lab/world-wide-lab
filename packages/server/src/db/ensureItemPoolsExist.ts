@@ -16,7 +16,6 @@ async function ensureItemPoolExists(sequelize: Sequelize, poolId: string) {
   ).count;
 
   if (existingPoolCount > 0) {
-    // Pool already exists
     return;
   }
 

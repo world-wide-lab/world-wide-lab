@@ -5,9 +5,7 @@ import sequelize from "../src/db";
 import { up } from "../src/db/migrate";
 import { tablesToReplicate } from "../src/db/replication";
 
-// Tables which are deliberately not replicated. Every table in the schema has
-// to be either replicated or listed here, so that adding a table forces a
-// decision about it.
+// Tables deliberately not replicated; every table must be replicated or listed here
 const tablesNotReplicated = [
   // Internal to a single instance
   "wwl_internal_migrations",
@@ -38,13 +36,9 @@ async function getForeignKeys(tableName: string) {
   }>;
 }
 
-// Replication copies the database table by table. These tests check the list
-// of tables against the actual schema, so that e.g. a new foreign key into a
-// table that is not replicated is caught here and not on a live destination.
 describe("Replication Coverage", () => {
   beforeAll(async () => {
-    // Use the schema as the migrations create it, since that is what a
-    // replication destination actually has
+    // Use the schema as the migrations create it, like a replication destination
     await up();
   });
 
@@ -95,8 +89,7 @@ describe("Replication Coverage", () => {
           referencedIndex >= index &&
           !columns[foreignKey.columnName].allowNull
         ) {
-          // Nullable references like this are set in a second pass once all
-          // tables are there, but a required one can not wait for that
+          // Only nullable references can be deferred to the second pass
           problems.push(
             `${tableName}.${foreignKey.columnName} references ${foreignKey.referencedTableName}, which is not replicated before it, and can not be left empty in the meantime`,
           );

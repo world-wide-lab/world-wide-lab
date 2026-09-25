@@ -733,8 +733,7 @@ const admin = new AdminJS({
     {
       resource: sequelize.models.ItemDraw,
       options: {
-        // Invisible in navigation, this is for debugging a stuck pool rather
-        // than for day-to-day work.
+        // Invisible in navigation, only for debugging a stuck pool
         navigation: false,
 
         sort: {

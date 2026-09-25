@@ -74,8 +74,7 @@ const responseSchema = fullResponseSchema.omit([
   "createdAt",
   "updatedAt",
 ]);
-// Responses may additionally close the draw they were produced under, which is
-// not part of the response itself and therefore not stored on it.
+// completesDraw is not stored on the response itself
 const responseCreationRequestSchema = responseSchema.shape({
   completesDraw: boolean().optional(),
 });
@@ -148,9 +147,7 @@ const fullItemSchema = object({
   timesCompleted: number().integer().min(0).optional(),
   privateInfo: object().optional(),
 }).noUnknown();
-// What a participant may send when contributing an item. The session and
-// response an item came from are named as they are on the public API, since
-// the client knows them as its own ids, not as the item's "source".
+// What a participant may send when contributing an item
 const itemContributionSchema = object({
   publicPayload: object().required(),
   sessionId: string().uuid().optional(),
@@ -169,8 +166,7 @@ const fullItemDrawSchema = object({
   status: string().oneOf(["served", "completed"]).optional(),
 }).noUnknown();
 
-// Query parameters of the draw endpoint. These govern what to hand out right
-// now, whereas the pool itself governs what may exist and who may see it.
+// Query parameters of the draw endpoint
 const drawQuerySchema = object({
   sessionId: string().uuid().required(),
   count: number().integer().min(1).max(100).optional().default(1),

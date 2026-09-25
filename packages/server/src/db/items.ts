@@ -1,6 +1,3 @@
-// Item pool operations which have to be correct when several participants (or
-// several instances) are active at the same time.
-
 import { QueryTypes, type Transaction } from "sequelize";
 import { AppError } from "../errors.js";
 import sequelize from "./index.js";
@@ -9,14 +6,11 @@ type ModerationMode = "reviewed" | "unreviewed" | "closed";
 type ItemStatus = "pending" | "approved" | "rejected" | "retired" | "withdrawn";
 type DrawPolicy = "random" | "least-drawn" | "newest" | "oldest";
 
-// Visibility depends on the pool's mode and the item's status together, so
-// that setting a pool back to 'reviewed' hides everything nobody approved.
 function visibleItemStatuses(moderation: ModerationMode): ItemStatus[] {
   return moderation === "unreviewed" ? ["pending", "approved"] : ["approved"];
 }
 
-// itemId breaks ties, since several items can share a createdAt down to the
-// millisecond and an ambiguous order would make draws unrepeatable.
+// itemId breaks ties between items created in the same millisecond
 const policyOrder: Record<DrawPolicy, string> = {
   random: "RANDOM()",
   "least-drawn": 'i."timesDrawn" ASC, RANDOM()',
@@ -24,14 +18,10 @@ const policyOrder: Record<DrawPolicy, string> = {
   oldest: 'i."createdAt" ASC, i."itemId" ASC',
 };
 
-// Sequelize hands out a single connection for sqlite, so two overlapping
-// transactions would try to nest their BEGIN statements on it and fail. Since
-// sqlite is only ever used by a single instance (the desktop app, or a local
-// file), queueing them in-process is enough. Postgres needs no queue.
+// Sequelize shares one sqlite connection, so overlapping transactions would nest their BEGINs; queue them in-process instead
 let sqliteTransactionQueue: Promise<unknown> = Promise.resolve();
 
-// Every transaction touching items has to go through here, so that none of
-// them can overlap with any other.
+// Every transaction touching items has to go through here
 function itemTransaction<T>(run: (transaction: Transaction) => Promise<T>) {
   const start = () => sequelize.transaction(run);
 
@@ -49,8 +39,7 @@ interface DrawOptions {
   poolId: string;
   moderation: ModerationMode;
   sessionId: string;
-  // The participant behind the drawing session, if there is one. Used to also
-  // exclude items this person contributed in one of their other sessions.
+  // Used to also exclude items contributed in the participant's other sessions
   participantId?: string | null;
   count: number;
   policy: DrawPolicy;
@@ -63,10 +52,7 @@ interface DrawOptions {
   maxGeneration?: number;
 }
 
-// Claim up to `count` items for a session and record a draw for each of them.
-// Picking the rows and counting the draw happens in one statement, since a
-// read-then-write in node would let two concurrent draws slip past the same
-// serving limit.
+// Claim up to `count` items in a single statement, so concurrent draws can't slip past the same limit
 async function drawItems(options: DrawOptions) {
   const conditions = ['i."poolId" = :poolId', 'i."status" IN (:statuses)'];
   const replacements: { [key: string]: any } = {
@@ -86,10 +72,7 @@ async function drawItems(options: DrawOptions) {
     replacements.maxCompletionsPerItem = options.maxCompletionsPerItem;
   }
   if (options.maxChildrenPerItem !== undefined) {
-    // Rejected or withdrawn children do not count, so that a chain link whose
-    // continuation was thrown out goes back into circulation. Children still
-    // waiting for review do count, so that the chain does not branch in the
-    // meantime.
+    // Pending children count (so the chain doesn't branch), rejected or withdrawn ones don't
     conditions.push(`
       (SELECT COUNT(*) FROM wwl_items c
         WHERE c."parentItemId" = i."itemId"
@@ -107,8 +90,6 @@ async function drawItems(options: DrawOptions) {
     replacements.maxGeneration = options.maxGeneration;
   }
   if (options.excludeOwn) {
-    // Exclude everything this session contributed and, when we know who is
-    // behind the session, everything they contributed in their other sessions.
     const ownSession = 's."sessionId" = :sessionId';
     let own = ownSession;
     if (options.participantId) {
@@ -131,8 +112,7 @@ async function drawItems(options: DrawOptions) {
       )`);
   }
 
-  // Skipping rows another transaction is claiming keeps concurrent draws from
-  // queueing up behind each other. Postgres-only; sqlite serialises writes.
+  // Keep concurrent draws from queueing behind each other (sqlite serialises writes anyway)
   const lock =
     sequelize.getDialect() === "postgres" ? "FOR UPDATE SKIP LOCKED" : "";
 
@@ -183,8 +163,7 @@ async function drawItems(options: DrawOptions) {
   });
 }
 
-// Mark a draw as completed and count the completion on its item. Completing a
-// draw twice is a no-op, so a completion is never counted twice.
+// Mark a draw as completed and count it on its item; completing twice is a no-op
 async function completeDraw(
   drawId: string,
   sessionId: string,

@@ -7,8 +7,7 @@ import {
 import { Op } from "sequelize";
 import sequelize from "../../db/index.js";
 
-// Jump from a record to the rows belonging to it, e.g. from a pool to its
-// items or from an item to the sessions it was served to.
+// Jump from a record to the rows belonging to it, e.g. from a pool to its items
 function createViewHandler(resourceId: string, filterKey: string) {
   return async (
     request: ActionRequest,
@@ -37,10 +36,7 @@ function createViewHandler(resourceId: string, filterKey: string) {
 const viewItemsHandler = createViewHandler("wwl_items", "poolId");
 const viewItemDrawsHandler = createViewHandler("wwl_item_draws", "itemId");
 
-// The moderation queue works on many items at a time, so approving, rejecting
-// and retiring are bulk actions over the same update. Items a participant
-// withdrew are left alone, so that selecting them by accident can not put
-// them back up. Editing a single item can still change them on purpose.
+// Bulk moderation; items a participant withdrew are left alone so they can't be put back up by accident
 function createModerationHandler(status: "approved" | "rejected" | "retired") {
   return async (
     request: ActionRequest,
@@ -83,9 +79,7 @@ function createModerationHandler(status: "approved" | "rejected" | "retired") {
   };
 }
 
-// Open the item list on the moderation queue i.e. everything nobody has
-// decided on yet. Any interaction with the list (filtering, sorting, paging)
-// carries query parameters along and lifts the default again.
+// Open the item list on the pending items unless the query already filters, sorts or pages
 async function defaultToPendingItems(
   request: ActionRequest,
 ): Promise<ActionRequest> {
@@ -95,8 +89,7 @@ async function defaultToPendingItems(
   return request;
 }
 
-// Researcher-seeded items do not need to be reviewed by anyone, so they are
-// created as approved unless the researcher picks something else.
+// Researcher-seeded items need no review, so they default to approved
 async function defaultToApprovedItem(
   request: ActionRequest,
 ): Promise<ActionRequest> {

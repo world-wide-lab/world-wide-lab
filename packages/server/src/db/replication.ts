@@ -9,10 +9,7 @@ const defaultRequestHeaders = {
   "User-Agent": `WWL Replication / ${config.version}`,
 };
 
-// The tables to replicate, in order. A table has to come after every table it
-// references, since rows are imported table by table. The only exceptions are
-// nullable references back into the table itself or further down this list,
-// which are set in a second pass (see getDeferredColumns).
+// Tables in import order: each after the tables it references, except nullable references set later (see getDeferredColumns)
 const tablesToReplicate = [
   "wwl_studies",
   "wwl_participants",
@@ -52,17 +49,13 @@ function getNonPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
   return nonPrimaryKeyColumns;
 }
 
-// A reference which could not be set while its row was imported, to be set
-// once every table has been replicated
+// A reference to be set once every table has been replicated
 interface DeferredLink {
   where: { [column: string]: unknown };
   values: { [column: string]: unknown };
 }
 
-// Columns which reference the table itself or a table that is replicated after
-// it. Their rows may not exist yet while a chunk is imported (e.g. an item's
-// parent, which was updated more recently than the item and therefore comes in
-// a later chunk), so these columns are filled in after all tables are done.
+// Columns referencing this or a later table, whose rows may not exist yet, so they are filled in last
 async function getDeferredColumns(tableName: string): Promise<string[]> {
   const position = tablesToReplicate.indexOf(tableName);
   const foreignKeys = (await sequelize
@@ -133,8 +126,7 @@ async function importDeferredLinks(
   console.log(`Linking ${deferredLinks.length} rows in ${tableName}`);
 
   for (const { where, values } of deferredLinks) {
-    // Silent, since updatedAt has to stay the source's value, as it decides
-    // what the next replication fetches
+    // Silent, since updatedAt decides what the next replication fetches
     await model.update(values, { where, silent: true });
   }
 }

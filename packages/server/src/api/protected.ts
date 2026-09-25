@@ -213,9 +213,7 @@ routerProtectedWithoutAuthentication.get(
           return await sequelize.models.Item.findAll({
             where: {
               [Sequelize.Op.and]: [
-                // A pool can be shared across studies, so a study's items are
-                // the ones in its own pools plus the ones its sessions
-                // contributed to or were served from a shared pool.
+                // Items in the study's own pools, plus shared-pool items its sessions contributed or drew
                 Sequelize.literal(`(
                   "Item"."poolId" IN (
                     SELECT "poolId" FROM wwl_item_pools WHERE "studyId" = :studyId

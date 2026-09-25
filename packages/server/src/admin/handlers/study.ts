@@ -66,11 +66,7 @@ async function newStudyHandler(
   throw new Error("new action can be invoked only via `post` http method");
 }
 
-// Remove everything an item pool holds for a single study: the study's own
-// pools with all of their items, and the record of what its sessions drew.
-// Items the study contributed to a pool it does not own stay where they are,
-// since other studies keep drawing from that pool, but they are stripped of
-// their link to the sessions and responses that are about to disappear.
+// Delete a study's own pools, items and draws; its items in shared pools stay but lose their links
 async function deleteStudyItems(studyId: string) {
   const sessionIds = (
     await sequelize.models.Session.findAll({
@@ -119,8 +115,7 @@ async function deleteStudyItems(studyId: string) {
       : [];
 
   if (drawIds.length > 0) {
-    // Responses of other studies can point at these draws. Those responses are
-    // not ours to delete, so they only lose the link.
+    // Responses of other studies can point at these draws, so they only lose the link
     await sequelize.models.Response.update(
       { drawId: null },
       { where: { drawId: drawIds } },
@@ -177,10 +172,7 @@ async function deleteStudyHandler(
     // Actually delete all the data
     const studyId = record.id();
 
-    // (1) Delete the items and draws belonging to this study. This has to
-    // happen before the responses, since items can point at the response they
-    // were generated from. Pools shared across studies (i.e. without a
-    // studyId) survive, they just lose their link to this study's data.
+    // (1) Delete the items and draws first, since items can point at responses
     await deleteStudyItems(studyId);
 
     // (2) Delete all responses associated with this study
