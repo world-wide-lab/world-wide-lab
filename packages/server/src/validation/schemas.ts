@@ -123,7 +123,6 @@ const fullItemPoolSchema = object({
   updatedAt: date(),
   studyId: string().optional(),
   moderation: string().oneOf(["reviewed", "unreviewed", "closed"]).optional(),
-  maxPayloadBytes: number().integer().positive().optional(),
   publicInfo: object().optional(),
   privateInfo: object().optional(),
 }).noUnknown();

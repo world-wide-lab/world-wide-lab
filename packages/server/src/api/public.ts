@@ -1345,21 +1345,6 @@ routerPublic.post(
         );
       }
 
-      // The global request size limit is not a meaningful limit for content
-      // other participants get to see, so pools have their own.
-      const maxPayloadBytes =
-        pool.maxPayloadBytes ?? config.items.defaultMaxPayloadBytes;
-      const payloadBytes = Buffer.byteLength(
-        JSON.stringify(contribution.publicPayload),
-        "utf8",
-      );
-      if (payloadBytes > maxPayloadBytes) {
-        throw new AppError(
-          `The item's publicPayload is too large (${payloadBytes} bytes, the limit for this pool is ${maxPayloadBytes} bytes)`,
-          400,
-        );
-      }
-
       // Items are always one generation further along than their parent
       let generation = 0;
       if (contribution.parentItemId !== undefined) {

@@ -208,16 +208,6 @@ describe("Items", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("closed");
     });
-
-    it("should reject a payload above the pool's limit", async () => {
-      await createPool("tiny-payloads", { maxPayloadBytes: 32 });
-      const response = await endpoint
-        .post("/v1/item-pool/tiny-payloads/item")
-        .send({ publicPayload: { text: "x".repeat(100) } });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("too large");
-    });
   });
 
   describe("GET /item-pool/:poolId/draw", () => {

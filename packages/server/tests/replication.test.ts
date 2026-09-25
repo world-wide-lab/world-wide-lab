@@ -288,7 +288,6 @@ describe("Replication", () => {
               updatedAt: "2024-02-09T22:16:56.536Z",
               studyId: "replication-test",
               moderation: "reviewed",
-              maxPayloadBytes: null,
               publicInfo: null,
               privateInfo: null,
             },

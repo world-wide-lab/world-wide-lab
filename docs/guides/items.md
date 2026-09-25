@@ -243,12 +243,6 @@ would, but keeps the two apart in your data. The `Approve`, `Reject` and
 undone by accident. Should you ever need to, you can still change the status
 of a single withdrawn item by editing it.
 
-## Payload Size
-
-An item's payload is limited to 64 KB by default. Pools can set their own
-limit, and the server-wide default can be changed with
-`ITEMS_DEFAULT_MAX_PAYLOAD_BYTES`.
-
 ## Downloading the Data
 
 Two extra data types are available alongside the usual ones (see

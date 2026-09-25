@@ -575,12 +575,6 @@ const admin = new AdminJS({
               "How contributions to this pool are moderated. Only use 'unreviewed' for payloads whose shape makes abuse impossible, e.g. a number, a coordinate or a choice from a fixed set.",
           },
 
-          maxPayloadBytes: {
-            isVisible: { list: false, filter: false, show: true, edit: true },
-            description:
-              "The maximum size of an item's payload in bytes. Leave this empty to use the server's default limit.",
-          },
-
           createdAt: {
             isVisible: { list: true, filter: true, show: true, edit: false },
             description: columnComments.createdAt,

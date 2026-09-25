@@ -66,13 +66,6 @@ export const up: Migration = async ({ context }) => {
       comment:
         "How contributions to this pool are moderated. 'reviewed': anyone may contribute, but only approved items are shown to others. 'unreviewed': contributions are shown to others without anyone having approved them. 'closed': the pool does not accept contributions.",
     },
-    maxPayloadBytes: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: null,
-      comment:
-        "The maximum size of an item's publicPayload in bytes. If this is empty, the server's default limit is used.",
-    },
     publicInfo: {
       type: DataTypes.JSON,
       allowNull: true,
