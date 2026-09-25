@@ -121,6 +121,63 @@ describe("Items", () => {
       expect(response.body.error).toBe("Unknown sessionId");
     });
 
+    it("should link an item to a response of the same session", async () => {
+      const sessionId = await createSession();
+      const source: any = await sequelize.models.Response.create({
+        sessionId,
+        name: "draw-trial",
+      });
+
+      const response = await endpoint
+        .post(`/v1/item-pool/${POOL_ID}/item`)
+        .send({
+          publicPayload: { text: "from a response" },
+          sessionId,
+          responseId: source.responseId,
+        });
+
+      expect(response.status).toBe(200);
+      const item = await getItem(response.body.itemId);
+      expect(item).toHaveProperty("sourceResponseId", source.responseId);
+    });
+
+    it("should reject a response belonging to another session", async () => {
+      const otherSessionId = await createSession(undefined, OTHER_STUDY_ID);
+      const source: any = await sequelize.models.Response.create({
+        sessionId: otherSessionId,
+        name: "draw-trial",
+      });
+
+      const response = await endpoint
+        .post(`/v1/item-pool/${POOL_ID}/item`)
+        .send({
+          publicPayload: { text: "claiming a stranger's response" },
+          sessionId: await createSession(),
+          responseId: source.responseId,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/responseId/);
+    });
+
+    it("should reject a responseId without a sessionId", async () => {
+      const sessionId = await createSession();
+      const source: any = await sequelize.models.Response.create({
+        sessionId,
+        name: "draw-trial",
+      });
+
+      const response = await endpoint
+        .post(`/v1/item-pool/${POOL_ID}/item`)
+        .send({
+          publicPayload: { text: "anonymous" },
+          responseId: source.responseId,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/responseId/);
+    });
+
     it("should reject an unknown parentItemId", async () => {
       const response = await endpoint
         .post(`/v1/item-pool/${POOL_ID}/item`)

@@ -1309,7 +1309,9 @@ async function getPoolOrFail(poolId: string) {
  *                   author or retracted.
  *               responseId:
  *                 type: integer
- *                 description: The response this item was generated from.
+ *                 description: >
+ *                   The response this item was generated from. It has to
+ *                   belong to the session given as sessionId.
  *               parentItemId:
  *                 type: string
  *                 description: The item this one was generated from.
@@ -1321,7 +1323,7 @@ async function getPoolOrFail(poolId: string) {
  *       '200':
  *         description: Item contributed successfully. Will return the itemId and its status.
  *       '400':
- *         description: Invalid request body, unknown poolId, or the pool is closed for contributions.
+ *         description: Invalid request body, unknown poolId, sessionId or responseId, or the pool is closed for contributions.
  *       '500':
  *         description: Failed to contribute item
  */
@@ -1379,10 +1381,22 @@ routerPublic.post(
         }
       }
       if (contribution.responseId !== undefined) {
+        // Response ids are sequential and therefore guessable, so an item may
+        // only point at a response of the session contributing it
+        if (contribution.sessionId === undefined) {
+          throw new AppError(
+            "A responseId can only be passed along with the sessionId it belongs to",
+            400,
+          );
+        }
         const response = await sequelize.models.Response.findOne({
-          where: { responseId: contribution.responseId },
+          where: {
+            responseId: contribution.responseId,
+            sessionId: contribution.sessionId,
+          },
         });
         if (!response) {
+          // Also covers a response which belongs to somebody else's session
           throw new AppError("Unknown responseId", 400);
         }
       }
