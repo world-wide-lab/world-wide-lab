@@ -150,6 +150,7 @@ const config = {
 
   studiesToCreate: getArrayFromEnv("CREATE_STUDIES"),
   leaderboardsToCreate: getArrayFromEnv("CREATE_LEADERBOARDS"),
+  itemPoolsToCreate: getArrayFromEnv("CREATE_ITEM_POOLS"),
 
   instances: {
     // Only enabled in development mode (by default)

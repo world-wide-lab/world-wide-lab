@@ -9,6 +9,17 @@ const defaultRequestHeaders = {
   "User-Agent": `WWL Replication / ${config.version}`,
 };
 
+// Tables in import order: each after the tables it references, except nullable references set later (see getDeferredColumns)
+const tablesToReplicate = [
+  "wwl_studies",
+  "wwl_participants",
+  "wwl_sessions",
+  "wwl_item_pools",
+  "wwl_items",
+  "wwl_item_draws",
+  "wwl_responses",
+];
+
 class UnknownTableError extends AppError {
   constructor(message: string) {
     super(message, 404);
@@ -38,17 +49,86 @@ function getNonPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
   return nonPrimaryKeyColumns;
 }
 
+// A reference to be set once every table has been replicated
+interface DeferredLink {
+  where: { [column: string]: unknown };
+  values: { [column: string]: unknown };
+}
+
+// Columns referencing this or a later table, whose rows may not exist yet, so they are filled in last
+async function getDeferredColumns(tableName: string): Promise<string[]> {
+  const position = tablesToReplicate.indexOf(tableName);
+  const foreignKeys = (await sequelize
+    .getQueryInterface()
+    .getForeignKeyReferencesForTable(tableName)) as Array<{
+    columnName: string;
+    referencedTableName: string;
+  }>;
+  return foreignKeys
+    .filter(
+      (foreignKey) =>
+        tablesToReplicate.indexOf(foreignKey.referencedTableName) >= position,
+    )
+    .map((foreignKey) => foreignKey.columnName);
+}
+
 // Import table data into the database
-async function importTableData(tableName: string, tableData: any[]) {
+async function importTableData(
+  tableName: string,
+  tableData: any[],
+  deferredColumns: string[],
+): Promise<DeferredLink[]> {
   const model = findModelByTableName(tableName);
 
   console.log(`Importing ${tableData.length} rows into ${tableName}`);
 
-  await model.bulkCreate(tableData, {
-    updateOnDuplicate: getNonPrimaryKeyColumns(model),
+  const deferredLinks: DeferredLink[] = [];
+  const rows = tableData.map((row) => {
+    const values: DeferredLink["values"] = {};
+    for (const column of deferredColumns) {
+      if (row[column] !== null && row[column] !== undefined) {
+        values[column] = row[column];
+      }
+    }
+    if (Object.keys(values).length === 0) {
+      return row;
+    }
+
+    const where: DeferredLink["where"] = {};
+    for (const column of model.primaryKeyAttributes) {
+      where[column] = row[column];
+    }
+    deferredLinks.push({ where, values });
+
+    const rowWithoutLinks = { ...row };
+    for (const column of Object.keys(values)) {
+      rowWithoutLinks[column] = null;
+    }
+    return rowWithoutLinks;
   });
 
-  model.getAttributes();
+  await model.bulkCreate(rows, {
+    // Rows which already exist keep their links until they are set again
+    updateOnDuplicate: getNonPrimaryKeyColumns(model).filter(
+      (column) => !deferredColumns.includes(column),
+    ),
+  });
+
+  return deferredLinks;
+}
+
+async function importDeferredLinks(
+  tableName: string,
+  deferredLinks: DeferredLink[],
+) {
+  const model = findModelByTableName(tableName);
+
+  console.log(`Linking ${deferredLinks.length} rows in ${tableName}`);
+
+  for (const { where, values } of deferredLinks) {
+    // Silent, since updatedAt decides what the next replication fetches
+    await model.update(values, { where, silent: true });
+  }
 }
 
 // Retrieve data from the source
@@ -123,10 +203,12 @@ async function verifyDatabaseVersion() {
   }
 }
 
-async function replicateTable(tableName: string) {
+async function replicateTable(tableName: string): Promise<DeferredLink[]> {
   const limit = config.replication.chunkSize;
   const model = findModelByTableName(tableName);
   const lastUpdated = (await model.max("updatedAt")) as Date;
+  const deferredColumns = await getDeferredColumns(tableName);
+  const deferredLinks: DeferredLink[] = [];
 
   let offset = 0;
   let rowCount = limit;
@@ -140,10 +222,14 @@ async function replicateTable(tableName: string) {
     );
     rowCount = tableData.length;
 
-    await importTableData(tableName, tableData);
+    deferredLinks.push(
+      ...(await importTableData(tableName, tableData, deferredColumns)),
+    );
 
     offset += limit;
   }
+
+  return deferredLinks;
 }
 
 // Perform a full replication update across all supported tables
@@ -154,20 +240,17 @@ async function runReplication() {
   await verifyDatabaseVersion();
   logger.info("Database versions OK");
 
-  const tablesToReplicate = [
-    // sequelize.models.Study.tableName,
-    // sequelize.models.Participant.tableName,
-    // sequelize.models.Session.tableName,
-    // sequelize.models.Responses.tableName,
-    "wwl_studies",
-    "wwl_participants",
-    "wwl_sessions",
-    "wwl_responses",
-  ];
-
   // Replicate each database table one by one
+  const deferredLinks = new Map<string, DeferredLink[]>();
   for (const tableName of tablesToReplicate) {
-    await replicateTable(tableName);
+    deferredLinks.set(tableName, await replicateTable(tableName));
+  }
+
+  // Every row exists now, so the links which had to wait can be set
+  for (const [tableName, links] of deferredLinks) {
+    if (links.length > 0) {
+      await importDeferredLinks(tableName, links);
+    }
   }
 
   logger.info("Finished replication.");
@@ -178,4 +261,5 @@ export {
   findModelByTableName,
   runReplication,
   getDbVersion,
+  tablesToReplicate,
 };

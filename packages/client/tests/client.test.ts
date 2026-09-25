@@ -9,6 +9,7 @@ import {
   WorldWideLabError,
 } from "../src";
 
+import sequelize from "@world-wide-lab/server/src/db/index.ts";
 import {
   type Server,
   init as initDev,
@@ -221,6 +222,111 @@ describe("Client", () => {
 
     const sessionFinishResult = await session.finish();
     expect(sessionFinishResult).toBe(true);
+  });
+
+  it("should contribute an item, draw it and react to it", async () => {
+    const author = await client.createSession({ studyId: "example" });
+
+    const item = await author.contributeItem("pool-test", {
+      publicPayload: { text: "a thing somebody wrote" },
+      // Also store what was contributed as ordinary study data
+      response: { name: "write-trial", payload: { text: "a thing", rt: 1234 } },
+    });
+
+    expect(item.itemId).toBeDefined();
+    // The pool is reviewed, so nobody sees this yet
+    expect(item.status).toBe("pending");
+    expect(typeof item.responseId).toBe("number");
+
+    // Nothing is drawable until it has been approved
+    const reader = await client.createSession({ studyId: "example" });
+    expect(await reader.drawItems("pool-test")).toEqual([]);
+
+    await sequelize.models.Item.update(
+      { status: "approved" },
+      { where: { itemId: item.itemId } },
+    );
+
+    const draws = await reader.drawItems("pool-test", {
+      policy: "least-drawn",
+    });
+    expect(draws).toHaveLength(1);
+    const [draw] = draws;
+    expect(draw.itemId).toBe(item.itemId);
+    expect(draw.publicPayload).toEqual({ text: "a thing somebody wrote" });
+    expect(draw.generation).toBe(0);
+
+    // Reacting to it completes the draw and links the response to it
+    const responseResult = await reader.response({
+      name: "guess",
+      payload: { guess: "a house" },
+      drawId: draw.drawId,
+    });
+    expect(responseResult).toBe(true);
+
+    const drawRow: any = await sequelize.models.ItemDraw.findOne({
+      where: { drawId: draw.drawId },
+    });
+    expect(drawRow.status).toBe("completed");
+
+    // The author's own item is never handed back to them
+    expect(await author.drawItems("pool-test")).toEqual([]);
+  });
+
+  it("should continue a chain from a drawn item", async () => {
+    const author = await client.createSession({ studyId: "example" });
+    const parent = await author.contributeItem("pool-test", {
+      publicPayload: { text: "generation zero" },
+    });
+
+    const next = await author.contributeItem("pool-test", {
+      publicPayload: { text: "generation one" },
+      parentItemId: parent.itemId,
+    });
+
+    const nextItem: any = await sequelize.models.Item.findOne({
+      where: { itemId: next.itemId },
+    });
+    expect(nextItem.generation).toBe(1);
+    expect(nextItem.parentItemId).toBe(parent.itemId);
+  });
+
+  it("should read and retract items", async () => {
+    const author = await client.createSession({ studyId: "example" });
+    const item = await author.contributeItem("gallery-test", {
+      publicPayload: { text: "on the wall" },
+    });
+    await sequelize.models.Item.update(
+      { status: "approved" },
+      { where: { itemId: item.itemId } },
+    );
+
+    const items = await client.getItems("gallery-test", { sort: "newest" });
+    expect(items).toHaveLength(1);
+    expect(items[0].publicPayload).toEqual({ text: "on the wall" });
+
+    expect(await author.retractItem(item.itemId)).toBe(true);
+    expect(await client.getItems("gallery-test")).toEqual([]);
+  });
+
+  it("should complete a draw without a response", async () => {
+    const author = await client.createSession({ studyId: "example" });
+    const item = await author.contributeItem("gallery-test", {
+      publicPayload: { text: "no response needed" },
+    });
+    await sequelize.models.Item.update(
+      { status: "approved" },
+      { where: { itemId: item.itemId } },
+    );
+
+    const reader = await client.createSession({ studyId: "example" });
+    const [draw] = await reader.drawItems("gallery-test");
+    expect(await reader.completeDraw(draw.drawId)).toBe(true);
+
+    const drawRow: any = await sequelize.models.ItemDraw.findOne({
+      where: { drawId: draw.drawId },
+    });
+    expect(drawRow.status).toBe("completed");
   });
 
   it("should add & retrieve scores from the leaderboard", async () => {

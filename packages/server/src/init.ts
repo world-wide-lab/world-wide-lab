@@ -9,6 +9,7 @@ import sequelize from "./db/index.js";
 import { up } from "./db/migrate.js";
 import { logger } from "./logger.js";
 
+import { ensureItemPoolsExist } from "./db/ensureItemPoolsExist.js";
 import { ensureLeaderboardsExist } from "./db/ensureLeaderboardsExist.js";
 import { ensureStudiesExist } from "./db/ensureStudiesExist.js";
 import { startServices } from "./services/index.js";
@@ -53,6 +54,10 @@ async function init(): Promise<HTTPServer> {
   // Same for certain leaderboards
   if (config.leaderboardsToCreate && config.leaderboardsToCreate.length > 0) {
     await ensureLeaderboardsExist(sequelize, config.leaderboardsToCreate);
+  }
+  // …and for certain item pools
+  if (config.itemPoolsToCreate && config.itemPoolsToCreate.length > 0) {
+    await ensureItemPoolsExist(sequelize, config.itemPoolsToCreate);
   }
 
   // Start any registered services running in the background
