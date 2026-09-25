@@ -1493,7 +1493,9 @@ routerPublic.post(
  *         schema:
  *           type: integer
  *         required: false
- *         description: Only draw items completed fewer than this many times.
+ *         description: >
+ *           Only draw items completed fewer than this many times. Draws still
+ *           in progress do not count, so concurrent draws can overshoot this.
  *       - in: query
  *         name: maxChildrenPerItem
  *         schema:
@@ -1503,7 +1505,8 @@ routerPublic.post(
  *           Only draw items with fewer than this many child items i.e. items
  *           contributed with this one as their parentItemId. Rejected
  *           children do not count. Use 1 to keep a transmission chain from
- *           branching.
+ *           branching. Draws which have not been continued yet do not count,
+ *           so concurrent draws can still overshoot this.
  *       - in: query
  *         name: minGeneration
  *         schema:

@@ -144,12 +144,16 @@ export interface DrawItemsOptions {
   maxDrawsPerItem?: number;
   /**
    * Only draw items which have been completed fewer than this many times.
+   * Draws which are still in progress do not count yet, so items can end up
+   * with more completions than this when many sessions draw at once.
    */
   maxCompletionsPerItem?: number;
   /**
    * Only draw items which have fewer than this many child items, i.e. items
    * contributed with this one as their parentItemId. Rejected children do not
-   * count. Use 1 to keep a transmission chain from branching.
+   * count. Use 1 to keep a transmission chain from branching. Draws which
+   * have not been continued yet do not count, so a chain can still branch
+   * when several sessions draw the same item at once.
    */
   maxChildrenPerItem?: number;
   /**

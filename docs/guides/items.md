@@ -108,6 +108,24 @@ good. For chains, use `maxChildrenPerItem` instead (see
 [Building a Chain](#building-a-chain)).
 :::
 
+::: warning Caps on completions and children are approximate
+`maxDrawsPerItem` is exact, because a draw counts the moment it is handed out.
+`maxCompletionsPerItem` and `maxChildrenPerItem` can only count what has
+already happened, though, and participants who drew an item but have not
+finished with it yet do not show up there. If ten participants draw at the
+same time, all of them can be handed an item that has 9 of its 10
+completions, which ends up with 19. The same goes for a chain link that two
+participants draw before either has continued it: the chain branches.
+
+How much this matters depends on how many participants are active at once. If
+it has to be exact, add `maxDrawsPerItem` as a hard ceiling, e.g.
+`maxCompletionsPerItem: 10` together with `maxDrawsPerItem: 12`, and accept
+that an abandoned draw can then cost an item one of its completions. For
+chains, `policy: "least-drawn"` spreads simultaneous participants across
+different links, which keeps branching rare as long as there are more links
+than participants active at the same time.
+:::
+
 ## Reacting to an Item
 
 Pass the `drawId` along with the response the participant produced. That links
@@ -249,6 +267,7 @@ await session.contributeItem("captions", {
 });
 
 // Phase 2 — everybody rates five captions that are not their own
+// (a caption can end up with a few more than ten ratings, see the caps above)
 const draws = await session.drawItems("captions", {
   count: 5,
   policy: "least-drawn",
