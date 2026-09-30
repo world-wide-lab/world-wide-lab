@@ -299,6 +299,13 @@ async function keysetQuery({
   onEnd();
 }
 
+// Payload keys are interpolated into the export's query, so any key which
+// could escape its quotes (quotes, backslashes) or be mistaken for one of
+// sequelize's :placeholders (colons) is not extracted.
+function isExtractablePayloadKey(key: string): boolean {
+  return !/['"\\:]/.test(key);
+}
+
 async function generateExtractedPayloadQuery(
   sequelize: Sequelize,
   studyId: string,
@@ -315,8 +322,16 @@ async function generateExtractedPayloadQuery(
     throw new AppError("created_after must be a Date object", 400);
   }
 
-  // Get all keys which are present in the payloads of the responses
-  const jsonKeys = await getPayloadKeys(sequelize, studyId);
+  // Get all keys which are present in the payloads of the responses. Keys are
+  // provided by participants and end up in the query below, so keys which
+  // could change its meaning are not extracted (they stay in the raw payload).
+  const allJsonKeys = await getPayloadKeys(sequelize, studyId);
+  const jsonKeys = allJsonKeys.filter(isExtractablePayloadKey);
+  if (jsonKeys.length < allJsonKeys.length) {
+    logger.warn(
+      `Not extracting ${allJsonKeys.length - jsonKeys.length} payload key(s) of study "${studyId}", as they contain quotes, backslashes or colons.`,
+    );
+  }
   const jsonFieldsString = jsonKeys
     .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
     .join(", ");

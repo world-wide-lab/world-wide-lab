@@ -19,7 +19,7 @@ const STUDY_ID_CLASHING_KEYS = "chunked-export-clashing-keys";
 const STUDY_ID_SPECIAL_KEYS = "chunked-export-special-keys";
 
 // Payload keys which would break (or change) the export's query if they were
-// not escaped properly, together with the value they are stored under
+// used in it. These are not extracted into columns of their own.
 const SPECIAL_KEYS = [
   "it's",
   'a "quoted" key',
@@ -30,6 +30,8 @@ const SPECIAL_KEYS = [
   "x' || (SELECT 'injected') || '",
   '"; DROP TABLE wwl_responses; --',
 ];
+// A regular key, stored next to the special ones, which is still extracted
+const REGULAR_KEY = "regular";
 
 const N_PARTICIPANTS = 3;
 const N_SESSIONS_PER_PARTICIPANT = 2;
@@ -105,7 +107,9 @@ describe("Chunked data exports", () => {
       name: `payload-name-${index}`,
     }));
     await generateStudyData(STUDY_ID_SPECIAL_KEYS, (index) =>
-      Object.fromEntries(SPECIAL_KEYS.map((key) => [key, `${key}-${index}`])),
+      Object.fromEntries(
+        [...SPECIAL_KEYS, REGULAR_KEY].map((key) => [key, `${key}-${index}`]),
+      ),
     );
   });
 
@@ -243,7 +247,7 @@ describe("Chunked data exports", () => {
   });
 
   describe("payload keys containing special characters", () => {
-    it("should export them under their own name (responses-extracted-payload)", async () => {
+    it("should skip them, but extract all other keys (JSON)", async () => {
       config.database.chunkSize = 4;
 
       const response = await download(
@@ -255,15 +259,13 @@ describe("Chunked data exports", () => {
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(N_RESPONSES);
 
-      // Every key has to be exported under its exact name and with its own
-      // value, i.e. it may neither be renamed nor evaluated as SQL
+      expect(uniqueValues(response.body, REGULAR_KEY).size).toBe(N_RESPONSES);
       for (const key of SPECIAL_KEYS) {
-        expect(uniqueValues(response.body, key).size).toBe(N_RESPONSES);
-        expect(response.body[0][key]).toBe(`${key}-0`);
+        expect(response.body[0]).not.toHaveProperty(key);
       }
     });
 
-    it("should export them under their own name (responses-extracted-payload, CSV)", async () => {
+    it("should skip them, but extract all other keys (CSV)", async () => {
       config.database.chunkSize = 4;
 
       const response = await download(
@@ -275,10 +277,25 @@ describe("Chunked data exports", () => {
       expect(response.status).toBe(200);
       const lines = csvLines(response.text);
       expect(lines.length).toBe(N_RESPONSES + 1);
+      expect(lines[0]).toContain(REGULAR_KEY);
+      expect(lines[0]).not.toContain("injected");
+      expect(lines[0]).not.toContain("DROP TABLE");
+    });
 
-      // CSV escapes double quotes by doubling them
+    it("should keep them in the raw payload", async () => {
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-raw",
+        "json",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(N_RESPONSES);
+      const payload = response.body[0].payload;
+      const parsed =
+        typeof payload === "string" ? JSON.parse(payload) : payload;
       for (const key of SPECIAL_KEYS) {
-        expect(lines[0]).toContain(key.replaceAll('"', '""'));
+        expect(parsed).toHaveProperty([key]);
       }
     });
 
