@@ -341,7 +341,7 @@ exports[`Database Migrations > should always create the same table structures 1`
       "defaultValue": undefined,
       "primaryKey": true,
       "type": "UUID",
-      "unique": true,
+      "unique": false,
     },
     "privateInfo": {
       "allowNull": true,
@@ -465,7 +465,7 @@ exports[`Database Migrations > should always create the same table structures 1`
       "defaultValue": undefined,
       "primaryKey": true,
       "type": "UUID",
-      "unique": true,
+      "unique": false,
     },
     "studyId": {
       "allowNull": false,
@@ -520,7 +520,7 @@ exports[`Database Migrations > should always create the same table structures 1`
       "defaultValue": null,
       "primaryKey": true,
       "type": "VARCHAR(255)",
-      "unique": true,
+      "unique": false,
     },
     "updatedAt": {
       "allowNull": true,
