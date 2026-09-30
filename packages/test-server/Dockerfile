@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:24
 
 # Set meta information
 LABEL org.opencontainers.image.description="Container image used to run tests against the World-Wide-Lab server"

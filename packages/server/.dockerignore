@@ -1,0 +1,19 @@
+# The image only needs a small part of this package, so everything is excluded
+# by default and the required files are re-added below.
+*
+
+!package.json
+!tsconfig.json
+!tsconfig-build.json
+!src
+!static
+!certs
+
+# Never include local files, credentials or build output in the image
+**/node_modules
+**/dist
+**/logs
+**/.env
+**/.env.*
+**/*.sqlite
+**/*.log

@@ -403,6 +403,50 @@ function defineModels(sequelize: Sequelize) {
     },
   );
 
+  const ResponsePayloadKeyCache = sequelize.define(
+    "ResponsePayloadKeyCache",
+    {
+      studyId: {
+        type: DataTypes.STRING,
+        primaryKey: true,
+        allowNull: false,
+        comment: "The study the cached payload keys belong to.",
+      },
+      keys: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: [],
+        comment: "The keys found in the payloads of the study's responses.",
+      },
+      lastResponseId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment:
+          "The highest responseId that has been scanned for keys. Later responses still have to be scanned.",
+      },
+      lastUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment:
+          "The most recent updatedAt that has been scanned for keys. Responses changed after it have to be scanned again.",
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+    },
+    {
+      tableName: "wwl_internal_response_payload_keys",
+    },
+  );
+
   const Instance = sequelize.define(
     "Instance",
     {

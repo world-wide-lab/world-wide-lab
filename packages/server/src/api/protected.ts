@@ -28,6 +28,7 @@ import {
 } from "../db/replication.js";
 import { sanitizeStudyId } from "../db/util.js";
 import { AppError } from "../errors.js";
+import { privateIpWhitelistMiddleware } from "../ipWhitelist.js";
 import { logger } from "../logger.js";
 import { requireAuthMiddleware } from "./authMiddleware.js";
 
@@ -512,6 +513,8 @@ routerProtectedWithoutAuthentication.get(
 );
 
 const routerProtected = express.Router();
+// Restrict access to these endpoints by IP, before even checking the API key
+routerProtected.use(privateIpWhitelistMiddleware);
 routerProtected.use(requireAuthMiddleware);
 routerProtected.use(routerProtectedWithoutAuthentication);
 

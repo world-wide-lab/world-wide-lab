@@ -9,9 +9,9 @@
  * @packageDocumentation
  */
 
-import { WwlAwsDeployment } from "./aws/";
 import { WwlAwsAppRunnerAutomatedDeployment } from "./aws/automatedDeployments/app-runner";
 import { WwlAwsDeploymentConfig } from "./aws/pulumiDeployments/_base";
+import { WwlAwsAppRunnerDeployment as WwlAwsDeployment } from "./aws/pulumiDeployments/app-runner";
 import { WwlAzureDeployment } from "./azure/";
 import { WwlAzureContainerAppAutomatedDeployment } from "./azure/automatedDeployments/container-app";
 import { WwlAzureDeploymentConfig } from "./azure/pulumiDeployments/container-app";
