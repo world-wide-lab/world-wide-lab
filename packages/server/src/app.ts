@@ -9,12 +9,24 @@ import api from "./api/index.js";
 import { routerProtectedWithoutAuthentication } from "./api/protected.js";
 import config from "./config.js";
 import { errorHandler } from "./errors.js";
+import {
+  privateIpWhitelistMiddleware,
+  publicIpWhitelistMiddleware,
+} from "./ipWhitelist.js";
 import { logger } from "./logger.js";
 import { getDirectory } from "./util.js";
 
 const dirname = getDirectory(import.meta.url);
 
 const app = express();
+
+// Determine which proxies (if any) to trust when determining the IP a request
+// originated from
+app.set("trust proxy", config.trustProxy);
+
+// Restrict access by IP as early as possible, so that requests from
+// non-whitelisted IPs are ignored before anything else happens
+app.use(publicIpWhitelistMiddleware);
 
 // app.use(helmet());
 app.use(cors());
@@ -70,7 +82,7 @@ if (config.admin.enabled) {
   // Make protected API routes available in Admin UI
   adminRouter.use("/wwl/", routerProtectedWithoutAuthentication);
 
-  app.use(admin.options.rootPath, adminRouter);
+  app.use(admin.options.rootPath, privateIpWhitelistMiddleware, adminRouter);
 }
 
 // Implement proper error handling

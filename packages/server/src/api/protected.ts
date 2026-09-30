@@ -21,7 +21,9 @@ import {
 } from "../db/export.js";
 import sequelize from "../db/index.js";
 import { findModelByTableName, runReplication } from "../db/replication.js";
+import { sanitizeStudyId } from "../db/util.js";
 import { AppError } from "../errors.js";
+import { privateIpWhitelistMiddleware } from "../ipWhitelist.js";
 import { requireAuthMiddleware } from "./authMiddleware.js";
 
 const routerProtectedWithoutAuthentication = express.Router();
@@ -202,7 +204,7 @@ routerProtectedWithoutAuthentication.get(
           });
         };
       } else if (dataType === "responses-extracted-payload") {
-        const { copyQuery, pageQuery } = await generateExtractedPayloadQuery(
+        const { query, pageQuery } = await generateExtractedPayloadQuery(
           sequelize,
           studyId,
           { created_after },
@@ -211,8 +213,21 @@ routerProtectedWithoutAuthentication.get(
         if (sequelize.getDialect() === "postgres" && format === "csv") {
           // Special case for postgres, use COPY to format & stream data
 
-          // The query already has all of its values escaped into it, since
-          // pg-copy-stream doesn't support query parameters.
+          // Manually replace the query's placeholders, as pg-copy-stream
+          // doesn't support query parameters. Care should be taken here
+          // to prevent SQL injection, which is why the studyId is sanitized
+          // and created_after is re-serialized from its parsed Date.
+          let copyQuery = query.replace(
+            ":studyId",
+            `'${sanitizeStudyId(studyId)}'`,
+          );
+          if (created_after) {
+            copyQuery = copyQuery.replace(
+              ":created_after",
+              `'${created_after.toISOString()}'`,
+            );
+          }
+
           const connection = (await sequelize.connectionManager.getConnection({
             type: "read",
           })) as Client;
@@ -245,10 +260,14 @@ routerProtectedWithoutAuthentication.get(
         cursorField = KEYSET_CURSOR_COLUMN;
         hideCursorField = true;
         queryPage = async (cursor: Cursor | undefined, limit: number) => {
-          // The query already has all of its values escaped into it, so it is
-          // run without any replacements, see generateExtractedPayloadQuery.
-          return await sequelize.query(pageQuery(cursor, limit), {
+          return await sequelize.query(pageQuery(cursor !== undefined), {
             type: Sequelize.QueryTypes.SELECT,
+            replacements: {
+              studyId,
+              limit,
+              ...(cursor !== undefined && { cursor }),
+              ...(created_after && { created_after }),
+            },
           });
         };
       } else {
@@ -424,6 +443,8 @@ routerProtectedWithoutAuthentication.get(
 );
 
 const routerProtected = express.Router();
+// Restrict access to these endpoints by IP, before even checking the API key
+routerProtected.use(privateIpWhitelistMiddleware);
 routerProtected.use(requireAuthMiddleware);
 routerProtected.use(routerProtectedWithoutAuthentication);
 

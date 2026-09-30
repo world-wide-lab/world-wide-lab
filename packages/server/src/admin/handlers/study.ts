@@ -9,6 +9,7 @@ import {
 } from "adminjs";
 import { QueryTypes } from "sequelize";
 import sequelize from "../../db/index.js";
+import { clearPayloadKeyCache } from "../../db/payloadKeyCache.js";
 
 // Based off original AdminJS code
 // https://github.com/SoftwareBrothers/adminjs/blob/v6.8.7/src/backend/actions/new/new-action.ts
@@ -118,7 +119,11 @@ async function deleteStudyHandler(
       },
     });
 
-    // (3) Delete the study itself
+    // (3) Drop the cached payload keys of the study, since the responses they
+    // have been determined from are gone now
+    await clearPayloadKeyCache(sequelize, studyId);
+
+    // (4) Delete the study itself
     await resource.delete(request.params.recordId, context);
 
     // Done with actual deleting of stuff!

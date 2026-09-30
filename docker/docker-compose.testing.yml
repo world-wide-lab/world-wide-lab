@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   db:
     image: postgres:15
@@ -9,6 +8,11 @@ services:
       # Note: These are example credentials, you MUST change these before deploying anything
       POSTGRES_USER: example_db_user
       POSTGRES_PASSWORD: example_db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U example_db_user -d wwl"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
 
   wwl-server:
     # Which image to test, so that CI can point this at the image it just built
@@ -16,7 +20,8 @@ services:
     ports:
       - 8787:8787
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       # Note: These are example credentials, you MUST change these before deploying anything
       DATABASE_URL: "postgresql://example_db_user:example_db_password@db:5432/wwl"
@@ -24,6 +29,11 @@ services:
       ADMIN_AUTH_DEFAULT_PASSWORD: "admin"
       ADMIN_AUTH_SESSION_SECRET: "asdfgh12345"
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
+    healthcheck:
+      interval: 1s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
     volumes:
       - ../packages/test-server/server-logs:/usr/src/app/logs
 
@@ -32,7 +42,9 @@ services:
       context: ../packages/test-server/
       dockerfile: Dockerfile
     depends_on:
-      - wwl-server
+      wwl-server:
+        # Wait for WWL before starting tests
+        condition: service_healthy
     environment:
       DEFAULT_API_KEY: "DEFAULT_API_KEY"
       WWL_SERVER_URL: "http://wwl-server:8787"

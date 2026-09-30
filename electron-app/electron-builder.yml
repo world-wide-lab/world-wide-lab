@@ -4,6 +4,31 @@ asar: true
 artifactName: "${productName}-${os}-${arch}.${ext}"
 directories:
   buildResources: resources
+# Strip the file list to reduce bloat
+files:
+  - "**/*"
+  # Type declarations are only consumed by the TypeScript compiler (~291 MB).
+  - "!**/*.d.ts"
+  - "!**/*.d.mts"
+  - "!**/*.d.cts"
+  # Source maps (~52 MB).
+  - "!**/*.map"
+  # Incremental-build artefacts accidentally published by some packages (~8 MB).
+  - "!**/tsconfig.tsbuildinfo"
+  # Documentation (~10 MB). Licence files are deliberately kept.
+  - "!**/*.md"
+  - "**/{LICENSE,LICENCE,COPYING,NOTICE}*"
+  # The keep-lists below are verified against the imports of
+  # @world-wide-lab/deploy by check-pulumi-modules.js on every build.
+  # Double check before edits
+  - "!node_modules/@pulumi/azure-native/*/**"
+  - "node_modules/@pulumi/azure-native/{app,dbforpostgresql,resources}/**"
+  - "node_modules/@pulumi/azure-native/types/**"
+  - "!node_modules/@pulumi/aws/*/**"
+  - "node_modules/@pulumi/aws/{apprunner,ec2,rds}/**"
+  - "node_modules/@pulumi/aws/types/**"
+  - "!node_modules/@pulumi/awsx/**"
+  - "!node_modules/aws-sdk/**"
 mac:
   hardenedRuntime: true
   entitlements: "build/entitlements.mac.plist"

@@ -10,7 +10,7 @@
 # the final image, all build tooling stays behind in the intermediate stages.
 
 # Node version used for building and running the server, kept in sync with .nvmrc
-ARG NODE_IMAGE=node:18.20.4-bookworm-slim
+ARG NODE_IMAGE=node:24.21.0-bookworm-slim
 
 # ---------------------------------------------------------------------------
 # Base: shared settings for all stages
