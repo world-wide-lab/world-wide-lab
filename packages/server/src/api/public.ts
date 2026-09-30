@@ -655,7 +655,7 @@ routerPublic.get(
         const s = sequelize.getDialect() === "sqlite" ? "`" : '"';
         getCount = async () => {
           const effectiveMinResponseCount = minResponseCount ?? 1;
-          const result = await sequelize.query<{ count: number }>(
+          const result = await sequelize.query<{ count: number | string }>(
             `
               SELECT COUNT(*) as count FROM (
                 SELECT
@@ -666,7 +666,7 @@ routerPublic.get(
                 WHERE ${s}Session${s}.${s}studyId${s} = :studyId
                 GROUP BY ${s}Session${s}.${s}sessionId${s}
                 HAVING COUNT(${s}Responses${s}.${s}responseId${s}) >= :effectiveMinResponseCount
-              );
+              ) AS ${s}sessionsWithResponses${s};
             `,
             {
               type: Sequelize.QueryTypes.SELECT,
@@ -676,7 +676,8 @@ routerPublic.get(
               },
             },
           );
-          return result[0].count;
+          // Postgres returns COUNT(*) as a (bigint) string
+          return Number(result[0].count);
         };
       } else {
         throw new AppError(`Unknown countType: ${countType}`, 400);
@@ -1135,17 +1136,23 @@ routerPublic.get(
         }
 
         getScores = async () =>
-          await sequelize.models.LeaderboardScore.findAll({
-            attributes,
-            where,
-            group: [
-              level === "individual"
-                ? "publicIndividualName"
-                : "publicGroupName",
-            ],
-            raw: true,
-            ...extraQuerySettings,
-          });
+          (
+            await sequelize.models.LeaderboardScore.findAll({
+              attributes,
+              where,
+              group: [
+                level === "individual"
+                  ? "publicIndividualName"
+                  : "publicGroupName",
+              ],
+              raw: true,
+              ...extraQuerySettings,
+            })
+          ).map((row: any) => ({
+            ...row,
+            // Postgres returns SUM() of integers as a (bigint) string
+            score: Number(row.score),
+          }));
       } else {
         // Direct scores
         attributes.push("score");

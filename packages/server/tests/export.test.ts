@@ -5,6 +5,7 @@ import request from "supertest";
 import app from "../src/app";
 import config from "../src/config";
 import sequelize from "../src/db";
+import { csvLines } from "./csv";
 
 const endpoint = request(app);
 
@@ -61,16 +62,6 @@ function download(studyId: string, dataType: string, format: string) {
 
 function uniqueValues(rows: object[], key: string) {
   return new Set(rows.map((row) => (row as Record<string, unknown>)[key]));
-}
-
-// Split a CSV export into lines, ignoring a trailing newline (postgres' COPY
-// terminates its last row with one, json-2-csv does not).
-function csvLines(text: string) {
-  const lines = text.split(/\r\n|\r|\n/);
-  if (lines.length > 0 && lines[lines.length - 1] === "") {
-    lines.pop();
-  }
-  return lines;
 }
 
 describe("Chunked data exports", () => {

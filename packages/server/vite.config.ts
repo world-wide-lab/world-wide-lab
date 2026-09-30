@@ -7,5 +7,6 @@ export default defineConfig({
       "tests/**/*.{test,spec}.?(c|m)[jt]s?(x)",
     ],
     globals: true,
+    globalSetup: ["tests/global_setup.ts"],
   },
 });

@@ -97,8 +97,15 @@ describe("Instances Service", () => {
 
     vi.advanceTimersByTime(1000 * 60 * 5);
 
+    // The heartbeat is written asynchronously, so wait for it to land
+    await vi.waitFor(async () => {
+      instances = await sequelize.models.Instance.findAll();
+      expect(instances[0].getDataValue("lastHeartbeat")).not.toEqual(
+        initialHeartbeat,
+      );
+    });
+
     // Check if heartbeat was updated
-    instances = await sequelize.models.Instance.findAll();
     expect(instances.length).toBe(1);
     expect(instances[0].getDataValue("instanceId")).toBe(instanceId);
     expect(instances[0].getDataValue("lastHeartbeat")).not.toEqual(

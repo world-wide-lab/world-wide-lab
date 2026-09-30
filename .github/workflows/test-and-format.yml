@@ -24,3 +24,41 @@ jobs:
 
       - name: Check code styling
         run: npx @biomejs/biome check .
+
+  # Run the server's tests against postgres as well, which is what the Docker
+  # image uses in production (the job above uses an in-memory SQLite database).
+  test-server-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Keep in sync with docker/docker-compose.testing.yml
+        image: postgres:15
+        env:
+          POSTGRES_USER: wwl
+          POSTGRES_PASSWORD: wwl
+          POSTGRES_DB: wwl
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wwl -d wwl"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install modules
+        run: npm ci
+
+      - name: Run server tests against postgres
+        working-directory: ./packages/server
+        run: npm test
+        env:
+          TEST_DATABASE_URL: postgresql://wwl:wwl@localhost:5432/wwl

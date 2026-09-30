@@ -40,7 +40,14 @@ describe("Database Migrations", () => {
         return tableInfo;
       }),
     );
-    expect(tableInfos).toMatchSnapshot();
+    // Column details (types, defaults, comments) are reported differently per
+    // dialect, so postgres gets its own snapshot
+    const dialect = sequelize.getDialect();
+    if (dialect === "sqlite") {
+      expect(tableInfos).toMatchSnapshot();
+    } else {
+      expect(tableInfos).toMatchSnapshot(dialect);
+    }
   });
 
   it("should have tables for all models", async () => {

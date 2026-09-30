@@ -4,6 +4,7 @@ import "./setup_env";
 import request from "supertest";
 import app from "../src/app";
 import sequelize from "../src/db";
+import { csvLines } from "./csv";
 
 import { version } from "../package.json";
 
@@ -598,7 +599,7 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      const lines = response.text.split(/\r\n|\r|\n/);
+      const lines = csvLines(response.text);
       expect(lines.length).toBe(4 + 1);
       expect(lines[0]).toMatchSnapshot();
     });
@@ -628,7 +629,14 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      expect(response.text).toBe("");
+      if (sequelize.getDialect() === "postgres") {
+        // Postgres' COPY still emits the header row
+        expect(csvLines(response.text)).toEqual([
+          "responseId,createdAt,updatedAt,name,sessionId",
+        ]);
+      } else {
+        expect(response.text).toBe("");
+      }
     });
 
     it("should handle studies without payload as well", async () => {
@@ -813,7 +821,7 @@ describe("API Routes", () => {
         .send();
 
       expect(response.status).toBe(200);
-      const lines = response.text.split(/\r\n|\r|\n/);
+      const lines = csvLines(response.text);
       expect(lines.length).toBe(4 + 1); // 4 data rows + 1 header row
 
       // Test with future date
@@ -828,7 +836,10 @@ describe("API Routes", () => {
         .send();
 
       expect(futureResponse.status).toBe(200);
-      expect(futureResponse.text).toBe(""); // Should be empty
+      // Should contain no data rows (postgres' COPY still emits the header row)
+      expect(csvLines(futureResponse.text).length).toBe(
+        sequelize.getDialect() === "postgres" ? 1 : 0,
+      );
     });
 
     it("should handle invalid created_after date format", async () => {
