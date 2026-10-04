@@ -13,6 +13,25 @@ const API_KEY = process.env.DEFAULT_API_KEY;
 const STUDY_ID = "chunked-export";
 // Study whose payloads contain keys that clash with the response's own columns
 const STUDY_ID_CLASHING_KEYS = "chunked-export-clashing-keys";
+// Study whose payloads contain keys with characters that are meaningful in
+// SQL. Payloads are submitted by participants, so their keys can contain
+// anything and must never end up in a query unescaped.
+const STUDY_ID_SPECIAL_KEYS = "chunked-export-special-keys";
+
+// Payload keys which would break (or change) the export's query if they were
+// used in it. These are not extracted into columns of their own.
+const SPECIAL_KEYS = [
+  "it's",
+  'a "quoted" key',
+  "back\\slash",
+  // Sequelize replaces named placeholders in raw queries
+  ":studyId",
+  // Attempts at actually injecting SQL through a payload key
+  "x' || (SELECT 'injected') || '",
+  '"; DROP TABLE wwl_responses; --',
+];
+// A regular key, stored next to the special ones, which is still extracted
+const REGULAR_KEY = "regular";
 
 const N_PARTICIPANTS = 3;
 const N_SESSIONS_PER_PARTICIPANT = 2;
@@ -87,6 +106,11 @@ describe("Chunked data exports", () => {
       responseId: `payload-value-${index}`,
       name: `payload-name-${index}`,
     }));
+    await generateStudyData(STUDY_ID_SPECIAL_KEYS, (index) =>
+      Object.fromEntries(
+        [...SPECIAL_KEYS, REGULAR_KEY].map((key) => [key, `${key}-${index}`]),
+      ),
+    );
   });
 
   afterEach(() => {
@@ -219,6 +243,80 @@ describe("Chunked data exports", () => {
       // still has to walk through all responses exactly once
       expect(response.body.length).toBe(N_RESPONSES);
       expect(uniqueValues(response.body, "responseId").size).toBe(N_RESPONSES);
+    });
+  });
+
+  describe("payload keys containing special characters", () => {
+    it("should skip them, but extract all other keys (JSON)", async () => {
+      config.database.chunkSize = 4;
+
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "json",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(N_RESPONSES);
+
+      expect(uniqueValues(response.body, REGULAR_KEY).size).toBe(N_RESPONSES);
+      for (const key of SPECIAL_KEYS) {
+        expect(response.body[0]).not.toHaveProperty(key);
+      }
+    });
+
+    it("should skip them, but extract all other keys (CSV)", async () => {
+      config.database.chunkSize = 4;
+
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "csv",
+      );
+
+      expect(response.status).toBe(200);
+      const lines = csvLines(response.text);
+      expect(lines.length).toBe(N_RESPONSES + 1);
+      expect(lines[0]).toContain(REGULAR_KEY);
+      expect(lines[0]).not.toContain("injected");
+      expect(lines[0]).not.toContain("DROP TABLE");
+    });
+
+    it("should keep them in the raw payload", async () => {
+      const response = await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-raw",
+        "json",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBe(N_RESPONSES);
+      const payload = response.body[0].payload;
+      const parsed =
+        typeof payload === "string" ? JSON.parse(payload) : payload;
+      for (const key of SPECIAL_KEYS) {
+        expect(parsed).toHaveProperty([key]);
+      }
+    });
+
+    it("should not run SQL contained in a payload key", async () => {
+      config.database.chunkSize = 4;
+
+      await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "json",
+      );
+      await download(
+        STUDY_ID_SPECIAL_KEYS,
+        "responses-extracted-payload",
+        "csv",
+      );
+
+      // The responses are still there, i.e. no injected statement has run
+      expect(await sequelize.models.Response.count()).toBeGreaterThanOrEqual(
+        3 * N_RESPONSES,
+      );
     });
   });
 

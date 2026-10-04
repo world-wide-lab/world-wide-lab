@@ -299,6 +299,12 @@ async function keysetQuery({
   onEnd();
 }
 
+// Remove any keys which escape its quotes (quotes, backslashes) or be
+// mistaken for a sequelize :placeholders (colons).
+function isExtractablePayloadKey(key: string): boolean {
+  return !/['"\\:]/.test(key);
+}
+
 async function generateExtractedPayloadQuery(
   sequelize: Sequelize,
   studyId: string,
@@ -316,7 +322,13 @@ async function generateExtractedPayloadQuery(
   }
 
   // Get all keys which are present in the payloads of the responses
-  const jsonKeys = await getPayloadKeys(sequelize, studyId);
+  const allJsonKeys = await getPayloadKeys(sequelize, studyId);
+  const jsonKeys = allJsonKeys.filter(isExtractablePayloadKey);
+  if (jsonKeys.length < allJsonKeys.length) {
+    logger.warn(
+      `Not extracting ${allJsonKeys.length - jsonKeys.length} payload key(s) of study "${studyId}", as they contain quotes, backslashes or colons.`,
+    );
+  }
   const jsonFieldsString = jsonKeys
     .map((jsonKey) => `wwl_responses."payload"->>'${jsonKey}' AS "${jsonKey}"`)
     .join(", ");
