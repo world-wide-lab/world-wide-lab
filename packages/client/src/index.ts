@@ -92,6 +92,185 @@ export interface ClientResponseOptions {
    * The actual data of this response
    */
   payload: object;
+  /**
+   * The draw this response was produced in reaction to, from
+   * {@link Client.drawItems}. Setting this records what the participant was
+   * reacting to, so that it does not have to be reconstructed from the payload
+   * later on.
+   */
+  drawId?: string;
+  /**
+   * Whether this response completes the draw it refers to. Defaults to true,
+   * since reacting to an item with a single response is the common case. Set
+   * it to false on trials which are only part of a reaction and let the last
+   * one close the draw.
+   */
+  completesDraw?: boolean;
+}
+
+/**
+ * How to pick which items to draw with {@link Client.drawItems}
+ * @public
+ */
+export interface DrawItemsOptions {
+  /**
+   * The session the items are drawn for. Required, since a draw is by
+   * definition served to someone.
+   */
+  sessionId: string;
+  /**
+   * How many items to draw (default is 1)
+   */
+  count?: number;
+  /**
+   * Which items to prefer. Use 'least-drawn' to spread participants evenly
+   * across a pool, which is what balanced ratings and transmission chains
+   * want. Default is 'random'.
+   */
+  policy?: "random" | "least-drawn" | "newest" | "oldest";
+  /**
+   * Skip items this session contributed and, if the session belongs to a
+   * participant, items they contributed in any of their other sessions
+   * (default is true).
+   */
+  excludeOwn?: boolean;
+  /**
+   * Skip items which have already been shown to this session (default is true)
+   */
+  excludeSeen?: boolean;
+  /**
+   * Only draw items which have been served fewer than this many times.
+   */
+  maxDrawsPerItem?: number;
+  /**
+   * Only draw items which have been completed fewer than this many times.
+   * Draws which are still in progress do not count yet, so items can end up
+   * with more completions than this when many sessions draw at once.
+   */
+  maxCompletionsPerItem?: number;
+  /**
+   * Only draw items which have fewer than this many child items, i.e. items
+   * contributed with this one as their parentItemId. Rejected or withdrawn
+   * children do not count. Use 1 to keep a transmission chain from branching. Draws which
+   * have not been continued yet do not count, so a chain can still branch
+   * when several sessions draw the same item at once.
+   */
+  maxChildrenPerItem?: number;
+  /**
+   * Only draw items at or beyond this generation of a chain.
+   */
+  minGeneration?: number;
+  /**
+   * Only draw items at or below this generation of a chain.
+   */
+  maxGeneration?: number;
+}
+
+/**
+ * An item that has been drawn from a pool for a session
+ * @public
+ */
+export interface DrawnItem {
+  /**
+   * The id of this draw. Pass it to {@link Session.response} to record what
+   * the participant was reacting to.
+   */
+  drawId: string;
+  /**
+   * The id of the item that was drawn. Pass it as the parentItemId of your
+   * own contribution to continue a chain.
+   */
+  itemId: string;
+  /**
+   * The content of the item
+   */
+  publicPayload: any;
+  /**
+   * How many items came before this one in its chain
+   */
+  generation: number;
+  /**
+   * The item this one was generated from, if any
+   */
+  parentItemId?: string;
+}
+
+/**
+ * Options to contribute an item with {@link Session.contributeItem}
+ * @public
+ */
+export interface ContributeItemOptions {
+  /**
+   * The content of the item. This is shown to other participants, so it must
+   * not contain anything sensitive.
+   */
+  publicPayload: object;
+  /**
+   * The item this one was generated from, e.g. the item that was drawn to
+   * produce it. This is what links the steps of a chain together.
+   */
+  parentItemId?: string;
+  /**
+   * Additional information about the item, which is never shown to anyone.
+   */
+  privateInfo?: object;
+  /**
+   * Also store the contribution as ordinary study data. The response is
+   * written first and the item then points back at it.
+   */
+  response?: Omit<ClientResponseOptions, "sessionId">;
+  /**
+   * The response this item was generated from, if it has already been stored.
+   */
+  responseId?: number;
+}
+
+/**
+ * An item that has just been contributed to a pool
+ * @public
+ */
+export interface ContributedItem {
+  /**
+   * The id of the new item
+   */
+  itemId: string;
+  /**
+   * Whether the item still needs to be approved before it is shown to others
+   */
+  status: string;
+  /**
+   * The id of the response the item was stored alongside, if one was created
+   */
+  responseId?: number;
+}
+
+/**
+ * Options to read items from a pool with {@link Client.getItems}
+ * @public
+ */
+export interface GetItemsOptions {
+  /**
+   * How many items to return (maximally)
+   */
+  limit?: number;
+  /**
+   * In which order to return the items (default is 'newest')
+   */
+  sort?: "newest" | "oldest" | "random";
+  /**
+   * Cache the result for this many seconds
+   */
+  cacheFor?: number;
+}
+
+/**
+ * An item as it is shown on a wall of what other participants produced
+ * @public
+ */
+export interface PoolItem {
+  itemId: string;
+  publicPayload: any;
+  generation: number;
 }
 
 /**
@@ -164,7 +343,7 @@ export type LeaderboardScores = Array<{
  *
  * @public
  */
-export type HTTPMethod = "GET" | "POST" | "PUT";
+export type HTTPMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 const PARTICIPANT_ID_KEY = "WWL_PARTICIPANT_ID";
 
@@ -177,7 +356,13 @@ export class WorldWideLabError extends Error {
 }
 
 function queryString(params: { [key: string]: any }): string {
-  return new URLSearchParams(params).toString();
+  const setParams: { [key: string]: any } = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      setParams[key] = value;
+    }
+  }
+  return new URLSearchParams(setParams).toString();
 }
 
 /**
@@ -369,6 +554,140 @@ export class Client {
   }
 
   /**
+   * Create a new Response and return its id.
+   * @param opts - Options to create the response with
+   * @returns The id of the new response
+   * @internal
+   */
+  async _createResponseWithId(opts: ClientResponseOptions): Promise<number> {
+    const result = await this.call("POST", "/response/", opts);
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to create Response.");
+    }
+    return (await result.json()).responseId;
+  }
+
+  /**
+   * Contribute an item to a pool, so that it can be shown to other
+   * participants. See also {@link Session.contributeItem}, which is usually
+   * what you want, since it links the item to the session it came from.
+   *
+   * @param poolId - The id of the pool to contribute to
+   * @param opts - The item to contribute
+   * @param sessionId - The session contributing the item, if there is one
+   * @returns The id and status of the new item
+   */
+  async contributeItem(
+    poolId: string,
+    opts: ContributeItemOptions,
+    sessionId?: string,
+  ): Promise<ContributedItem> {
+    // Store the item as study data first, so that the item can point at it
+    let responseId = opts.responseId;
+    if (opts.response) {
+      if (!sessionId) {
+        throw new WorldWideLabError(
+          "A sessionId is required to store an item's response.",
+        );
+      }
+      responseId = await this._createResponseWithId({
+        sessionId,
+        ...opts.response,
+      });
+    }
+
+    const result = await this.call("POST", `/item-pool/${poolId}/item`, {
+      publicPayload: opts.publicPayload,
+      sessionId,
+      responseId,
+      parentItemId: opts.parentItemId,
+      privateInfo: opts.privateInfo,
+    });
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to contribute Item.");
+    }
+    const data = await result.json();
+    return { itemId: data.itemId, status: data.status, responseId };
+  }
+
+  /**
+   * Draw items from a pool and record that they have been shown to a session.
+   *
+   * @remarks
+   * The list can be shorter than the requested count, or empty, when the pool
+   * has run out of items matching the query, so always check what you got
+   * back before using it.
+   *
+   * @param poolId - The id of the pool to draw from
+   * @param options - Which items to draw and which ones to skip
+   * @returns The items that were drawn
+   */
+  async drawItems(
+    poolId: string,
+    options: DrawItemsOptions,
+  ): Promise<DrawnItem[]> {
+    const result = await this.call(
+      "GET",
+      `/item-pool/${poolId}/draw?${queryString({ ...options })}`,
+    );
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to draw Items.");
+    }
+    return (await result.json()).draws;
+  }
+
+  /**
+   * Retrieve items from a pool without drawing them, e.g. to show a wall of
+   * what other participants have produced. Nothing is recorded, so results
+   * can be cached via the cacheFor option.
+   *
+   * @param poolId - The id of the pool to read from
+   * @param options - How many items to return and in which order
+   * @returns The items in the pool
+   */
+  async getItems(
+    poolId: string,
+    options?: GetItemsOptions,
+  ): Promise<PoolItem[]> {
+    const result = await this.call(
+      "GET",
+      `/item-pool/${poolId}/items?${queryString({ ...options })}`,
+    );
+    if (result.status !== 200) {
+      throw new WorldWideLabError("Failed to retrieve Items.");
+    }
+    return (await result.json()).items;
+  }
+
+  /**
+   * Complete a draw without storing a response. See also
+   * {@link Session.completeDraw}.
+   *
+   * @param drawId - The id of the draw to complete
+   * @param sessionId - The session the item was drawn for
+   * @returns true if the draw was completed successfully
+   */
+  async completeDraw(drawId: string, sessionId: string): Promise<boolean> {
+    const result = await this.call("POST", `/draw/${drawId}/complete`, {
+      sessionId,
+    });
+    return (await result.json()).success === true;
+  }
+
+  /**
+   * Withdraw an item a session contributed, so that it is no longer shown to
+   * anyone. See also {@link Session.retractItem}.
+   *
+   * @param itemId - The id of the item to retract
+   * @param sessionId - The session that contributed the item
+   * @returns true if the item was retracted successfully
+   */
+  async retractItem(itemId: string, sessionId: string): Promise<boolean> {
+    const result = await this.call("DELETE", `/item/${itemId}`, { sessionId });
+    return (await result.json()).success === true;
+  }
+
+  /**
    * Store the participantId of the last person that participated using your website.
    * @param participantId - The participantId to store
    * @returns true if the id was stored successfully
@@ -541,6 +860,61 @@ export class Session extends _ClientModel {
   response(opts: Omit<ClientResponseOptions, "sessionId">): Promise<boolean> {
     const createResponseOptions = { sessionId: this.sessionId, ...opts };
     return this.clientInstance.createResponse(createResponseOptions);
+  }
+
+  /**
+   * Contribute an item to a pool, so that it can be shown to other
+   * participants.
+   *
+   * @param poolId - The id of the pool to contribute to
+   * @param opts - The item to contribute
+   * @returns The id and status of the new item
+   */
+  contributeItem(
+    poolId: string,
+    opts: ContributeItemOptions,
+  ): Promise<ContributedItem> {
+    return this.clientInstance.contributeItem(poolId, opts, this.sessionId);
+  }
+
+  /**
+   * Draw items from a pool to show them to this session.
+   *
+   * @param poolId - The id of the pool to draw from
+   * @param options - Which items to draw and which ones to skip
+   * @returns The items that were drawn
+   */
+  drawItems(
+    poolId: string,
+    options?: Omit<DrawItemsOptions, "sessionId">,
+  ): Promise<DrawnItem[]> {
+    return this.clientInstance.drawItems(poolId, {
+      sessionId: this.sessionId,
+      ...options,
+    });
+  }
+
+  /**
+   * Complete a draw without storing a response. Responses can do this on
+   * their own via their drawId, so this is for tasks whose outcome is not
+   * logged as study data.
+   *
+   * @param drawId - The id of the draw to complete
+   * @returns true if the draw was completed successfully
+   */
+  completeDraw(drawId: string): Promise<boolean> {
+    return this.clientInstance.completeDraw(drawId, this.sessionId);
+  }
+
+  /**
+   * Withdraw an item this session contributed, so that it is no longer shown
+   * to anyone.
+   *
+   * @param itemId - The id of the item to retract
+   * @returns true if the item was retracted successfully
+   */
+  retractItem(itemId: string): Promise<boolean> {
+    return this.clientInstance.retractItem(itemId, this.sessionId);
   }
 
   /**

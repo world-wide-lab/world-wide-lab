@@ -20,6 +20,15 @@ const columnComments = {
     "Additional public information for this record, stored as a JSON object. This field must not contain sensitive information as its contents can be queried from the public API.",
   deletionProtection:
     "Should the study be protected from deletion? If this is set to true, the study cannot be deleted from the admin interface until this is turned off again. This is useful to prevent accidental deletion of studies that have already been published.",
+
+  poolId:
+    "The unique identifier and name for each pool of items. Must be unique across all pools.",
+  itemId:
+    "The unique identifier for each item. Generated automatically. This id is public, as it is handed out to participants.",
+  drawId:
+    "The unique identifier for each draw i.e. one item having been served to one session. Generated automatically. This id is public, as it is handed out to participants.",
+  publicPayload:
+    "The actual content of an item, stored as a JSON object. This field must not contain sensitive information, since it is shown to other participants via the public API.",
 };
 
 function defineModels(sequelize: Sequelize) {
@@ -197,6 +206,13 @@ function defineModels(sequelize: Sequelize) {
         allowNull: false,
         comment: columnComments.sessionId,
       },
+      drawId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        defaultValue: null,
+        comment:
+          "The draw this response was produced in reaction to, if any. This is what links a response back to the item a participant was shown.",
+      },
     },
     {
       tableName: "wwl_responses",
@@ -300,6 +316,201 @@ function defineModels(sequelize: Sequelize) {
     },
   );
 
+  const ItemPool = sequelize.define(
+    "ItemPool",
+    {
+      poolId: {
+        primaryKey: true,
+        type: DataTypes.STRING,
+        validate: {
+          is: /^[a-zA-Z0-9-_]+$/,
+        },
+        unique: true,
+        allowNull: false,
+        defaultValue: null,
+        comment: columnComments.poolId,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      studyId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null,
+        comment: `${columnComments.studyId} If this is empty, the pool is shared across all studies.`,
+      },
+      moderation: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "reviewed",
+        validate: {
+          isIn: [["reviewed", "unreviewed", "closed"]],
+        },
+        comment:
+          "How contributions to this pool are moderated. 'reviewed': anyone may contribute, but only approved items are shown to others. 'unreviewed': contributions are shown to others without anyone having approved them. 'closed': the pool does not accept contributions.",
+      },
+      publicInfo: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: columnComments.publicInfo,
+      },
+      privateInfo: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: columnComments.privateInfo,
+      },
+    },
+    {
+      tableName: "wwl_item_pools",
+    },
+  );
+
+  const Item = sequelize.define(
+    "Item",
+    {
+      itemId: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
+        comment: columnComments.itemId,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      poolId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        comment: columnComments.poolId,
+      },
+      publicPayload: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        comment: columnComments.publicPayload,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "pending",
+        validate: {
+          isIn: [["pending", "approved", "rejected", "retired", "withdrawn"]],
+        },
+        comment:
+          "The moderation status of this item. Whether an item is actually shown to other participants also depends on the moderation setting of its pool.",
+      },
+      sourceSessionId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        defaultValue: null,
+        comment:
+          "The session that contributed this item. If this is empty, the item has been seeded by the researcher.",
+      },
+      sourceResponseId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        comment: "The response this item has been generated from, if any.",
+      },
+      parentItemId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        defaultValue: null,
+        comment:
+          "The item this item has been generated from, if any. This is what links the individual steps of a transmission chain together.",
+      },
+      generation: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment:
+          "How many items came before this one in its chain. Items without a parent are generation 0.",
+      },
+      timesDrawn: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment:
+          "How often this item has been served to a session. Kept in sync with the number of draws for this item.",
+      },
+      timesCompleted: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment:
+          "How often a session that was served this item has completed its draw.",
+      },
+      privateInfo: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: columnComments.privateInfo,
+      },
+    },
+    {
+      tableName: "wwl_items",
+    },
+  );
+
+  const ItemDraw = sequelize.define(
+    "ItemDraw",
+    {
+      drawId: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4,
+        comment: columnComments.drawId,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        comment: columnComments.createdAt,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+        onUpdate: "CASCADE",
+        comment: columnComments.updatedAt,
+      },
+      itemId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        comment: columnComments.itemId,
+      },
+      sessionId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        comment: columnComments.sessionId,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "served",
+        validate: {
+          isIn: [["served", "completed"]],
+        },
+        comment:
+          "Whether the session this item was served to has completed what it was drawn for.",
+      },
+    },
+    {
+      tableName: "wwl_item_draws",
+    },
+  );
+
   // Associations
   Participant.hasMany(Session, { foreignKey: "participantId" });
   Session.belongsTo(Participant, { foreignKey: "participantId" });
@@ -318,6 +529,42 @@ function defineModels(sequelize: Sequelize) {
 
   Session.hasMany(LeaderboardScore, { foreignKey: "sessionId" });
   LeaderboardScore.belongsTo(Session, { foreignKey: "sessionId" });
+
+  Study.hasMany(ItemPool, { sourceKey: "studyId", foreignKey: "studyId" });
+  ItemPool.belongsTo(Study, { targetKey: "studyId", foreignKey: "studyId" });
+
+  ItemPool.hasMany(Item, { foreignKey: "poolId" });
+  Item.belongsTo(ItemPool, { foreignKey: "poolId" });
+
+  Session.hasMany(Item, {
+    as: "contributedItems",
+    foreignKey: "sourceSessionId",
+  });
+  Item.belongsTo(Session, {
+    as: "sourceSession",
+    foreignKey: "sourceSessionId",
+  });
+
+  Response.hasMany(Item, {
+    as: "generatedItems",
+    foreignKey: "sourceResponseId",
+  });
+  Item.belongsTo(Response, {
+    as: "sourceResponse",
+    foreignKey: "sourceResponseId",
+  });
+
+  Item.hasMany(Item, { as: "childItems", foreignKey: "parentItemId" });
+  Item.belongsTo(Item, { as: "parentItem", foreignKey: "parentItemId" });
+
+  Item.hasMany(ItemDraw, { foreignKey: "itemId" });
+  ItemDraw.belongsTo(Item, { foreignKey: "itemId" });
+
+  Session.hasMany(ItemDraw, { foreignKey: "sessionId" });
+  ItemDraw.belongsTo(Session, { foreignKey: "sessionId" });
+
+  ItemDraw.hasMany(Response, { foreignKey: "drawId" });
+  Response.belongsTo(ItemDraw, { foreignKey: "drawId" });
 
   const InternalAdminSession = sequelize.define(
     "InternalAdminSession",

@@ -56,7 +56,9 @@ const routerProtectedWithoutAuthentication = express.Router();
  *             responses-raw,
  *             sessions-raw,
  *             participants-raw,
- *             responses-extracted-payload
+ *             responses-extracted-payload,
+ *             items-raw,
+ *             item-draws-raw
  *          ]
  *         required: true
  *         description: >
@@ -101,6 +103,8 @@ routerProtectedWithoutAuthentication.get(
             "sessions-raw",
             "participants-raw",
             "responses-extracted-payload",
+            "items-raw",
+            "item-draws-raw",
           ])
           .required(),
         format: string().oneOf(["json", "csv"]).required(),
@@ -199,6 +203,66 @@ routerProtectedWithoutAuthentication.get(
             subQuery: false,
             group: ["Participant.participantId"],
             order: [["participantId", "ASC"]],
+            raw: true,
+            limit,
+          });
+        };
+      } else if (dataType === "items-raw") {
+        cursorField = "itemId";
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
+          return await sequelize.models.Item.findAll({
+            where: {
+              [Sequelize.Op.and]: [
+                // Items in the study's own pools, plus shared-pool items its sessions contributed or drew
+                Sequelize.literal(`(
+                  "Item"."poolId" IN (
+                    SELECT "poolId" FROM wwl_item_pools WHERE "studyId" = :studyId
+                  )
+                  OR "Item"."sourceSessionId" IN (
+                    SELECT "sessionId" FROM wwl_sessions WHERE "studyId" = :studyId
+                  )
+                  OR "Item"."itemId" IN (
+                    SELECT wwl_item_draws."itemId"
+                      FROM wwl_item_draws
+                        INNER JOIN wwl_sessions ON (wwl_sessions."sessionId" = wwl_item_draws."sessionId")
+                     WHERE wwl_sessions."studyId" = :studyId
+                  )
+                )`),
+                ...(created_after
+                  ? [{ createdAt: { [Sequelize.Op.gte]: created_after } }]
+                  : []),
+                ...(cursor !== undefined
+                  ? [{ itemId: { [Sequelize.Op.gt]: cursor } }]
+                  : []),
+              ],
+            },
+            replacements: { studyId },
+            order: [["itemId", "ASC"]],
+            raw: true,
+            limit,
+          });
+        };
+      } else if (dataType === "item-draws-raw") {
+        cursorField = "drawId";
+        queryPage = async (cursor: Cursor | undefined, limit: number) => {
+          return await sequelize.models.ItemDraw.findAll({
+            where: {
+              [Sequelize.Op.and]: [
+                Sequelize.literal(`(
+                  "ItemDraw"."sessionId" IN (
+                    SELECT "sessionId" FROM wwl_sessions WHERE "studyId" = :studyId
+                  )
+                )`),
+                ...(created_after
+                  ? [{ createdAt: { [Sequelize.Op.gte]: created_after } }]
+                  : []),
+                ...(cursor !== undefined
+                  ? [{ drawId: { [Sequelize.Op.gt]: cursor } }]
+                  : []),
+              ],
+            },
+            replacements: { studyId },
+            order: [["drawId", "ASC"]],
             raw: true,
             limit,
           });
