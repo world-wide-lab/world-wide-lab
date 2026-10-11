@@ -13,7 +13,11 @@ import {
   initJsPsych,
 } from "jspsych";
 
-import { Client, type Session } from "@world-wide-lab/client";
+import {
+  Client,
+  type ResponseQueueOptions,
+  type Session,
+} from "@world-wide-lab/client";
 import { VERSION } from "./version";
 
 type SessionResponseOptions = Parameters<Session["response"]>[0];
@@ -61,6 +65,18 @@ export type SetupOptions = {
     privateInfo?: object;
     publicInfo?: object;
   };
+
+  /**
+   * Re-send responses which failed to upload, waiting a bit longer before
+   * every attempt (an exponential backoff).
+   *
+   * Responses are always sent off right away, this only adds re-sending them
+   * when that fails. It is turned off by default, set it to true (or pass
+   * options) to turn it on.
+   *
+   * @see {@link @world-wide-lab/client#ResponseQueueOptions}
+   */
+  responseQueue?: boolean | ResponseQueueOptions;
 };
 
 /**
@@ -300,6 +316,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     }
     jsPsychWorldWideLab.client = new Client({
       url: options.url,
+      responseQueue: options.responseQueue,
     });
     jsPsychWorldWideLab.client._library = "@world-wide-lab/integration-jspsych";
     jsPsychWorldWideLab.client._libraryVersion = VERSION;
@@ -391,6 +408,7 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
     return initJsPsych(jsPsychOptions);
   }
 
+  /** Responses collected before the Session has been created */
   private static responseQueue: SessionResponseOptions[] = [];
   /**
    * Save a response to World-Wide-Lab.
@@ -406,14 +424,40 @@ class jsPsychWorldWideLab implements JsPsychPlugin<PluginInfo> {
       jsPsychWorldWideLab.responseQueue.push(response);
     }
   }
-  private static async sendQueuedResponses() {
+  private static sendQueuedResponses() {
+    // Not awaited one by one, the client already uploads them in order
     while (jsPsychWorldWideLab.responseQueue.length > 0) {
       const entry = jsPsychWorldWideLab.responseQueue.shift();
-      await jsPsychWorldWideLab._saveResponse(entry);
+      jsPsychWorldWideLab._saveResponse(entry);
     }
   }
-  private static async _saveResponse(response: SessionResponseOptions) {
-    await jsPsychWorldWideLab.session.response(response);
+  private static async _saveResponse(
+    response: SessionResponseOptions,
+  ): Promise<boolean> {
+    return jsPsychWorldWideLab.session.response(response);
+  }
+
+  /** How many responses have not been stored by the server yet. */
+  public static get pendingResponses(): number {
+    return (
+      jsPsychWorldWideLab.responseQueue.length +
+      (jsPsychWorldWideLab.client?.pendingResponses ?? 0)
+    );
+  }
+
+  /**
+   * Wait for all responses which are still being re-sent, e.g. before
+   * re-directing participants to another page.
+   *
+   * @remarks
+   * Nothing else waits for these responses, so they never hold up an
+   * experiment. Call this when you do want to wait for them.
+   * @returns true if all responses have been stored, false if any were lost
+   */
+  public static async flush(): Promise<boolean> {
+    await jsPsychWorldWideLab.setupCompleted();
+
+    return jsPsychWorldWideLab.client.flushResponses();
   }
 
   /**

@@ -38,6 +38,17 @@ function getNonPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
   return nonPrimaryKeyColumns;
 }
 
+function getPrimaryKeyColumns(model: ModelStatic<Model>): string[] {
+  const attributes = model.getAttributes();
+  const primaryKeyColumns: string[] = [];
+  for (const attr in attributes) {
+    if (attributes[attr].primaryKey) {
+      primaryKeyColumns.push(attr);
+    }
+  }
+  return primaryKeyColumns;
+}
+
 // Import table data into the database
 async function importTableData(tableName: string, tableData: any[]) {
   const model = findModelByTableName(tableName);
@@ -46,6 +57,10 @@ async function importTableData(tableName: string, tableData: any[]) {
 
   await model.bulkCreate(tableData, {
     updateOnDuplicate: getNonPrimaryKeyColumns(model),
+    // Rows are identified via their primary key here. Without this, sequelize
+    // would use any other unique index it finds (e.g. the one used to
+    // de-duplicate responses) to decide what counts as a duplicate.
+    conflictAttributes: getPrimaryKeyColumns(model),
   });
 
   model.getAttributes();
